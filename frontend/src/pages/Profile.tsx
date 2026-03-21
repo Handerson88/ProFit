@@ -173,9 +173,11 @@ export const Profile = () => {
                   <div className="w-full h-full rounded-full bg-gray-50 flex items-center justify-center text-4xl overflow-hidden relative">
                     {(profile?.avatar_url || profile?.profile_photo) ? (
                       <img 
-                        src={(profile?.avatar_url || profile?.profile_photo)?.startsWith('data:') 
-                          ? (profile?.avatar_url || profile?.profile_photo) 
-                          : `${(profile?.avatar_url || profile?.profile_photo)?.startsWith('http') ? '' : ''}${profile?.avatar_url || profile?.profile_photo}`} 
+                        src={(() => {
+                          const url = profile?.avatar_url || profile?.profile_photo;
+                          if (typeof url !== 'string') return '';
+                          return url;
+                        })()} 
                         alt="Profile" 
                         className="w-full h-full object-cover"
                       />

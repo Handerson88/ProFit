@@ -7,8 +7,8 @@ import { CalendarModal } from '../components/CalendarModal';
 
 const HistoryItem = ({ id, title, time, calories, imageUrl, ingredients, observation, onDelete }: any) => {
   const [isDeleting, setIsDeleting] = useState(false);
-  const imageSource = imageUrl 
-    ? (imageUrl.startsWith('http') ? imageUrl : `http://127.0.0.1:5000${imageUrl}`)
+  const imageSource = (imageUrl && typeof imageUrl === 'string') 
+    ? (imageUrl.startsWith('http') || imageUrl.startsWith('data:') ? imageUrl : imageUrl)
     : null;
 
   const parsedIngredients = ingredients ? (typeof ingredients === 'string' ? JSON.parse(ingredients) : ingredients) : [];
