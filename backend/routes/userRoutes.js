@@ -6,20 +6,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Configure Multer for Profile Photos
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join('./uploads', 'profiles', req.user.id);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'profile-' + req.user.id + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configure Multer for Profile Photos (Memory Storage for Vercel)
+const storage = multer.memoryStorage();
 
 const upload = multer({ 
   storage: storage,

@@ -81,11 +81,10 @@ exports.generateWorkoutPlan = async (req, res) => {
       if (userResult.rows.length > 0) {
         const emailService = require('../services/emailService');
         const userEmail = userResult.rows[0].email;
-        emailService.sendNotificationEmail(
-          userEmail, 
-          'Novo Treino Disponível! 🏋️‍♂️', 
-          'Seu plano de treino gerado por Inteligência Artificial acabou de ficar pronto. Acesse o aplicativo agora e comece a treinar!'
-        ).catch(err => console.error('[Workout] Erro ao enviar email de notificação:', err));
+        emailService.sendWorkoutPlanEmail(
+          userResult.rows[0], 
+          structuredPlan.title
+        ).catch(err => console.error('[Workout] Erro ao enviar email de plano:', err));
       }
     } catch(e) {
       console.error('[Workout] Erro ao obter usuario para notificação:', e);

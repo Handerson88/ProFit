@@ -108,20 +108,21 @@ exports.updateProfilePhoto = async (req, res) => {
   }
 
   try {
-    const photoUrl = `/uploads/profiles/${user_id}/${req.file.filename}`;
+    // For Vercel, store as Base64 in DB for persistence
+    const base64Photo = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     
     await db.query(
-      'UPDATE users SET avatar_url = $1 WHERE id = $2',
-      [photoUrl, user_id]
+      'UPDATE users SET profile_photo = $1 WHERE id = $2',
+      [base64Photo, user_id]
     );
 
     res.json({ 
-      message: 'Profile photo updated successfully',
-      avatar_url: photoUrl
+      message: 'Foto de perfil atualizada!',
+      profile_photo: base64Photo
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to update profile photo' });
+    console.error('[UserController] Photo upload error:', err);
+    res.status(500).json({ message: 'Falha ao atualizar foto de perfil' });
   }
 };
 

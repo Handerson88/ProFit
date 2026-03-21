@@ -273,3 +273,27 @@ exports.sendPasswordChangedEmail = async (user) => {
         throw err;
     }
 };
+
+exports.sendWorkoutPlanEmail = async (user, planTitle) => {
+    const title = "Seu Plano de Treino está Pronto! 🏋️‍♂️";
+    const content = `
+        <p>Olá, <strong>${user.name || 'Atleta'}</strong>!</p>
+        <p>Ótimas notícias! Sua inteligência artificial acabou de gerar um novo plano de treino focado em: <span class="highlight">${planTitle}</span>.</p>
+        <p>O plano foi personalizado com base no seu nível, objetivo e disponibilidade. Você já pode começar a treinar hoje mesmo!</p>
+    `;
+    const ctaText = "Ver Meu Plano de Treino";
+    const ctaLink = `${APP_URL}/workout/active`;
+
+    try {
+        await resend.emails.send({
+            from: FROM_EMAIL,
+            to: user.email,
+            subject: title,
+            html: baseTemplate(title, content, ctaText, ctaLink)
+        });
+        await logEmail(user.id, 'workout_plan_ready', 'sent');
+    } catch (err) {
+        await logEmail(user.id, 'workout_plan_ready', 'failed', err.message);
+        console.error('Failed to send workout plan email:', err);
+    }
+};

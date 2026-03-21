@@ -1,15 +1,20 @@
 const axios = require('axios');
 const fs = require('fs');
 
-async function analyzeFoodImage(imagePath) {
+async function analyzeFoodImage(imageBufferOrPath) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is not configured');
   }
 
   // Convert image to base64
-  const imageBuffer = fs.readFileSync(imagePath);
-  const base64Image = imageBuffer.toString('base64');
+  let base64Image;
+  if (Buffer.isBuffer(imageBufferOrPath)) {
+    base64Image = imageBufferOrPath.toString('base64');
+  } else {
+    const imageBuffer = fs.readFileSync(imageBufferOrPath);
+    base64Image = imageBuffer.toString('base64');
+  }
 
 const prompt = `Você agora é um Especialista de Visão Computacional e Nutrição de Elite.
 Sua tarefa é analisar a imagem de um prato de comida e fornecer uma análise nutricional MASTER, profissional e visualmente precisa.

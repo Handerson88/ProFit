@@ -12,8 +12,10 @@ exports.scanMeal = async (req, res) => {
   }
 
   try {
-    const imageUrl = `/uploads/meals/${user_id}/${req.file.filename}`;
-    const fullPath = req.file.path;
+    // For Vercel/MemoryStorage, req.file.path is undefined. Use buffer.
+    const imageBuffer = req.file.buffer;
+    // placeholder or base64 if needed, but for scan logic imageUrl is minimal
+    const imageUrl = req.body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'; 
     console.log('--- START MEAL SCAN ---');
     console.log('User ID:', user_id);
     console.log('File details:', {
@@ -84,8 +86,7 @@ exports.scanMeal = async (req, res) => {
 
     // 3. Generate Image Hash for Memory (MD5)
     console.log('Generating image hash...');
-    const fileBuffer = fs.readFileSync(fullPath);
-    const imageHash = crypto.createHash('md5').update(fileBuffer).digest('hex');
+    const imageHash = crypto.createHash('md5').update(imageBuffer).digest('hex');
     console.log('Image Hash:', imageHash);
 
     // 4. Check Food Memory Cache
@@ -105,7 +106,7 @@ exports.scanMeal = async (req, res) => {
     } else {
       console.log('CACHE MISS. Calling OpenAI Vision...');
       // 5. Analyze with OpenAI Vision
-      analysis = await analyzeFoodImage(fullPath);
+      analysis = await analyzeFoodImage(imageBuffer);
       console.log('AI Analysis result received:', !!analysis);
 
       // 5.1 Check for image quality
