@@ -18,6 +18,7 @@ import {
   Award
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { api } from '../../services/api';
 
 const AdminUserDetail: React.FC = () => {
     const { id } = useParams();
@@ -31,11 +32,7 @@ const AdminUserDetail: React.FC = () => {
 
     const fetchUserDetails = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://127.0.0.1:5000/api/admin/users/${id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const result = await response.json();
+            const result = await api.admin.getUser(id!);
             setData(result);
         } catch (err) {
             console.error('Error fetching user details:', err);

@@ -441,6 +441,24 @@ export const api = {
     deleteScannedDish: (id: string) => fetch(`${API_URL}/admin/scanned-dishes/${id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+
+    getFoods: () => fetch(`${API_URL}/admin/foods`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+
+    updateFood: (id: string, data: any) => fetch(`${API_URL}/admin/foods/${id}`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(data)
+    }).then(handleResponse),
+
+    deleteFood: (id: string) => fetch(`${API_URL}/admin/foods/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse)
   },
   ai: {

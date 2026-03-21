@@ -14,6 +14,7 @@ import {
   User as UserIcon
 } from 'lucide-react';
 import { api } from '../../services/api';
+const API_URL = import.meta.env.VITE_API_URL || '';
 import { ConfirmModal } from '../../components/ConfirmModal';
 
 interface ScannedDish {
@@ -237,7 +238,11 @@ const AdminDishes: React.FC = () => {
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-200 dark:border-slate-700">
                           {dish.image_url ? (
-                            <img src={`http://127.0.0.1:5000${dish.image_url}`} alt={dish.dish_name} className="w-full h-full object-cover" />
+                            <img 
+                              src={dish.image_url.startsWith('data:') ? dish.image_url : `${API_URL}${dish.image_url}`} 
+                              alt={dish.dish_name} 
+                              className="w-full h-full object-cover" 
+                            />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-400">
                               <Utensils size={20} />
@@ -317,7 +322,7 @@ const AdminDishes: React.FC = () => {
             <div className="relative h-64 bg-slate-100 dark:bg-slate-800">
               {selectedDish.image_url ? (
                 <img 
-                  src={`http://127.0.0.1:5000${selectedDish.image_url}`} 
+                  src={selectedDish.image_url.startsWith('data:') ? selectedDish.image_url : `${API_URL}${selectedDish.image_url}`} 
                   alt={selectedDish.dish_name} 
                   className="w-full h-full object-cover"
                 />

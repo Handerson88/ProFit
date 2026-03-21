@@ -10,6 +10,7 @@ import {
   X,
   Loader2
 } from 'lucide-react';
+import { api } from '../../services/api';
 import { ConfirmModal } from '../../components/ConfirmModal';
 
 const AdminFoods: React.FC = () => {
@@ -36,11 +37,7 @@ const AdminFoods: React.FC = () => {
 
     const fetchFoods = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/admin/foods', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const data = await api.admin.getFoods();
             setFoods(data);
         } catch (err) {
             console.error('Error fetching foods:', err);
@@ -56,20 +53,9 @@ const AdminFoods: React.FC = () => {
 
     const handleSave = async (id: string) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/admin/foods/${id}`, {
-                method: 'PUT',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(editForm)
-            });
-
-            if (response.ok) {
-                setFoods(foods.map(f => f.id === id ? editForm : f));
-                setEditingId(null);
-            }
+            await api.admin.updateFood(id, editForm);
+            setFoods(foods.map(f => f.id === id ? editForm : f));
+            setEditingId(null);
         } catch (err) {
             console.error('Error saving food:', err);
         }
@@ -85,11 +71,7 @@ const AdminFoods: React.FC = () => {
             showCancel: true,
             onConfirm: async () => {
                 try {
-                    const token = localStorage.getItem('token');
-                    await fetch(`http://localhost:5000/api/admin/foods/${id}`, {
-                        method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
+                    await api.admin.deleteFood(id);
                     setFoods(prev => prev.filter(f => f.id !== id));
                 } catch (err) {
                     console.error('Error deleting food:', err);
