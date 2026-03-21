@@ -1,0 +1,22 @@
+{
+  "short_name": "ProFit",
+  "name": "ProFit Calories & Workout",
+  "icons": [
+    {
+      "src": "faviconnovo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "faviconnovo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "theme_color": "#56AB2F",
+  "description": "Seu assistente inteligente de calorias e treinos com IA."
+}

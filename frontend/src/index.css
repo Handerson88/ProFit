@@ -1,0 +1,119 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+body.light-mode {
+  background: radial-gradient(circle at top right, #F0F9EB 0%, #F6F7F9 40%);
+  color: #1A1C1E;
+}
+
+body.dark-mode {
+  background: #0F172A;
+  color: #F1F5F9;
+}
+
+@layer base {
+  html, body, #root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body {
+    @apply text-text-primary font-sans antialiased;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  body:not(.admin-mode) {
+    background: radial-gradient(circle at top right, #F0F9EB 0%, #F6F7F9 40%);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  body.admin-mode {
+    display: block;
+    background: #F7F9FC;
+  }
+
+  body.admin-mode.dark-mode {
+    background: #0F172A;
+  }
+
+  #root {
+    width: 100%;
+    height: 100%;
+  }
+
+  body:not(.admin-mode) #root {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+}
+
+@layer components {
+  .main-wrapper {
+    @apply w-full flex justify-center items-start min-h-screen overflow-x-hidden p-0;
+  }
+
+  .app-container {
+    @apply w-full min-h-screen bg-white relative border-x border-gray-100/50 mx-auto box-border shadow-none md:max-w-4xl md:shadow-2xl md:my-8 md:rounded-[40px] md:min-h-[90vh] lg:max-w-6xl;
+  }
+  
+  .card-premium {
+    @apply bg-white/70 backdrop-blur-md rounded-[32px] shadow-soft p-6 transition-all duration-500 hover:shadow-premium hover:-translate-y-1 border border-white;
+  }
+  
+  .btn-primary {
+    @apply bg-accent-gradient text-white font-bold py-5 px-8 rounded-[24px] shadow-lg active:scale-95 transition-all duration-300 text-center flex items-center justify-center space-x-2;
+    box-shadow: 0 10px 20px -10px rgba(86, 171, 47, 0.5);
+  }
+
+  .btn-secondary {
+    @apply bg-white/50 backdrop-blur-sm text-text-primary font-bold py-5 px-8 rounded-[24px] shadow-soft border border-white active:scale-95 transition-all duration-300 text-center flex items-center justify-center space-x-2;
+  }
+
+  .input-premium {
+    @apply w-full bg-white border border-gray-100 rounded-[20px] p-5 focus:ring-2 focus:ring-primary-light focus:border-primary-light outline-none transition-all shadow-sm shadow-black/5 placeholder:text-gray-300 text-base font-medium;
+  }
+
+  .glass-nav {
+    @apply fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/90 backdrop-blur-xl border-t border-gray-100/50 px-8 py-5 flex justify-between items-center z-50 rounded-t-[40px];
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.03);
+  }
+}
+
+/* Custom scrollbar for a cleaner look */
+::-webkit-scrollbar {
+  width: 0px;
+}
+
+.calendar-slider::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tailwind utility to hide arrows on numeric input */
+.hide-arrows::-webkit-outer-spin-button,
+.hide-arrows::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.hide-arrows[type=number] {
+  -moz-appearance: textfield;
+}

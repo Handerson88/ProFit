@@ -1,0 +1,48 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  body {
+    @apply bg-background text-text-primary font-sans antialiased overflow-x-hidden;
+    -webkit-tap-highlight-color: transparent;
+    background: radial-gradient(circle at top right, #F0F9EB 0%, #F6F7F9 40%);
+  }
+}
+
+@layer components {
+  .app-container {
+    @apply min-h-screen max-w-md mx-auto relative bg-background shadow-2xl border-x border-gray-100/50;
+  }
+  
+  .card-premium {
+    @apply bg-white/70 backdrop-blur-md rounded-[32px] shadow-soft p-6 transition-all duration-500 hover:shadow-premium hover:-translate-y-1 border border-white;
+  }
+  
+  .btn-primary {
+    @apply bg-accent-gradient text-white font-bold py-5 px-8 rounded-[24px] shadow-lg active:scale-95 transition-all duration-300 text-center flex items-center justify-center space-x-2;
+    box-shadow: 0 10px 20px -10px rgba(86, 171, 47, 0.5);
+  }
+
+  .btn-secondary {
+    @apply bg-white/50 backdrop-blur-sm text-text-primary font-bold py-5 px-8 rounded-[24px] shadow-soft border border-white active:scale-95 transition-all duration-300 text-center flex items-center justify-center space-x-2;
+  }
+
+  .input-premium {
+    @apply w-full bg-white border border-gray-100 rounded-[20px] p-5 focus:ring-2 focus:ring-primary-light focus:border-primary-light outline-none transition-all shadow-sm shadow-black/5 placeholder:text-gray-300 text-base font-medium;
+  }
+
+  .glass-nav {
+    @apply fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/90 backdrop-blur-xl border-t border-gray-100/50 px-8 py-5 flex justify-between items-center z-50 rounded-t-[40px];
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.03);
+  }
+}
+
+/* Custom scrollbar for a cleaner look */
+::-webkit-scrollbar {
+  width: 0px;
+}
+
+.calendar-slider::-webkit-scrollbar {
+  display: none;
+}
