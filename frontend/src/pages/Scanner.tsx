@@ -32,6 +32,15 @@ export const FoodScanner = () => {
     startCamera();
     return () => stopCamera();
   }, []);
+  
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
 
   const startCamera = async () => {
     try {
@@ -100,10 +109,11 @@ export const FoodScanner = () => {
       };
 
       const localImageUrl = URL.createObjectURL(file);
+      const base64Image = await fileToBase64(file);
       console.log("SCANNER DEBUG - Local Image URL created:", localImageUrl);
 
       navigate('/scan-result', { 
-        state: { food: foodData, localImage: localImageUrl } 
+        state: { food: foodData, localImage: localImageUrl, base64Image: base64Image } 
       });
       trackingService.logEvent('scan_success', { type: 'camera', food: foodData.name }).catch(console.error);
     } catch (err: any) {
@@ -151,10 +161,11 @@ export const FoodScanner = () => {
       };
 
       const localImageUrl = URL.createObjectURL(file);
+      const base64Image = await fileToBase64(file);
       console.log("SCANNER DEBUG - Local Image URL created (Library):", localImageUrl);
 
       navigate('/scan-result', { 
-        state: { food: foodData, localImage: localImageUrl } 
+        state: { food: foodData, localImage: localImageUrl, base64Image: base64Image } 
       });
     } catch (err: any) {
       console.error("Upload failed", err);

@@ -232,7 +232,14 @@ exports.scanMeal = async (req, res) => {
 exports.addMeal = async (req, res) => {
   const { food_name, meal_name, calories, protein, carbs, fat, quantity, meal_type, image_url, ingredients } = req.body;
   const user_id = req.user.id;
-  const mealCalories = Number(calories) || 0;
+  
+  // Robust Number parsing to avoid NaN errors in PostgreSQL
+  const mealCalories = Math.round(Number(calories)) || 0;
+  const parsedProtein = Number(protein) || 0;
+  const parsedCarbs = Number(carbs) || 0;
+  const parsedFat = Number(fat) || 0;
+  const parsedQuantity = Number(quantity) || 1;
+
   const dateStr = new Date().toISOString().split('T')[0];
 
   try {
@@ -245,10 +252,10 @@ exports.addMeal = async (req, res) => {
         food_name, 
         meal_name || food_name, 
         mealCalories, 
-        Number(protein || 0), 
-        Number(carbs || 0), 
-        Number(fat || 0), 
-        Number(quantity || 1), 
+        parsedProtein, 
+        parsedCarbs, 
+        parsedFat, 
+        parsedQuantity, 
         meal_type || 'Manual', 
         image_url, 
         JSON.stringify(ingredients || []), 

@@ -32,7 +32,8 @@ export const ScanResult = () => {
     ingredients: [] as any[],
     calorieStatus: null as any,
     recommendation: '',
-    nutrition_observation: ''
+    nutrition_observation: '',
+    base64Image: ''
   });
 
   const [quantity, setQuantity] = useState(1);
@@ -63,7 +64,8 @@ export const ScanResult = () => {
          ingredients: fd.ingredients || [],
          calorieStatus: fd.calorie_status || fd.calorieStatus,
          recommendation: fd.recommendation,
-         nutrition_observation: fd.nutrition_observation || fd.recommendation || ''
+         nutrition_observation: fd.nutrition_observation || fd.recommendation || '',
+         base64Image: location.state.base64Image || ''
        }));
     } else {
       navigate('/scanner');
@@ -82,7 +84,7 @@ export const ScanResult = () => {
         fat: totalFats,
         quantity: quantity,
         meal_type: 'Scanned',
-        image_url: foodData.image.includes('uploads') ? foodData.image.split('http://localhost:5000')[1] || foodData.image : foodData.image,
+        image_url: foodData.base64Image || foodData.image,
         ingredients: foodData.ingredients,
         nutrition_observation: foodData.nutrition_observation
       });
