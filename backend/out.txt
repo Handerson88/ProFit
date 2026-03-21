@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/faviconnovo.png" />
+    <link rel="shortcut icon" type="image/png" href="/faviconnovo.png" />
+    <link rel="apple-touch-icon" href="/faviconnovo.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#56AB2F" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>ProFit Calories & Workout</title>
+    <script type="module" crossorigin src="/assets/index-OsA5zY66.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C8oEhsvz.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
