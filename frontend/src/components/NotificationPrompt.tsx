@@ -43,7 +43,7 @@ export const NotificationPrompt = () => {
         
         let subscription = await registration.pushManager.getSubscription();
         if (!subscription) {
-          const publicVapidKey = 'BKc8qhaKLqZxbRyYxm2XIDIwMvPfDMyxiTgZIUFiroMgdg1BmZLNUIPbAioocr5_ODT939gHpU8ujfDGkIkKasE';
+          const publicVapidKey = 'BDZj5D4q4-h8VYjQC37AG3yW7Yw6y-oScxrsdwUajfaXXpSBoc_h3S9HwFpb8x0awJTBeEeAR_hwN6MyRPBi050';
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
@@ -51,6 +51,15 @@ export const NotificationPrompt = () => {
         }
 
         await api.notifications.registerDevice(subscription);
+        
+        // Show immediate success notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('ProFit Calories', {
+            body: 'Notificações ativadas com sucesso! Você receberá alertas do ProFit.',
+            icon: '/icon-192.png'
+          });
+        }
+
         setStatus('success');
         setTimeout(() => setShow(false), 3000);
       } else {

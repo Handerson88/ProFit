@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Send, Users, User, Bell, AlertCircle, CheckCircle2, Layout, ChevronDown } from 'lucide-react';
+import { api } from '../../services/api';
 
 const AdminNotifications: React.FC = () => {
     const [title, setTitle] = useState('');
@@ -18,11 +19,7 @@ const AdminNotifications: React.FC = () => {
 
     const fetchTemplates = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://127.0.0.1:5000/api/admin/notifications/templates', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const data = await api.admin.getNotificationTemplates();
             setTemplates(data);
         } catch (err) {
             console.error('Error fetching templates:', err);
@@ -42,29 +39,17 @@ const AdminNotifications: React.FC = () => {
         setStatus(null);
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://127.0.0.1:5000/api/admin/notifications/send', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    title,
-                    message,
-                    type,
-                    recipientType,
-                    userId: recipientType === 'specific' ? specificUserId : null
-                })
+            await api.admin.sendAdminNotification({
+                title,
+                message,
+                type,
+                recipientType,
+                userId: recipientType === 'specific' ? specificUserId : null
             });
 
-            if (response.ok) {
-                setStatus({ type: 'success', message: 'Notificação enviada com sucesso para os usuários!' });
-                setTitle('');
-                setMessage('');
-            } else {
-                setStatus({ type: 'error', message: 'Erro ao enviar notificação. Tente novamente.' });
-            }
+            setStatus({ type: 'success', message: 'Notificação enviada com sucesso para os usuários!' });
+            setTitle('');
+            setMessage('');
         } catch (err) {
             console.error(err);
             setStatus({ type: 'error', message: 'Erro de conexão com o servidor.' });

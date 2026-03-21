@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
+const notificationController = require('./notificationController');
 
 exports.sendNotification = async (req, res) => {
     const { title, message, type, recipientType, userId } = req.body;
@@ -23,6 +24,14 @@ exports.sendNotification = async (req, res) => {
             );
             // Broadcast to all connected users
             io.emit('new_notification', newNotif);
+            
+            // Push notification to all devices
+            await notificationController.sendPushToAll({
+                title: newNotif.title,
+                body: newNotif.message,
+                data: { type: newNotif.type }
+            });
+
             notifications.push(newNotif);
 
         } else if (recipientType === 'active_subscribers') {
@@ -41,6 +50,14 @@ exports.sendNotification = async (req, res) => {
                 );
                 // Send to specific user room
                 io.to(sub.user_id).emit('new_notification', newNotif);
+
+                // Push notification to this specific user
+                await notificationController.sendPushToUser(sub.user_id, {
+                    title: newNotif.title,
+                    body: newNotif.message,
+                    data: { type: newNotif.type }
+                });
+
                 notifications.push(newNotif);
             }
         } else if (recipientType === 'specific' && userId) {
@@ -57,6 +74,14 @@ exports.sendNotification = async (req, res) => {
             );
             // Send to specific user room
             io.to(userId).emit('new_notification', newNotif);
+
+            // Push notification to this specific user
+            await notificationController.sendPushToUser(userId, {
+                title: newNotif.title,
+                body: newNotif.message,
+                data: { type: newNotif.type }
+            });
+
             notifications.push(newNotif);
         }
 

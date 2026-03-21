@@ -7,90 +7,148 @@ const APP_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 const baseTemplate = (title, content, ctaText, ctaLink) => `
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background-color: #F6F7F9; 
-            margin: 0; 
-            padding: 40px 20px; 
-            color: #1F2937;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: #F8FAFC; 
+            color: #1E293B;
+            line-height: 1.6;
             -webkit-font-smoothing: antialiased;
         }
+        .wrapper { width: 100%; padding: 40px 20px; background-color: #F8FAFC; }
         .container { 
             max-width: 600px; 
             background: #ffffff; 
             margin: 0 auto; 
-            border-radius: 32px; 
+            border-radius: 40px; 
             overflow: hidden; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
-            border: 1px solid rgba(0,0,0,0.02);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #F1F5F9;
         }
         .header { 
-            padding: 50px 40px; 
+            padding: 60px 40px; 
             text-align: center; 
-            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            position: relative;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 40px;
+            background: #ffffff;
+            border-radius: 40px 40px 0 0;
         }
         .content { 
-            padding: 50px 40px; 
-            line-height: 1.8;
-            font-size: 16px;
+            padding: 20px 50px 60px; 
+            text-align: center;
         }
         .footer { 
-            padding: 40px; 
+            padding: 50px 40px; 
             text-align: center; 
-            font-size: 12px; 
-            color: #9CA3AF; 
-            background: #FAFAFB;
-            border-top: 1px solid #F3F4F6;
+            font-size: 13px; 
+            color: #64748B; 
+            background: #F8FAFC;
+            border-top: 1px solid #F1F5F9;
+        }
+        .logo-text { 
+            font-size: 32px; 
+            font-weight: 800; 
+            color: #ffffff; 
+            letter-spacing: -0.05em;
+            margin-bottom: 5px;
+        }
+        .logo-dot { color: #D1FAE5; }
+        .badge {
+            display: inline-block;
+            padding: 6px 16px;
+            background: #ECFDF5;
+            color: #059669;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 24px;
+        }
+        h1 { 
+            font-size: 32px; 
+            font-weight: 800; 
+            margin-bottom: 24px; 
+            color: #0F172A;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+        }
+        .text-lead {
+            font-size: 18px;
+            color: #475569;
+            margin-bottom: 32px;
+        }
+        .main-content {
+            font-size: 16px;
+            color: #64748B;
+            margin-bottom: 40px;
+            text-align: left;
+            background: #F8FAFC;
+            padding: 30px;
+            border-radius: 24px;
         }
         .button { 
             display: inline-block; 
-            padding: 20px 40px; 
-            background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+            padding: 22px 48px; 
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
             color: #ffffff !important; 
             text-decoration: none; 
-            border-radius: 18px; 
-            font-weight: 800; 
-            font-size: 16px;
-            margin-top: 40px;
-            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            border-radius: 20px; 
+            font-weight: 700; 
+            font-size: 18px;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+            transition: all 0.3s ease;
         }
-        h1 { 
-            font-size: 28px; 
-            font-weight: 800; 
-            margin-bottom: 24px; 
-            color: #111827;
-            letter-spacing: -0.025em;
-            line-height: 1.2;
+        .highlight { color: #059669; font-weight: 700; }
+        .divider { height: 1px; background: #F1F5F9; margin: 40px 0; }
+        .social-links { margin-top: 24px; }
+        .social-links a { 
+            margin: 0 10px;
+            color: #94A3B8;
+            text-decoration: none;
         }
-        p { margin-bottom: 24px; color: #4B5563; }
-        .highlight { color: #6366F1; font-weight: 700; }
-        .logo { font-size: 24px; font-weight: 900; color: white; letter-spacing: -0.05em; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">ProFit.</div>
-        </div>
-        <div class="content">
-            <h1>${title}</h1>
-            ${content}
-            ${ctaText ? `<center style="margin-top: 10px;"><a href="${ctaLink}" class="button">${ctaText}</a></center>` : ''}
-        </div>
-        <div class="footer">
-            <p style="margin-bottom: 10px; font-weight: 700; color: #6B7280;">Atinge a tua melhor versão.</p>
-            <p>© ${new Date().getFullYear()} ProFit AI - Inteligência Nutricional</p>
-            <p>Beira, Moçambique | <a href="#" style="color: #6366F1; text-decoration: none;">Suporte ProFit</a></p>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <div class="logo-text">ProFit<span class="logo-dot">.</span></div>
+                <div style="color: #D1FAE5; font-size: 14px; font-weight: 500;">Premium Nutrition Coaching</div>
+            </div>
+            <div class="content">
+                <div class="badge">Notificação Oficial</div>
+                <h1>${title}</h1>
+                <div class="main-content">
+                    ${content}
+                </div>
+                ${ctaText ? `
+                <div style="margin-top: 20px;">
+                    <a href="${ctaLink}" class="button">${ctaText}</a>
+                </div>
+                ` : ''}
+            </div>
+            <div class="footer">
+                <p style="margin-bottom: 12px; font-weight: 700; color: #0F172A; font-size: 16px;">Vem ser sua melhor versão.</p>
+                <p style="margin-bottom: 24px;">Este é um e-mail automático do ecossistema ProFit AI. Por favor, não responda a este endereço.</p>
+                <div class="divider"></div>
+                <p>© ${new Date().getFullYear()} ProFit AI - Inteligência Nutricional em Saúde</p>
+                <p style="margin-top: 8px;">Beira, Moçambique</p>
+            </div>
         </div>
     </div>
 </body>
@@ -203,13 +261,20 @@ exports.sendPaymentFailedEmail = async (user, reason) => {
 };
 
 exports.sendInviteEmail = async (email, inviterName, inviteLink) => {
-    const title = "Você foi convidado para o ProFit! 🚀";
+    const title = "Seu convite exclusivo chegou! 🚀";
     const content = `
         <p>Olá!</p>
-        <p>Seu amigo <span class="highlight">${inviterName}</span> convidou você para se juntar ao ProFit, o assistente nutricional inteligente que está transformando vidas.</p>
-        <p>Crie sua conta hoje e comece a monitorar sua saúde de forma profissional.</p>
+        <p>Temos o prazer de informar que <span class="highlight">${inviterName}</span> convidou você para fazer parte do <span class="highlight">ProFit Elite</span>.</p>
+        <p>O ProFit não é apenas um contador de calorias. É o seu novo assistente pessoal de saúde que utiliza inteligência artificial avançada para analisar suas refeições através de fotos e criar planos de treino sob medida para os seus objetivos.</p>
+        <p style="margin-top: 10px; font-weight: 600; color: #0F172A;">O que te espera:</p>
+        <ul style="margin-bottom: 20px; list-style-type: none; padding-left: 0;">
+            <li style="margin-bottom: 8px;">✨ Escaneamento de Refeições por IA</li>
+            <li style="margin-bottom: 8px;">🏋️ Treinos Personalizados Dinâmicos</li>
+            <li style="margin-bottom: 8px;">📊 Acompanhamento de Macros Profissional</li>
+        </ul>
+        <p>Clique no botão abaixo para ativar seu convite e realizar seu quiz inicial de perfil.</p>
     `;
-    const ctaText = "Aceitar Convite";
+    const ctaText = "Começar Agora";
     const ctaLink = inviteLink;
 
     try {

@@ -15,6 +15,7 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
+import { api } from '../../services/api';
 
 const AdminMRR: React.FC = () => {
     const [stats, setStats] = useState<any>(null);
@@ -27,18 +28,10 @@ const AdminMRR: React.FC = () => {
 
     const fetchData = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const [statsRes, chartRes] = await Promise.all([
-                fetch('http://127.0.0.1:5000/api/admin/mrr/stats', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                fetch('http://127.0.0.1:5000/api/admin/mrr/chart', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
+            const [statsData, chartData] = await Promise.all([
+                api.admin.getMRRStats(),
+                api.admin.getMRRChart()
             ]);
-            
-            const statsData = await statsRes.json();
-            const chartData = await chartRes.json();
             
             setStats(statsData);
             setChartData(chartData);

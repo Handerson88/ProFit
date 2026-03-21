@@ -1,7 +1,5 @@
-import { api } from './api';
+import { api, API_URL } from './api';
 import { syncService } from './syncService';
-
-const API_URL = 'http://127.0.0.1:5000/api';
 
 class QuizService {
   async saveAnswer(question: string, answer: any, current_step?: string, is_complete?: boolean) {

@@ -70,6 +70,29 @@ exports.sendPushToUser = async (userId, payload) => {
   }
 };
 
+/**
+ * Utility function to send push notifications to all registered devices
+ */
+exports.sendPushToAll = async (payload) => {
+  try {
+    const result = await db.query('SELECT subscription FROM user_devices');
+
+    const notifications = result.rows.map(row => {
+      const subscription = row.subscription;
+      return webpush.sendNotification(subscription, JSON.stringify(payload))
+        .catch(async (err) => {
+          if (err.statusCode === 404 || err.statusCode === 410) {
+            await db.query('DELETE FROM user_devices WHERE subscription = $1', [JSON.stringify(subscription)]);
+          }
+        });
+    });
+
+    await Promise.all(notifications);
+  } catch (error) {
+    console.error('sendPushToAll error:', error);
+  }
+};
+
 exports.getNotifications = async (req, res) => {
   try {
     const userId = req.user.id;

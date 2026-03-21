@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+export const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const handleResponse = async (res: Response) => {
   let data;
@@ -9,14 +9,13 @@ const handleResponse = async (res: Response) => {
   }
   
   if (!res.ok) {
-    const isPublicRoute = ['/login', '/register', '/onboarding', '/forgot-password', '/reset-password'].includes(window.location.pathname);
+    const isPublicRoute = ['/login', '/register', '/onboarding', '/forgot-password', '/reset-password', '/auth/invite'].some(path => window.location.pathname.startsWith(path));
     
     // Redirect to login if unauthorized or if user/profile is not found
     if ((res.status === 401 || res.status === 403 || (res.status === 404 && res.url.includes('/user/profile'))) && !isPublicRoute) {
       console.warn(`Auth session invalid (Status ${res.status}). Redirecting to login...`);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      localStorage.removeItem('token');
       window.location.href = '/login';
     }
     const errorMessage = data.message || `HTTP Error ${res.status}: ${res.statusText}`;
@@ -60,9 +59,7 @@ export const api = {
       body: JSON.stringify({ name, email })
     }).then(handleResponse),
 
-    verifyInvite: (token: string) => fetch(`${API_URL}/auth/invite/${token}`, {
-      method: 'GET'
-    }).then(handleResponse),
+    verifyInvite: (token: string) => fetch(`${API_URL}/auth/invite/${token}`).then(handleResponse),
 
     activateInvite: (payload: any) => fetch(`${API_URL}/auth/invite/activate`, {
       method: 'POST',
@@ -443,6 +440,19 @@ export const api = {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse),
 
+    getNotificationTemplates: () => fetch(`${API_URL}/admin/notifications/templates`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+
+    sendAdminNotification: (data: any) => fetch(`${API_URL}/admin/notifications/send`, {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    }).then(handleResponse),
+
     getFoods: () => fetch(`${API_URL}/admin/foods`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse),
@@ -458,6 +468,14 @@ export const api = {
 
     deleteFood: (id: string) => fetch(`${API_URL}/admin/foods/${id}`, {
       method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+
+    getMRRStats: () => fetch(`${API_URL}/admin/mrr/stats`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+
+    getMRRChart: () => fetch(`${API_URL}/admin/mrr/chart`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse)
   },
@@ -500,6 +518,6 @@ export const api = {
     }).then(handleResponse),
     getAll: () => fetch(`${API_URL}/achievements/all`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    }).then(handleResponse),
+    }).then(handleResponse)
   }
 };

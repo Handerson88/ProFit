@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { api } from '../services/api';
 
 const InviteActivation: React.FC = () => {
     const { token } = useParams<{ token: string }>();
@@ -20,14 +21,8 @@ const InviteActivation: React.FC = () => {
     useEffect(() => {
         const verifyInvite = async () => {
             try {
-                const response = await fetch(`http://127.0.0.1:5000/api/auth/invite/${token}`);
-                const data = await response.json();
-                
-                if (response.ok) {
-                    setUser(data);
-                } else {
-                    setError(data.message || 'Convite inválido ou expirado.');
-                }
+                const data = await api.auth.verifyInvite(token!);
+                setUser(data);
             } catch (err) {
                 setError('Erro ao conectar com o servidor.');
             } finally {
@@ -49,27 +44,17 @@ const InviteActivation: React.FC = () => {
         setError(null);
 
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/auth/invite/activate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, password })
-            });
+            const data = await api.auth.activateInvite({ token, password });
             
-            const data = await response.json();
-
-            if (response.ok) {
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
-                setSuccess(true);
-                // Wait 2 seconds then redirect to quiz
-                setTimeout(() => {
-                    navigate('/quiz');
-                }, 2000);
-            } else {
-                setError(data.message || 'Erro ao ativar conta.');
-            }
-        } catch (err) {
-            setError('Erro ao conectar com o servidor.');
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            setSuccess(true);
+            // Wait 2 seconds then redirect to quiz
+            setTimeout(() => {
+                navigate('/quiz');
+            }, 2000);
+        } catch (err: any) {
+            setError(err.message || 'Erro ao conectar com o servidor.');
         } finally {
             setActivating(false);
         }
