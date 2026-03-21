@@ -59,7 +59,7 @@ export const ScanResult = () => {
          protein: Number(fd.protein || 0),
          carbs: Number(fd.carbs || 0),
          fats: Number(fd.fat || fd.fats || 0),
-         image: fd.image_url ? `http://localhost:5000${fd.image_url}` : (fd.image || ''),
+         image: location.state.localImage || (fd.image_url && typeof fd.image_url === 'string' && fd.image_url.startsWith('http') ? fd.image_url : (fd.image || '')),
          ingredients: fd.ingredients || [],
          calorieStatus: fd.calorie_status || fd.calorieStatus,
          recommendation: fd.recommendation,

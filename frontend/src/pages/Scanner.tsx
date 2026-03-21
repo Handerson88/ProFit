@@ -99,10 +99,11 @@ export const FoodScanner = () => {
         nutrition_observation: result.nutrition_observation || result.recommendation
       };
 
-      console.log("SCANNER DEBUG - Navigating with:", foodData);
+      const localImageUrl = URL.createObjectURL(file);
+      console.log("SCANNER DEBUG - Local Image URL created:", localImageUrl);
 
       navigate('/scan-result', { 
-        state: { food: foodData } 
+        state: { food: foodData, localImage: localImageUrl } 
       });
       trackingService.logEvent('scan_success', { type: 'camera', food: foodData.name }).catch(console.error);
     } catch (err: any) {
@@ -149,10 +150,11 @@ export const FoodScanner = () => {
         nutrition_observation: result.nutrition_observation || result.recommendation
       };
 
-      console.log("SCANNER DEBUG - Navigating with (Library):", foodData);
+      const localImageUrl = URL.createObjectURL(file);
+      console.log("SCANNER DEBUG - Local Image URL created (Library):", localImageUrl);
 
       navigate('/scan-result', { 
-        state: { food: foodData } 
+        state: { food: foodData, localImage: localImageUrl } 
       });
     } catch (err: any) {
       console.error("Upload failed", err);
