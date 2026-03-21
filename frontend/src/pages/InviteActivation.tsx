@@ -96,20 +96,41 @@ const InviteActivation: React.FC = () => {
                 className="bg-white rounded-[32px] shadow-2xl overflow-hidden max-w-md w-full"
             >
                 {/* Header Section */}
-                <div className="bg-[#38A169] p-8 text-center space-y-2">
-                    <h1 className="text-3xl font-extrabold text-white">Bem-vindo ao ProFit!</h1>
-                    <p className="text-emerald-50 text-sm">Olá, <span className="font-bold underline">{user?.name}</span>! Finalize seu cadastro abaixo.</p>
+                <div className="bg-gradient-to-br from-[#10B981] to-[#059669] p-10 text-center space-y-3 relative overflow-hidden">
+                    {/* Background Decoration */}
+                    <div className="absolute top-[-20%] right-[-10%] w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                    <div className="absolute bottom-[-10%] left-[-10%] w-24 h-24 bg-emerald-900/10 rounded-full blur-xl" />
+                    
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/30 shadow-xl">
+                        <Lock className="text-white" size={32} />
+                    </div>
+                    
+                    <h1 className="text-3xl font-extrabold text-white tracking-tight">Crie sua Conta</h1>
+                    <p className="text-emerald-50 text-sm font-medium opacity-90">
+                        Olá, <span className="text-white font-bold">{user?.name}</span>! <br/>
+                        Defina seus dados de acesso abaixo.
+                    </p>
                 </div>
 
-                <div className="p-8 space-y-6">
+                <div className="p-10 space-y-8">
                     {success ? (
-                        <div className="text-center space-y-4 py-8 animate-in zoom-in duration-500">
-                            <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
-                                <CheckCircle size={48} />
+                        <div className="text-center space-y-6 py-10 animate-in zoom-in duration-700">
+                            <div className="w-24 h-24 bg-emerald-50 text-[#10B981] rounded-full flex items-center justify-center mx-auto shadow-inner">
+                                <CheckCircle size={56} />
                             </div>
-                            <h2 className="text-2xl font-bold text-[#1A202C]">Conta Ativada!</h2>
-                            <p className="text-[#718096]">Sua conta foi ativada com sucesso. Vamos começar pelo quiz inicial.</p>
-                            <Loader2 className="animate-spin text-emerald-500 mx-auto" size={24} />
+                            <div className="space-y-2">
+                                <h2 className="text-2xl font-black text-[#0F172A]">Conta Criada! 🎉</h2>
+                                <p className="text-[#64748B] font-medium leading-relaxed">
+                                    Sua conta foi ativada com sucesso. <br/>
+                                    Enviamos um e-mail de boas-vindas para <strong>{user?.email}</strong>.
+                                </p>
+                            </div>
+                            <div className="flex flex-col items-center gap-4 pt-4">
+                                <div className="flex items-center gap-3 px-6 py-3 bg-slate-50 rounded-full border border-slate-100">
+                                    <Loader2 className="animate-spin text-[#10B981]" size={20} />
+                                    <span className="text-sm font-bold text-[#64748B]">Iniciando Quiz Nutricional...</span>
+                                </div>
+                            </div>
                         </div>
                     ) : (
                         <>
@@ -164,12 +185,12 @@ const InviteActivation: React.FC = () => {
                                 <button 
                                     type="submit"
                                     disabled={activating}
-                                    className="w-full py-4 bg-gradient-to-r from-[#38A169] to-[#2F855A] text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 hover:translate-y-[-2px] active:translate-y-0 transition-all disabled:opacity-50"
+                                    className="w-full py-5 bg-gradient-to-r from-[#10B981] to-[#059669] text-white font-bold text-lg rounded-2xl shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 hover:translate-y-[-3px] hover:shadow-2xl hover:shadow-emerald-500/40 active:translate-y-0 transition-all disabled:opacity-50"
                                 >
-                                    {activating ? <Loader2 className="animate-spin" size={20} /> : (
+                                    {activating ? <Loader2 className="animate-spin" size={24} /> : (
                                         <>
-                                            Ativar Agora
-                                            <ArrowRight size={18} />
+                                            Criar minha conta
+                                            <ArrowRight size={20} />
                                         </>
                                     )}
                                 </button>

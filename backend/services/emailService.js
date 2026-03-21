@@ -167,26 +167,45 @@ const logEmail = async (userId, type, status, details = null) => {
 };
 
 exports.sendWelcomeEmail = async (user) => {
-    const title = "Bem-vindo ao ProFit 🎉";
+    const title = "Seja bem-vindo ao ProFit! 🎉";
     const content = `
-        <p>Olá, <strong>${user.name || 'Atleta'}</strong>!</p>
-        <p>Obrigado por se juntar a nós! O ProFit é seu novo assistente pessoal para monitorar calorias, macros e treinos de forma inteligente.</p>
-        <p>Tudo o que você precisa para alcançar sua melhor versão está aqui.</p>
+        <div class="text-lead">Olá, <strong>${user.name || 'Atleta'}</strong>!</div>
+        <p>Estamos muito felizes em ter você conosco na plataforma mais inteligente de nutrição e performance de Moçambique.</p>
+        <p>Seu acesso foi configurado com sucesso. A partir de agora, você tem em mãos ferramentas de elite para transformar seu corpo e sua saúde.</p>
+        
+        <div style="margin: 30px 0; text-align: left; background: #ffffff; padding: 25px; border-radius: 20px; border: 1px solid #F1F5F9;">
+            <div style="font-weight: 800; color: #0F172A; margin-bottom: 15px; font-size: 18px;">Próximos Passos:</div>
+            <div style="margin-bottom: 12px; display: flex; align-items: center;">
+                <span style="background: #ECFDF5; color: #10B981; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; items-center; justify-content: center; font-size: 12px; font-weight: 800; margin-right: 12px;">1</span>
+                <span>Finalize o Quiz para que nossa IA entenda seu perfil.</span>
+            </div>
+            <div style="margin-bottom: 12px; display: flex; align-items: center;">
+                <span style="background: #ECFDF5; color: #10B981; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; items-center; justify-content: center; font-size: 12px; font-weight: 800; margin-right: 12px;">2</span>
+                <span>Tire sua primeira foto de refeição para escaneamento.</span>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <span style="background: #ECFDF5; color: #10B981; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; items-center; justify-content: center; font-size: 12px; font-weight: 800; margin-right: 12px;">3</span>
+                <span>Explore seu plano de treino personalizado.</span>
+            </div>
+        </div>
+
+        <p>Se precisar de ajuda, basta clicar em "Suporte" dentro do aplicativo.</p>
     `;
-    const ctaText = "Acessar minha conta";
+    const ctaText = "Ir para o meu Painel";
     const ctaLink = `${APP_URL}/dashboard`;
 
     try {
-        await resend.emails.send({
+        const result = await resend.emails.send({
             from: FROM_EMAIL,
             to: user.email,
             subject: title,
             html: baseTemplate(title, content, ctaText, ctaLink)
         });
+        console.log(`[Email] Welcome email sent to ${user.email}. ID: ${result.id}`);
         await logEmail(user.id, 'welcome', 'sent');
     } catch (err) {
+        console.error(`[Email] Error sending welcome email to ${user.email}:`, err);
         await logEmail(user.id, 'welcome', 'failed', err.message);
-        throw err;
     }
 };
 
@@ -278,14 +297,16 @@ exports.sendInviteEmail = async (email, inviterName, inviteLink) => {
     const ctaLink = inviteLink;
 
     try {
-        await resend.emails.send({
+        const result = await resend.emails.send({
             from: FROM_EMAIL,
             to: email,
             subject: title,
             html: baseTemplate(title, content, ctaText, ctaLink)
         });
+        console.log(`[Email] Invite email sent to ${email} (from ${inviterName}). ID: ${result.id}`);
         await logEmail(null, 'invite', 'sent', `Invited by ${inviterName}`);
     } catch (err) {
+        console.error(`[Email] Error sending invite email to ${email}:`, err);
         await logEmail(null, 'invite', 'failed', err.message);
         throw err;
     }
