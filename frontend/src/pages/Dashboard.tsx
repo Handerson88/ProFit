@@ -494,7 +494,7 @@ export const Dashboard = () => {
 
   const RecentMealCard = ({ meal }: { meal: any }) => {
     const formattedTime = meal.created_at ? new Date(meal.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
-    const imageSource = meal.image_url 
+    const imageSource = meal?.image_url 
       ? (meal.image_url.startsWith('http') || meal.image_url.startsWith('data:') ? meal.image_url : meal.image_url)
       : null;
     

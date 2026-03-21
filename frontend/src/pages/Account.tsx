@@ -170,9 +170,9 @@ export const Account = () => {
                   <div className="w-32 h-32 rounded-[40px] overflow-hidden border-4 border-gray-50 p-1 shadow-inner bg-gray-50 relative">
                     {(profile?.avatar_url || profile?.profile_photo) ? (
                       <img 
-                        src={(profile.avatar_url || profile.profile_photo).startsWith('data:') 
-                          ? (profile.avatar_url || profile.profile_photo) 
-                          : (profile.avatar_url || profile.profile_photo)} 
+                        src={(profile?.avatar_url || profile?.profile_photo)?.startsWith('data:') 
+                          ? (profile?.avatar_url || profile?.profile_photo) 
+                          : (profile?.avatar_url || profile?.profile_photo)} 
                         alt="Avatar" 
                         className="w-full h-full object-cover rounded-[35px]" 
                       />
