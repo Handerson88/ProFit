@@ -451,6 +451,23 @@ console.log('Database init called');
 // Health Check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
 
+// Database Health Check for Production Verification
+app.get('/api/db-check', async (req, res) => {
+  try {
+    const result = await db.query('SELECT NOW()');
+    res.json({ 
+      status: 'connected', 
+      db_time: result.rows[0].now,
+      env: {
+        has_db_url: !!(process.env.DATABASE_URL || process.env.URL_BANCO_DE_DADOS),
+        has_jwt: !!process.env.JWT_SECRET
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
 // Keep process alive if app.listen fails to hold it
 setInterval(() => {}, 1000 * 60 * 60);
 
