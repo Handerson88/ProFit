@@ -282,16 +282,38 @@ exports.sendPaymentFailedEmail = async (user, reason) => {
 exports.sendInviteEmail = async (email, inviterName, inviteLink) => {
     const title = "Seu convite exclusivo chegou! 🚀";
     const content = `
-        <p>Olá!</p>
-        <p>Temos o prazer de informar que <span class="highlight">${inviterName}</span> convidou você para fazer parte do <span class="highlight">ProFit Elite</span>.</p>
-        <p>O ProFit não é apenas um contador de calorias. É o seu novo assistente pessoal de saúde que utiliza inteligência artificial avançada para analisar suas refeições através de fotos e criar planos de treino sob medida para os seus objetivos.</p>
-        <p style="margin-top: 10px; font-weight: 600; color: #0F172A;">O que te espera:</p>
-        <ul style="margin-bottom: 20px; list-style-type: none; padding-left: 0;">
-            <li style="margin-bottom: 8px;">✨ Escaneamento de Refeições por IA</li>
-            <li style="margin-bottom: 8px;">🏋️ Treinos Personalizados Dinâmicos</li>
-            <li style="margin-bottom: 8px;">📊 Acompanhamento de Macros Profissional</li>
-        </ul>
-        <p>Clique no botão abaixo para ativar seu convite e realizar seu quiz inicial de perfil.</p>
+        <div class="text-lead">Olá!</div>
+        <p>Temos o prazer de informar que <span class="highlight">${inviterName}</span> convidou você para fazer parte da comunidade <strong>ProFit Elite</strong>.</p>
+        <p>O ProFit não é apenas um guia nutricional. É o seu novo assistente pessoal de saúde que utiliza inteligência artificial avançada para analisar suas refeições através de fotos e criar planos de treino sob medida para os seus objetivos.</p>
+        
+        <div style="margin: 30px 0; text-align: left; background: #ffffff; padding: 25px; border-radius: 24px; border: 1px solid #F1F5F9;">
+            <div style="font-weight: 800; color: #0F172A; margin-bottom: 20px; font-size: 18px; display: flex; align-items: center;">
+                O que te espera no ProFit:
+            </div>
+            <div style="margin-bottom: 15px; display: flex; align-items: start;">
+                <span style="font-size: 20px; margin-right: 12px;">✨</span>
+                <div>
+                    <strong style="color: #0F172A; display: block;">Escaneamento por IA</strong>
+                    <span style="font-size: 14px; color: #64748B;">Analise macros e calorias apenas tirando uma foto do seu prato.</span>
+                </div>
+            </div>
+            <div style="margin-bottom: 15px; display: flex; align-items: start;">
+                <span style="font-size: 20px; margin-right: 12px;">🏋️</span>
+                <div>
+                    <strong style="color: #0F172A; display: block;">Treinos Dinâmicos</strong>
+                    <span style="font-size: 14px; color: #64748B;">Planos gerados por IA que evoluem conforme seu progresso.</span>
+                </div>
+            </div>
+            <div style="display: flex; align-items: start;">
+                <span style="font-size: 20px; margin-right: 12px;">📊</span>
+                <div>
+                    <strong style="color: #0F172A; display: block;">Dashboard de Elite</strong>
+                    <span style="font-size: 14px; color: #64748B;">Acompanhe sua evolução diária com gráficos e métricas profissionais.</span>
+                </div>
+            </div>
+        </div>
+
+        <p>Para começar sua jornada, clique no botão abaixo para ativar seu convite e realizar seu quiz inicial de perfil.</p>
     `;
     const ctaText = "Começar Agora";
     const ctaLink = inviteLink;

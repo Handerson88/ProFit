@@ -272,10 +272,11 @@ exports.inviteUser = async (req, res) => {
             return res.status(409).json({ message: 'Este email já está registrado.' });
         }
 
-        // 2. Create user with pending_invite status
+        // 2. Create user with pending_invite status and 48h expiration
+        const inviteExpires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48h
         await db.query(
-            'INSERT INTO users (id, name, email, scan_limit_per_day, status, invite_token) VALUES ($1, $2, $3, $4, $5, $6)',
-            [id, name, email, scan_limit || 3, 'pending_invite', token]
+            'INSERT INTO users (id, name, email, scan_limit_per_day, status, invite_token, invite_expires) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+            [id, name, email, scan_limit || 3, 'pending_invite', token, inviteExpires]
         );
 
         // 3. Log action

@@ -99,8 +99,8 @@ exports.forgotPassword = async (req, res) => {
 
     const user = result.rows[0];
     
-    // Gerar token seguro JWT (expira em 15 minutos)
-    const resetToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    // Gerar token seguro JWT (expira em 1 hora)
+    const resetToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     // Link para o frontend
     const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
