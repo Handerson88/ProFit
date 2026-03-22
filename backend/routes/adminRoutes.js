@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const workoutController = require('../controllers/workoutController');
 const adminNotificationController = require('../controllers/adminNotificationController');
 const adminMiddleware = require('../middleware/adminMiddleware');
 
@@ -24,6 +25,8 @@ router.put('/foods/:id', adminController.updateFood);
 router.delete('/foods/:id', adminController.deleteFood);
 router.get('/plans', adminController.getPlans);
 router.get('/logs', adminController.getLogs);
+router.get('/ai-foods', adminController.getAIDetectedFoods);
+router.post('/ai-foods/migrate', adminController.migrateAIDetectedFoods);
 
 // Scanned Dishes
 router.get('/scanned-dishes', adminController.getScannedDishes);
@@ -33,6 +36,10 @@ router.delete('/scanned-dishes/:id', adminController.deleteScannedDish);
 // MRR
 router.get('/mrr/stats', adminController.getMRRStats);
 router.get('/mrr/chart', adminController.getMRRChart);
+
+// Workouts
+router.get('/workouts', adminController.getWorkouts);
+router.post('/workouts/migrate', workoutController.migrateWorkoutsToDatabase);
 
 const adminPreferenceController = require('../controllers/adminPreferenceController');
 

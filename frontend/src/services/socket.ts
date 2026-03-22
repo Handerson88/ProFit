@@ -24,6 +24,10 @@ class SocketService {
     return this.socket;
   }
 
+  get instance() {
+    return this.socket;
+  }
+
   joinConversation(conversationId: string) {
     this.socket?.emit('join_conversation', conversationId);
   }

@@ -280,6 +280,14 @@ export const api = {
       headers: { 
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
+    }).then(handleResponse),
+    completeOnboarding: () => fetch(`${API_URL}/user/update`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ onboarding_completed: true })
     }).then(handleResponse)
   },
 
@@ -290,7 +298,13 @@ export const api = {
       }
     }).then(handleResponse),
 
-    markAsRead: (id: number) => fetch(`${API_URL}/notifications/${id}/read`, {
+    getNotifications: () => fetch(`${API_URL}/notifications`, {
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    }).then(handleResponse),
+
+    markAsRead: (id: string) => fetch(`${API_URL}/notifications/${id}/read`, {
       method: 'PUT',
       headers: { 
         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -391,6 +405,19 @@ export const api = {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse),
 
+    sendAdminNotification: (data: any) => fetch(`${API_URL}/admin/notifications/send`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}` 
+      },
+      body: JSON.stringify(data)
+    }).then(handleResponse),
+
+    getNotificationTemplates: () => fetch(`${API_URL}/admin/notifications/templates`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+
     getUser: (id: string) => fetch(`${API_URL}/admin/users/${id}`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse),
@@ -450,26 +477,13 @@ export const api = {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse),
 
-    getNotificationTemplates: () => fetch(`${API_URL}/admin/notifications/templates`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    }).then(handleResponse),
-
-    sendAdminNotification: (data: any) => fetch(`${API_URL}/admin/notifications/send`, {
-      method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-    }).then(handleResponse),
-
     getFoods: () => fetch(`${API_URL}/admin/foods`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse),
 
     updateFood: (id: string, data: any) => fetch(`${API_URL}/admin/foods/${id}`, {
       method: 'PUT',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
@@ -486,6 +500,25 @@ export const api = {
     }).then(handleResponse),
 
     getMRRChart: () => fetch(`${API_URL}/admin/mrr/chart`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+    
+    getWorkouts: (page: number = 1, search: string = '') => fetch(`${API_URL}/admin/workouts?page=${page}&search=${search}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+
+    migrateWorkouts: () => fetch(`${API_URL}/admin/workouts/migrate`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+
+    getAIDetectedFoods: (search: string = '', sortBy: string = 'count') => 
+      fetch(`${API_URL}/admin/ai-foods?search=${search}&sortBy=${sortBy}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      }).then(handleResponse),
+
+    migrateAIFoods: () => fetch(`${API_URL}/admin/ai-foods/migrate`, {
+      method: 'POST',
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse)
   },

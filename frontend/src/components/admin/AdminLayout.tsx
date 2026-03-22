@@ -13,7 +13,8 @@ import {
   Moon,
   Soup,
   Shield,
-  MessageSquare
+  MessageSquare,
+  Activity
 } from 'lucide-react';
 import { useAdminTheme } from '../../context/AdminThemeContext';
 
@@ -30,6 +31,7 @@ const AdminLayout: React.FC = () => {
     const navItems = [
         { icon: LayoutDashboard, label: 'Painel', path: '/admin' },
         { icon: Users, label: 'Usuários', path: '/admin/users' },
+        { icon: Activity, label: 'Treinos IA', path: '/admin/workouts' },
         { icon: Dumbbell, label: 'Pacotes de Treino', path: '/admin/plans' },
         { icon: Utensils, label: 'Alimentos', path: '/admin/foods' },
         { icon: Shield, label: 'Logs do Sistema', path: '/admin/logs' },

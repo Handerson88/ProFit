@@ -79,15 +79,26 @@ exports.generateWorkoutPlan = async (req, res) => {
     try {
       const userResult = await db.query('SELECT name, email FROM users WHERE id = $1', [user_id]);
       if (userResult.rows.length > 0) {
+        const userData = userResult.rows[0];
+
+        // NEW: Save to administrative workouts table as per request
+        await db.query(
+          `INSERT INTO workouts (id, user_id, user_email, user_name, goal, level, duration, exercises, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)`,
+          [
+            newPlan.rows[0].id, user_id, userData.email, userData.name,
+            goal, level, duration, JSON.stringify(structuredPlan)
+          ]
+        );
+
         const emailService = require('../services/emailService');
-        const userEmail = userResult.rows[0].email;
         emailService.sendWorkoutPlanEmail(
-          userResult.rows[0], 
+          userData, 
           structuredPlan.title
         ).catch(err => console.error('[Workout] Erro ao enviar email de plano:', err));
       }
     } catch(e) {
-      console.error('[Workout] Erro ao obter usuario para notificação:', e);
+      console.error('[Workout] Erro ao processar persistência administrativa/notificação:', e);
     }
 
     res.status(201).json(newPlan.rows[0]);
@@ -264,5 +275,37 @@ exports.resetWorkoutPlan = async (req, res) => {
   } catch (err) {
     console.error('Reset Workout Error:', err);
     res.status(500).json({ message: 'Erro ao resetar plano.' });
+  }
+};
+
+// New: Migrate existing plans to flattened Workouts table
+exports.migrateWorkoutsToDatabase = async (req, res) => {
+  try {
+    const plans = await db.query(`
+      SELECT wp.*, u.name as user_name, u.email as user_email 
+      FROM workout_plans wp 
+      JOIN users u ON wp.user_id = u.id
+      WHERE wp.id NOT IN (SELECT id FROM workouts)
+    `);
+
+    console.log(`Migrating ${plans.rows.length} workouts...`);
+
+    for (const plan of plans.rows) {
+      await db.query(
+        `INSERT INTO workouts (id, user_id, user_email, user_name, goal, level, duration, exercises, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (id) DO NOTHING`,
+        [
+          plan.id, plan.user_id, plan.user_email, plan.user_name, 
+          plan.goal, plan.level, plan.duration, 
+          plan.structured_plan || {}, plan.created_at
+        ]
+      );
+    }
+
+    res.json({ message: `Sucesso! ${plans.rows.length} treinos migrados.` });
+  } catch (err) {
+    console.error('Migration Error:', err);
+    res.status(500).json({ error: 'Falha na migração de treinos.' });
   }
 };

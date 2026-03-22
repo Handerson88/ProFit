@@ -4,6 +4,36 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const crypto = require('crypto');
 
+/**
+ * Normalizes and upserts food names into AI detected memory
+ * @param {string[]} ingredients 
+ */
+async function upsertAIDetectedFoods(ingredients) {
+  if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) return;
+
+  console.log('--- AI MEMORY: Upserting detected foods ---');
+  for (const ingredient of ingredients) {
+    try {
+      const normalized = ingredient.trim().toLowerCase();
+      if (!normalized) continue;
+
+      // PostgreSQL Upsert (Insert or Update on Conflict)
+      await db.query(`
+        INSERT INTO ai_detected_foods (name, count, last_detected_at)
+        VALUES ($1, 1, CURRENT_TIMESTAMP)
+        ON CONFLICT (name) 
+        DO UPDATE SET 
+          count = ai_detected_foods.count + 1,
+          last_detected_at = CURRENT_TIMESTAMP
+      `, [normalized]);
+      
+      console.log(`AI MEMORY: Updated "${normalized}"`);
+    } catch (err) {
+      console.error(`AI MEMORY ERROR: Failed to upsert "${ingredient}":`, err.message);
+    }
+  }
+}
+
 exports.scanMeal = async (req, res) => {
   const user_id = req.user.id;
   
@@ -166,6 +196,11 @@ exports.scanMeal = async (req, res) => {
         'UPDATE users SET scans_used_today = scans_used_today + 1, last_scan_date = CURRENT_TIMESTAMP WHERE id = $1',
         [user_id]
       );
+
+      // 7.1.5 Update AI detected foods memory
+      if (analysis.ingredients) {
+        upsertAIDetectedFoods(analysis.ingredients).catch(e => console.error('AI Memory Background Error:', e));
+      }
 
       // 7.2 Save for Admin View / History of Scans (Not active meal)
       await db.query(

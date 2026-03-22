@@ -15,6 +15,7 @@ import { MilestonePopUp } from '../components/MilestonePopUp';
 import { appService } from '../services/appService';
 import { useAuth } from '../context/AuthContext';
 import { Trash2, Edit3, AlertCircle, X, UserPlus, Gift } from 'lucide-react';
+import { NotificationCenter } from '../components/NotificationCenter';
 
 
 const formatDateHeader = (date: Date) => {
@@ -628,17 +629,7 @@ export const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <button 
-              onClick={() => navigate('/notifications')}
-              className="relative w-12 h-12 flex items-center justify-center bg-white shadow-sm rounded-full active:scale-95 transition-all"
-            >
-            <Bell className="w-6 h-6 text-gray-700" />
-            {unreadNotifications > 0 && (
-              <span className="absolute top-2.5 right-2.5 flex items-center justify-center w-4 h-4 bg-red-500 rounded-full border-2 border-white text-[9px] font-bold text-white">
-                {unreadNotifications > 9 ? '9+' : unreadNotifications}
-              </span>
-            )}
-          </button>
+            <NotificationCenter />
           </div>
         </div>
 

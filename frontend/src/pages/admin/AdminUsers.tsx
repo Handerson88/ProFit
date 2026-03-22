@@ -205,12 +205,15 @@ const AdminUsers: React.FC = () => {
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex flex-col items-center gap-1.5">
                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                user.status === 'active' ? 'bg-[#E6FFFA] text-[#319795]' :
-                                                user.status === 'pending_invite' ? 'bg-[#FFF5F5] text-[#E53E3E]' :
-                                                'bg-gray-100 text-gray-500'
+                                                user.is_active ? 'bg-[#E6FFFA] text-[#319795]' : 'bg-[#FFF5F5] text-[#E53E3E]'
                                             }`}>
-                                                {user.status === 'pending_invite' ? 'Pendente' : 'Ativo'}
+                                                {user.is_active ? 'Ativo' : 'Bloqueado'}
                                             </span>
+                                            {user.is_active && !user.onboarding_completed && (
+                                                <span className="text-[9px] text-amber-600 font-bold uppercase tracking-tighter">
+                                                    Onboarding Pendente
+                                                </span>
+                                            )}
                                             {user.has_paid && (
                                                 <span className="flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-100">
                                                     <Crown size={10} />
@@ -257,6 +260,20 @@ const AdminUsers: React.FC = () => {
                                                 title="Gerenciar Limites"
                                             >
                                                 <Settings size={16} />
+                                            </button>
+                                            <button 
+                                                onClick={async () => {
+                                                    try {
+                                                        await api.admin.toggleUserStatus(user.id, !user.is_active);
+                                                        fetchUsers();
+                                                    } catch (err) {
+                                                        console.error('Error toggling status:', err);
+                                                    }
+                                                }}
+                                                className={`p-1.5 rounded-md transition-colors ${user.is_active ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                                                title={user.is_active ? 'Bloquear' : 'Desbloquear'}
+                                            >
+                                                {user.is_active ? <Ban size={16} /> : <UserCheck size={16} />}
                                             </button>
                                             <button 
                                                 onClick={() => navigate(`/admin/users/${user.id}`)}

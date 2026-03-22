@@ -23,6 +23,7 @@ import { Preferences } from './pages/Preferences';
 import { AIChat } from './pages/AIChat';
 import LandingPage from './pages/LandingPage';
 import { AcceptInvite } from './pages/AcceptInvite';
+import ActivateAccount from './pages/ActivateAccount';
 import { Plans } from './pages/Plans';
 import { Checkout } from './pages/Checkout';
 import { Achievements } from './pages/Achievements';
@@ -44,6 +45,7 @@ import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminDishes from './pages/admin/AdminDishes';
 import { AdminSupport } from './pages/admin/AdminSupport';
 import { AdminThemeProvider } from './context/AdminThemeContext';
+import AdminWorkouts from './pages/admin/AdminWorkouts';
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, isAuthenticated, isLoading, authLoading, totalUsersCount } = useAuth();
@@ -70,6 +72,14 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
     return <Navigate to="/upgrade" replace />;
   }
 
+  // Onboarding Check: Force users to quiz if not completed
+  const { checkOnboardingStatus } = useAuth();
+  const isOnboardingCompleted = checkOnboardingStatus();
+  
+  if (!isOnboardingCompleted && currentPath !== '/quiz' && currentPath !== '/onboarding' && user?.role !== 'admin') {
+    return <Navigate to="/quiz" replace />;
+  }
+
   return children;
 };
 
@@ -85,6 +95,10 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
   }
 
   if (isAuthenticated) {
+    const { checkOnboardingStatus } = useAuth();
+    if (!checkOnboardingStatus()) {
+        return <Navigate to="/quiz" replace />;
+    }
     return <Navigate to="/home" replace />;
   }
 
@@ -125,6 +139,7 @@ function App() {
         <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        <Route path="/activate" element={<PublicRoute><ActivateAccount /></PublicRoute>} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
         <Route path="/accept-invite" element={<PublicRoute><AcceptInvite /></PublicRoute>} />
@@ -157,6 +172,7 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="users/:id" element={<AdminUserDetail />} />
+          <Route path="workouts" element={<AdminWorkouts />} />
           <Route path="plans" element={<AdminPlans />} />
           <Route path="foods" element={<AdminFoods />} />
           <Route path="logs" element={<AdminLogs />} />

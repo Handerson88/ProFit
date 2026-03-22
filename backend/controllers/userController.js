@@ -44,9 +44,10 @@ exports.updateProfile = async (req, res) => {
         height = $5, 
         goal = $6,
         daily_calorie_target = $7,
-        plan_type = COALESCE($8, plan_type)
-       WHERE id = $9`,
-      [name, email, age, weight, height, goal, daily_calorie_target, plan_type, user_id]
+        plan_type = COALESCE($8, plan_type),
+        onboarding_completed = COALESCE($9, onboarding_completed)
+       WHERE id = $10`,
+      [name, email, age, weight, height, goal, daily_calorie_target, plan_type, req.body.onboarding_completed, user_id]
     );
     res.json({ message: 'Profile updated successfully' });
   } catch (err) {
@@ -88,7 +89,8 @@ exports.submitQuiz = async (req, res) => {
         goal = $5, 
         activity_level = $6, 
         target_weight = $7, 
-        daily_calorie_target = $8 
+        daily_calorie_target = $8,
+        onboarding_completed = true
        WHERE id = $9`,
       [parsedAge, gender, parsedHeight, parsedWeight, goal, activity_level, parsedTargetWeight, final_calorie_target, user_id]
     );

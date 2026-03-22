@@ -56,21 +56,28 @@ exports.registerDevice = async (req, res) => {
 
 /**
  * Utility function to send push notifications to all devices of a user
+ * and emit a socket event for real-time in-app update
  */
-exports.sendPushToUser = async (userId, payload) => {
+exports.sendPushToUser = async (userId, payload, io = null) => {
   try {
+    // 1. Emit Socket.io event if instance is provided
+    if (io) {
+      io.to(`user_${userId}`).emit('new_notification', payload);
+    }
+
+    // 2. Fetch all registered devices for Push
     const result = await db.query(
       'SELECT subscription FROM user_devices WHERE user_id = $1',
       [userId]
     );
 
     const notifications = result.rows.map(row => {
-      const subscription = row.subscription;
+      const subscription = typeof row.subscription === 'string' ? JSON.parse(row.subscription) : row.subscription;
       return webpush.sendNotification(subscription, JSON.stringify(payload))
         .catch(async (err) => {
           if (err.statusCode === 404 || err.statusCode === 410) {
             console.log('Push subscription has expired or is no longer valid. Deleting...');
-            await db.query('DELETE FROM user_devices WHERE subscription = $1', [JSON.stringify(subscription)]);
+            await db.query('DELETE FROM user_devices WHERE subscription = $1', [JSON.stringify(row.subscription)]);
           } else {
             console.error('Push notification error:', err);
           }

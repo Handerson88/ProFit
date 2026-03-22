@@ -158,9 +158,18 @@ exports.resetPassword = async (req, res) => {
 exports.getInviteDetail = async (req, res) => {
     const { token } = req.params;
     try {
-        const result = await db.query('SELECT name, email FROM users WHERE invite_token = $1 AND status = $2 AND invite_expires > NOW()', [token, 'pending_invite']);
+        const result = await db.query(`
+            SELECT u.name, u.email 
+            FROM tokens t
+            JOIN users u ON t.user_id = u.id
+            WHERE t.token = $1 
+              AND t.type = 'activation' 
+              AND t.expires_at > NOW()
+              AND u.is_active = false
+        `, [token]);
+
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Convite inválido ou já utilizado.' });
+            return res.status(404).json({ message: 'Convite inválido ou expirado.' });
         }
         res.json(result.rows[0]);
     } catch (err) {
@@ -173,28 +182,36 @@ exports.getInviteDetail = async (req, res) => {
 exports.activateInvite = async (req, res) => {
     const { token, password } = req.body;
     try {
-        // 1. Find user
-        const result = await db.query('SELECT id FROM users WHERE invite_token = $1 AND status = $2 AND invite_expires > NOW()', [token, 'pending_invite']);
-        if (result.rows.length === 0) {
+        // 1. Find token and user
+        const tokenResult = await db.query(`
+            SELECT user_id FROM tokens 
+            WHERE token = $1 AND type = 'activation' AND expires_at > NOW()
+        `, [token]);
+
+        if (tokenResult.rows.length === 0) {
             return res.status(404).json({ message: 'Convite inválido ou expirado.' });
         }
 
-        const userId = result.rows[0].id;
+        const userId = tokenResult.rows[0].user_id;
 
         // 2. Hash password and update user
         const hashedPassword = await bcrypt.hash(password, 10);
-        await db.query(
-            'UPDATE users SET password_hash = $1, status = $2, invite_token = NULL, last_login_at = NOW() WHERE id = $3',
-            [hashedPassword, 'active', userId]
-        );
+        await db.query(`
+            UPDATE users 
+            SET password_hash = $1, is_active = true, last_login_at = NOW() 
+            WHERE id = $2
+        `, [hashedPassword, userId]);
 
-        // 3. Generate auth token for immediate login
+        // 3. Delete the used token
+        await db.query('DELETE FROM tokens WHERE token = $1', [token]);
+
+        // 4. Generate auth token for immediate login
         const authToken = jwt.sign({ id: userId }, process.env.JWT_SECRET);
         
-        // 4. Fetch updated user info
-        const userResult = await db.query('SELECT id, name, email FROM users WHERE id = $1', [userId]);
+        // 5. Fetch updated user info
+        const userResult = await db.query('SELECT id, name, email, onboarding_completed FROM users WHERE id = $1', [userId]);
 
-        // 5. Send Welcome Email
+        // 6. Send Welcome Email
         emailService.sendWelcomeEmail(userResult.rows[0])
           .catch(err => console.error('[Auth] Erro ao enviar email de boas-vindas no convite:', err));
 
@@ -218,15 +235,22 @@ exports.createInvite = async (req, res) => {
 
     const inviteToken = uuidv4();
     const userId = uuidv4();
-    const inviteExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
+    // 1. Create user (inactive)
     await db.query(
-      'INSERT INTO users (id, name, email, status, invite_token, invite_expires) VALUES ($1, $2, $3, $4, $5, $6)',
-      [userId, name, email, 'pending_invite', inviteToken, inviteExpires]
+      'INSERT INTO users (id, name, email, is_active, onboarding_completed) VALUES ($1, $2, $3, $4, $5)',
+      [userId, name, email, false, false]
+    );
+
+    // 2. Create activation token
+    await db.query(
+        'INSERT INTO tokens (token, user_id, type, expires_at) VALUES ($1, $2, $3, $4)',
+        [inviteToken, userId, 'activation', expiresAt]
     );
 
     const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
-    const inviteLink = `${frontUrl}/accept-invite?token=${inviteToken}`;
+    const inviteLink = `${frontUrl}/activate?token=${inviteToken}`;
     const inviterName = req.user ? req.user.name : 'Um membro do ProFit';
     
     await emailService.sendInviteEmail(email, inviterName, inviteLink);

@@ -102,7 +102,9 @@ const initDB = async () => {
       ADD COLUMN IF NOT EXISTS referred_by UUID REFERENCES users(id) ON DELETE SET NULL,
       ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user',
       ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP,
-      ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMP
+      ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE,
+      ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE
     `);
 
     await db.query(`
@@ -182,6 +184,25 @@ const initDB = async () => {
         location TEXT,
         duration TEXT,
         plan_text TEXT,
+        structured_plan JSONB,
+        next_plan_available_at TIMESTAMP,
+        plan_start_date TIMESTAMP,
+        plan_renewal_date TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // New: Flattened Workouts table for Admin view
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS workouts (
+        id UUID PRIMARY KEY,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        user_email TEXT,
+        user_name TEXT,
+        goal TEXT,
+        level TEXT,
+        duration TEXT,
+        exercises JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -254,6 +275,16 @@ const initDB = async () => {
     `);
 
     await db.query(`
+      CREATE TABLE IF NOT EXISTS tokens (
+        token TEXT PRIMARY KEY,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        type TEXT NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.query(`
       CREATE TABLE IF NOT EXISTS scanned_dishes (
         id UUID PRIMARY KEY,
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -318,6 +349,18 @@ const initDB = async () => {
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
         subscription TEXT NOT NULL,
         device_type TEXT DEFAULT 'web',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS scheduled_notifications (
+        id UUID PRIMARY KEY,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        frequency TEXT DEFAULT 'daily', -- daily, weekly
+        time TIME NOT NULL, -- e.g. '12:00:00'
+        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -545,6 +588,9 @@ if (process.env.NODE_ENV !== 'production') {
     console.log(`Server running on port ${PORT} with Socket.io enabled`);
   });
 }
+
+const cronService = require('./services/cronService');
+cronService.initCronJobs(io);
 
 module.exports = app;
 

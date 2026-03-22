@@ -23,6 +23,7 @@ interface User {
   discount_used?: boolean;
   active_discounts?: Array<{ id: string; percentage: number; is_used: boolean }>;
   role?: string;
+  onboarding_completed?: boolean;
 }
 
 interface AuthContextType {
@@ -169,8 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkOnboardingStatus = () => {
     if (!user) return false;
-    // Check if essential fields are missing
-    return !user.age || !user.weight || !user.height || !user.goal;
+    return !!user.onboarding_completed;
   };
 
   const fetchAppStatus = async () => {

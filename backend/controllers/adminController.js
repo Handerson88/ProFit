@@ -165,7 +165,7 @@ exports.getUsersActivity = async (req, res) => {
 exports.getUsers = async (req, res) => {
     try {
         const result = await db.query(`
-            SELECT id, name, email, created_at, status, has_paid, scan_limit_per_day,
+            SELECT id, name, email, created_at, status, is_active, onboarding_completed, has_paid, scan_limit_per_day,
             (SELECT name FROM users u2 WHERE u2.id = users.referred_by) as referrer_name,
             (SELECT date FROM meals WHERE user_id = users.id ORDER BY date DESC LIMIT 1) as last_activity
             FROM users 
@@ -232,12 +232,12 @@ exports.deleteUser = async (req, res) => {
 
 exports.toggleUserStatus = async (req, res) => {
     const { id } = req.params;
-    const { status } = req.body; // 'active', 'blocked', 'pending_invite'
+    const { is_active } = req.body; 
     try {
-        await db.query('UPDATE users SET status = $1 WHERE id = $2', [status, id]);
-        const action = status === 'blocked' ? 'Bloqueio de usuário' : 'Desbloqueio de usuário';
+        await db.query('UPDATE users SET is_active = $1 WHERE id = $2', [is_active, id]);
+        const action = is_active ? 'Desbloqueio de usuário' : 'Bloqueio de usuário';
         logAdminAction(req.admin.id, `${action}: ${id}`, 'user', id);
-        res.json({ message: `Status do usuário atualizado para ${status}`, status });
+        res.json({ message: `Status do usuário atualizado para ${is_active ? 'Ativo' : 'Bloqueado'}`, is_active });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Erro ao atualizar status do usuário' });
@@ -262,8 +262,8 @@ exports.updateUserScanLimit = async (req, res) => {
 // New: Invite User
 exports.inviteUser = async (req, res) => {
     const { name, email, scan_limit } = req.body;
-    const id = uuidv4();
-    const token = uuidv4(); // Unique invite token
+    const userId = uuidv4();
+    const inviteToken = uuidv4();
 
     try {
         // 1. Check if user already exists
@@ -272,29 +272,33 @@ exports.inviteUser = async (req, res) => {
             return res.status(409).json({ message: 'Este email já está registrado.' });
         }
 
-        // 2. Create user with pending_invite status and 48h expiration
-        const inviteExpires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48h
+        // 2. Create user (inactive)
         await db.query(
-            'INSERT INTO users (id, name, email, scan_limit_per_day, status, invite_token, invite_expires) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-            [id, name, email, scan_limit || 3, 'pending_invite', token, inviteExpires]
+            'INSERT INTO users (id, name, email, scan_limit_per_day, is_active, onboarding_completed, role) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+            [userId, name, email, scan_limit || 3, false, false, 'user']
         );
 
-        // 3. Log action
-        logAdminAction(req.admin.id, `Convite enviado para ${email}`, 'user', id);
+        // 3. Create activation token (48h expiration for admin invites)
+        const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); 
+        await db.query(
+            'INSERT INTO tokens (token, user_id, type, expires_at) VALUES ($1, $2, $3, $4)',
+            [inviteToken, userId, 'activation', expiresAt]
+        );
 
-        // 4. Send Email
+        // 4. Log action
+        logAdminAction(req.admin.id, `Convite enviado para ${email}`, 'user', userId);
+
+        // 5. Send Email
         const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
-        const inviteLink = `${frontUrl}/accept-invite?token=${token}`;
+        const inviteLink = `${frontUrl}/activate?token=${inviteToken}`;
         const inviterName = 'Administração ProFit';
         
         await emailService.sendInviteEmail(email, inviterName, inviteLink);
         
-        console.log(`[ADMIN] Convite real enviado para ${email}`);
-        
         res.json({ 
             message: 'Convite enviado com sucesso!', 
             inviteLink,
-            user_id: id 
+            user_id: userId 
         });
     } catch (err) {
         console.error('[Admin] Erro ao processar convite:', err);
@@ -556,5 +560,116 @@ exports.getMRRChart = async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Erro ao buscar dados do gráfico MRR' });
+    }
+};
+
+exports.getWorkouts = async (req, res) => {
+    try {
+        const { page = 1, search = '' } = req.query;
+        const limit = 10;
+        const offset = (page - 1) * limit;
+
+        let query = `SELECT * FROM workouts`;
+        let countQuery = `SELECT COUNT(*) FROM workouts`;
+        const params = [];
+
+        if (search) {
+            const searchPattern = `%${search}%`;
+            query += ` WHERE user_name ILIKE $1 OR user_email ILIKE $1`;
+            countQuery += ` WHERE user_name ILIKE $1 OR user_email ILIKE $1`;
+            params.push(searchPattern);
+        }
+
+        query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        const finalParams = [...params, limit, offset];
+
+        const result = await db.query(query, finalParams);
+        const countResult = await db.query(countQuery, params);
+
+        res.json({
+            workouts: result.rows,
+            total: parseInt(countResult.rows[0].count),
+            pages: Math.ceil(parseInt(countResult.rows[0].count) / limit),
+            currentPage: parseInt(page)
+        });
+    } catch (err) {
+        console.error('Admin Get Workouts Error:', err);
+        res.status(500).json({ message: 'Erro ao buscar treinos administrativos' });
+    }
+};
+
+// AI Food Memory Endpoints
+exports.getAIDetectedFoods = async (req, res) => {
+    const { search, sortBy = 'count' } = req.query;
+    try {
+        let query = 'SELECT * FROM ai_detected_foods';
+        const params = [];
+
+        if (search) {
+            params.push(`%${search}%`);
+            query += ' WHERE name ILIKE $1';
+        }
+
+        if (sortBy === 'recent') {
+            query += ' ORDER BY last_detected_at DESC';
+        } else if (sortBy === 'oldest') {
+            query += ' ORDER BY last_detected_at ASC';
+        } else {
+            query += ' ORDER BY count DESC, last_detected_at DESC';
+        }
+
+        const result = await db.query(query, params);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('[Admin] Error fetching AI foods:', err);
+        res.status(500).json({ message: 'Erro ao buscar memória da IA' });
+    }
+};
+
+exports.migrateAIDetectedFoods = async (req, res) => {
+    try {
+        console.log('--- ADMIN: Starting AI Food Memory Migration ---');
+        // Fetch all meals with ingredients
+        const result = await db.query("SELECT ingredients FROM meals WHERE ingredients IS NOT NULL AND ingredients != '[]'");
+        const allIngredients = result.rows;
+        
+        let totalProcessed = 0;
+        let totalIngredients = 0;
+
+        for (const row of allIngredients) {
+            let ingredients = [];
+            try {
+                ingredients = typeof row.ingredients === 'string' ? JSON.parse(row.ingredients) : row.ingredients;
+            } catch (e) { continue; }
+
+            if (!Array.isArray(ingredients)) continue;
+
+            for (const item of ingredients) {
+                const normalized = item.trim().toLowerCase();
+                if (!normalized) continue;
+
+                await db.query(`
+                    INSERT INTO ai_detected_foods (name, count, last_detected_at)
+                    VALUES ($1, 1, CURRENT_TIMESTAMP)
+                    ON CONFLICT (name) 
+                    DO UPDATE SET 
+                        count = ai_detected_foods.count + 1,
+                        last_detected_at = CURRENT_TIMESTAMP
+                `, [normalized]);
+                totalIngredients++;
+            }
+            totalProcessed++;
+        }
+
+        logAdminAction(req.admin.id, `Migração de memória IA concluída: ${totalProcessed} refeições, ${totalIngredients} alimentos`, 'ai_memory', null);
+        
+        res.json({ 
+            message: 'Migração concluída com sucesso', 
+            processedMeals: totalProcessed,
+            totalIngredients: totalIngredients 
+        });
+    } catch (err) {
+        console.error('[Admin] Migration failed:', err);
+        res.status(500).json({ message: 'Falha durante a migração da memória da IA' });
     }
 };
