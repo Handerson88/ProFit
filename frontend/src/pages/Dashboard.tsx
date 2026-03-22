@@ -312,17 +312,9 @@ export const Dashboard = () => {
 
   // Separate effect for one-time setup (sockets, events)
   useEffect(() => {
+    
     socketService.connect();
     
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        refreshData();
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', refreshData);
-
     // Socket Integration
     try {
       const userStr = localStorage.getItem('user');
