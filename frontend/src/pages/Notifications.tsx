@@ -48,7 +48,7 @@ export const Notifications = () => {
     }
   };
 
-  const handleMarkAsRead = async (id: number) => {
+  const handleMarkAsRead = async (id: string) => {
     try {
       await api.notifications.markAsRead(id);
       setNotifications(notifications.map(n => 

@@ -422,13 +422,13 @@ export const api = {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse),
 
-    toggleUserStatus: (id: string, status: string) => fetch(`${API_URL}/admin/users/status/${id}`, {
+    toggleUserStatus: (id: string, is_active: boolean) => fetch(`${API_URL}/admin/users/status/${id}`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ is_active })
     }).then(handleResponse),
 
     updateUserScanLimit: (id: string, scan_limit: number) => fetch(`${API_URL}/admin/users/limits/${id}`, {
