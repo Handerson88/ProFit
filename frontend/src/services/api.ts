@@ -206,6 +206,16 @@ export const api = {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     }).then(handleResponse),
+    
+    getDashboardBootstrap: (date?: string) => {
+      const url = new URL(`${API_URL}/user/dashboard-bootstrap`);
+      if (date) url.searchParams.append('date', date);
+      return fetch(url.toString(), {
+        headers: { 
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }).then(handleResponse);
+    },
 
     update: (data: any) => fetch(`${API_URL}/user/update`, {
       method: 'PUT',

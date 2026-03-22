@@ -24,6 +24,7 @@ const upload = multer({
 const preferenceController = require('../controllers/preferenceController');
 
 router.get('/profile', authMiddleware, userController.getProfile);
+router.get('/dashboard-bootstrap', authMiddleware, userController.getDashboardBootstrap);
 router.put('/update', authMiddleware, userController.updateProfile);
 router.post('/quiz', authMiddleware, userController.submitQuiz);
 router.post('/photo-upload', authMiddleware, upload.single('photo'), userController.updateProfilePhoto);

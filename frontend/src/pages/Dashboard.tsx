@@ -254,58 +254,74 @@ export const Dashboard = () => {
   const handleCloseMilestone = () => {
     localStorage.setItem('milestone_20_users_seen', 'true');
     setShowMilestone(false);
-  };
+  };  useEffect(() => {
+    const loadDashboardData = async () => {
+      // Don't set loading if we have cache, unless it's today (to ensure fresh scan results)
+      const dateStr = [
+        selectedDate.getFullYear(),
+        String(selectedDate.getMonth() + 1).padStart(2, '0'),
+        String(selectedDate.getDate()).padStart(2, '0')
+      ].join('-');
+      const isToday = selectedDate.toDateString() === new Date().toDateString();
 
-  useEffect(() => {
-    const fetchCore = async () => {
+      if (!dailyCache[dateStr] || isToday) {
+        setIsLoading(true);
+      }
+
       try {
-        const [profileData, notificationsData, recentMealsData, calorieHistoryData, weeklyStatsData] = await Promise.all([
-          api.user.getProfile(),
-          api.notifications.getAll(),
-          api.meals.getRecentMeals(),
-          api.meals.getCalorieHistory(),
-          api.meals.getWeeklyStats()
-        ]);
-        setProfile(profileData);
-        const fullName = profileData?.name || profileData?.first_name;
+        const data = await api.user.getDashboardBootstrap(dateStr);
+        
+        // Populate all states from the single bootstrap response
+        setProfile(data.profile);
+        const fullName = data.profile?.name || data.profile?.first_name;
         if (fullName) {
-          setUserName(fullName.split(' ')[0]); // Get only first name
-        } else {
-          setUserName('Usuário');
+          setUserName(fullName.split(' ')[0]);
         }
-        if (profileData.daily_calorie_target !== undefined && profileData.daily_calorie_target !== null) {
-          setTargetCalories(Number(profileData.daily_calorie_target));
-        } else {
-          setTargetCalories(2000); // Robust fallback
-        }
-        if (profileData.goal) {
-          setUserGoal(profileData.goal);
-        }
-        if (notificationsData && notificationsData.unreadCount !== undefined) {
-          setUnreadNotifications(notificationsData.unreadCount);
-        }
-        if (recentMealsData) {
-          setRecentMeals(recentMealsData);
-        }
-        if (calorieHistoryData) {
-          setCalorieHistory(calorieHistoryData);
-        }
-        if (weeklyStatsData) {
-          setWeeklyData(weeklyStatsData);
-        }
+        setTargetCalories(Number(data.profile.daily_calorie_target) || 2000);
+        setUserGoal(data.profile.goal || '');
+        setUnreadNotifications(data.unreadNotificationsCount);
+        setRecentMeals(data.recentMeals);
+        setWeeklyData(data.weeklyStats);
 
-        // Notification Prompt logic
+        const ds = data.dailySummary;
+        setSummary(ds.summary || []);
+        setMeals(ds.meals || []);
+        setSteps(ds.steps || 0);
+        setWater(ds.water || 0);
+        setDailyTotals(ds.totals || null);
+        
+        const total = ds.totals?.calories || (ds.summary || []).reduce((acc: number, item: any) => acc + (Number(item.calories) || 0), 0);
+        setTotalToday(total);
+        
+        setDailyCache(prev => ({ ...prev, [dateStr]: ds }));
+
+        // Only show prompt on initial mount (if needed)
         const promptDismissed = localStorage.getItem('notification_prompt_dismissed');
-        if (profileData && (profileData.notifications_enabled === false || profileData.notifications_enabled === null) && !promptDismissed) {
+        if (data.profile && (data.profile.notifications_enabled === false || data.profile.notifications_enabled === null) && !promptDismissed) {
           setShowNotificationPrompt(true);
         }
       } catch (err) {
-        console.error("Failed to load core data", err);
+        console.error("Dashboard Bootstrap Error:", err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchCore();
+
+    loadDashboardData();
+  }, [selectedDate]);
+
+  // Separate effect for one-time setup (sockets, events)
+  useEffect(() => {
+    socketService.connect();
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshData();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', refreshData);
 
     // Socket Integration
     try {
@@ -377,56 +393,8 @@ export const Dashboard = () => {
     setShowNotificationPrompt(false);
   };
 
-  useEffect(() => {
-    const fetchDay = async () => {
-      const dateStr = [
-        selectedDate.getFullYear(),
-        String(selectedDate.getMonth() + 1).padStart(2, '0'),
-        String(selectedDate.getDate()).padStart(2, '0')
-      ].join('-');
-
-      const isToday = selectedDate.toDateString() === new Date().toDateString();
-
-      // Bypass cache for "Today" OR if we specifically want a fresh fetch
-      // This ensures scans appearing instantly
-      if (dailyCache[dateStr] && !isToday) {
-        const data = dailyCache[dateStr];
-        setSummary(data.summary || []);
-        setMeals(data.meals || []);
-        setSteps(data.steps || 0);
-        setWater(data.water || 0);
-        setDailyTotals(data.dailyTotals || null);
-        const total = (data.dailyTotals?.calories) || (data.summary || []).reduce((acc: number, item: any) => acc + Number(item.calories), 0);
-        setTotalToday(total);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const [summaryData, recentRes] = await Promise.all([
-          api.meals.getSummary(dateStr),
-          api.meals.getRecentMeals()
-        ]);
-        
-        setSummary(summaryData.summary || []);
-        setMeals(summaryData.meals || []);
-        setSteps(summaryData.steps || 0);
-        setWater(summaryData.water || 0);
-        setDailyTotals(summaryData.dailyTotals || null);
-        const total = summaryData.dailyTotals?.calories || (summaryData.summary || []).reduce((acc: number, item: any) => acc + (Number(item.calories) || 0), 0);
-        setTotalToday(total);
-        setRecentMeals(recentRes);
-        
-        setDailyCache(prev => ({ ...prev, [dateStr]: summaryData }));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchDay();
-  }, [selectedDate]);
 
   const refreshData = async () => {
-    // Force refresh core and current day
     const dateStr = [
       selectedDate.getFullYear(),
       String(selectedDate.getMonth() + 1).padStart(2, '0'),
@@ -434,29 +402,24 @@ export const Dashboard = () => {
     ].join('-');
     
     try {
-      const coreResults = await Promise.all([
-        api.user.getProfile(),
-        api.meals.getRecentMeals(),
-        api.meals.getCalorieHistory(),
-        api.meals.getWeeklyStats(),
-        api.meals.getSummary(dateStr)
-      ]);
+      const data = await api.user.getDashboardBootstrap(dateStr);
       
-      const profileData = coreResults[0];
-      setRecentMeals(coreResults[1]);
-      setCalorieHistory(coreResults[2]);
-      setWeeklyData(coreResults[3]);
+      setProfile(data.profile);
+      setRecentMeals(data.recentMeals);
+      setWeeklyData(data.weeklyStats);
       
-      const summaryData = coreResults[4];
-      setSummary(summaryData.summary || []);
-      setMeals(summaryData.meals || []);
-      setSteps(summaryData.steps || 0);
-      setWater(summaryData.water || 0);
-      setDailyTotals(summaryData.dailyTotals || null);
-      const total = summaryData.dailyTotals?.calories || (summaryData.summary || []).reduce((acc: number, item: any) => acc + (Number(item.calories) || 0), 0);
+      const ds = data.dailySummary;
+      setSummary(ds.summary || []);
+      setMeals(ds.meals || []);
+      setSteps(ds.steps || 0);
+      setWater(ds.water || 0);
+      setDailyTotals(ds.totals || null);
+      
+      const total = ds.totals?.calories || (ds.summary || []).reduce((acc: number, item: any) => acc + (Number(item.calories) || 0), 0);
       setTotalToday(total);
+      setUnreadNotifications(data.unreadNotificationsCount);
       
-      setDailyCache(prev => ({ ...prev, [dateStr]: summaryData }));
+      setDailyCache(prev => ({ ...prev, [dateStr]: ds }));
     } catch (err) {
       console.error("Failed to refresh data", err);
     }

@@ -173,3 +173,81 @@ exports.getAppStatus = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch app status' });
   }
 };
+exports.getDashboardBootstrap = async (req, res) => {
+  const user_id = req.user.id;
+  const dateStr = req.query.date || new Date().toISOString().split('T')[0];
+
+  try {
+    const [
+      profileRes,
+      notificationsCountRes,
+      recentMealsRes,
+      weeklyStatsRes,
+      dailySummaryRes,
+      dailyTotalsRes,
+      mealsRes
+    ] = await Promise.all([
+      // 1. Profile
+      db.query('SELECT * FROM users WHERE id = $1', [user_id]),
+      // 2. Unread notifications count
+      db.query('SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = false', [user_id]),
+      // 3. Recent meals (always fetch global recent regardless of date for the recent list)
+      db.query('SELECT * FROM meals WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5', [user_id]),
+      // 4. Weekly stats
+      db.query(`
+        SELECT TO_CHAR(date, 'Dy') as day, SUM(calories) as calories
+        FROM meals 
+        WHERE user_id = $1 AND date >= CURRENT_DATE - INTERVAL '6 days'
+        GROUP BY day, DATE(date)
+        ORDER BY DATE(date) ASC
+      `, [user_id]),
+      // 5. Daily Summary (by meal type)
+      db.query(`
+        SELECT meal_type, SUM(COALESCE(calories, 0)) as calories, SUM(COALESCE(protein, 0)) as protein, 
+               SUM(COALESCE(carbs, 0)) as carbs, SUM(COALESCE(fat, 0)) as fat
+        FROM meals WHERE user_id = $1 AND date::date = $2 GROUP BY meal_type
+      `, [user_id, dateStr]),
+      // 6. Daily Totals
+      db.query(`
+        SELECT SUM(COALESCE(calories, 0)) as calories, SUM(COALESCE(protein, 0)) as protein, 
+               SUM(COALESCE(carbs, 0)) as carbs, SUM(COALESCE(fat, 0)) as fat
+        FROM meals WHERE user_id = $1 AND date::date = $2
+      `, [user_id, dateStr]),
+      // 7. Meals for the specific day
+      db.query('SELECT * FROM meals WHERE user_id = $1 AND date::date = $2 ORDER BY created_at DESC', [user_id, dateStr])
+    ]);
+
+    const user = profileRes.rows[0];
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Referral logic enrichment (kept from getProfile)
+    const referralCountRes = await db.query('SELECT COUNT(*) FROM users WHERE referred_by = $1 AND has_paid = true', [user_id]);
+    user.paying_referrals_count = parseInt(referralCountRes.rows[0].count);
+    
+    const discountsRes = await db.query('SELECT * FROM discounts WHERE user_id = $1 AND is_used = false ORDER BY percentage DESC', [user_id]);
+    user.active_discounts = discountsRes.rows;
+
+    res.json({
+      profile: user,
+      unreadNotificationsCount: parseInt(notificationsCountRes.rows[0].count),
+      recentMeals: recentMealsRes.rows,
+      weeklyStats: weeklyStatsRes.rows,
+      dailySummary: {
+        summary: dailySummaryRes.rows,
+        totals: {
+          calories: Number(dailyTotalsRes.rows[0]?.calories || 0),
+          protein: Number(dailyTotalsRes.rows[0]?.protein || 0),
+          carbs: Number(dailyTotalsRes.rows[0]?.carbs || 0),
+          fat: Number(dailyTotalsRes.rows[0]?.fat || 0)
+        },
+        meals: mealsRes.rows,
+        steps: 0, // Placeholder for future integration
+        water: 0  // Placeholder for future integration
+      }
+    });
+
+  } catch (err) {
+    console.error('[UserController] Bootstrap error:', err);
+    res.status(500).json({ message: 'Failed to bootstrap dashboard data' });
+  }
+};

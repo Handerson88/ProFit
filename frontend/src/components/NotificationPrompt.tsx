@@ -35,22 +35,42 @@ export const NotificationPrompt = () => {
   };
 
   const handleEnable = async () => {
+    console.log('--- NOTIFICATION ACTIVATE START ---');
+    console.log('Current Permission:', Notification.permission);
+    
+    if (Notification.permission === 'denied') {
+      console.warn('Notification permission was already denied by user/browser.');
+      setStatus('denied');
+      return;
+    }
+
     setStatus('loading');
     try {
+      console.log('Requesting permission...');
       const permission = await Notification.requestPermission();
+      console.log('Permission Result:', permission);
+
       if (permission === 'granted') {
+        console.log('Registering Service Worker...');
         const registration = await navigator.serviceWorker.register('/sw.js');
+        console.log('SW Registered:', !!registration);
         
         let subscription = await registration.pushManager.getSubscription();
+        console.log('Existing Subscription:', !!subscription);
+
         if (!subscription) {
+          console.log('Creating new subscription...');
           const publicVapidKey = 'BDZj5D4q4-h8VYjQC37AG3yW7Yw6y-oScxrsdwUajfaXXpSBoc_h3S9HwFpb8x0awJTBeEeAR_hwN6MyRPBi050';
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
           });
+          console.log('New Subscription created');
         }
 
+        console.log('Registering device with backend...');
         await api.notifications.registerDevice(subscription);
+        console.log('Backend registration success');
         
         // Show immediate success notification
         if ('Notification' in window && Notification.permission === 'granted') {
@@ -64,12 +84,15 @@ export const NotificationPrompt = () => {
         setTimeout(() => setShow(false), 3000);
       } else {
         setStatus('denied');
-        setTimeout(() => setShow(false), 2000);
+        setTimeout(() => setShow(false), 3000);
       }
-    } catch (error) {
-      console.error('Notification Setup Error:', error);
+    } catch (error: any) {
+      console.error('CRITICAL Notification Setup Error:', error);
+      console.error('Error Name:', error.name);
+      console.error('Error Message:', error.message);
       setStatus('denied');
-      setTimeout(() => setShow(false), 2000);
+      // Keep visible a bit longer so user can see something happened
+      setTimeout(() => setShow(false), 4000);
     }
   };
 
@@ -141,10 +164,13 @@ export const NotificationPrompt = () => {
               </div>
             ) : (
               <div className="text-center py-4">
-                <h3 className="text-xl font-black text-gray-900 mb-2">Permissão Negada</h3>
-                <p className="text-sm font-bold text-gray-500">
-                  Sem problemas! Você pode ativar depois nas configurações do seu navegador.
+                <h3 className="text-xl font-black text-gray-900 mb-2 text-rose-600">Ops! Acesso Negado</h3>
+                <p className="text-sm font-bold text-gray-500 mb-4">
+                  Parece que as notificações estão bloqueadas no seu navegador ou dispositivo.
                 </p>
+                <div className="bg-rose-50 p-4 rounded-xl text-xs text-rose-700 font-medium leading-relaxed">
+                  Para corrigir, clique no ícone de cadeado na barra de endereços e altere "Notificações" para "Permitir".
+                </div>
               </div>
             )}
           </motion.div>
