@@ -16,29 +16,31 @@ async function analyzeFoodImage(imageBufferOrPath) {
     base64Image = imageBuffer.toString('base64');
   }
 
-const prompt = `Você agora é um Especialista de Visão Computacional e Nutrição de Elite.
-Sua tarefa é analisar a imagem de um prato de comida e fornecer uma análise nutricional MASTER, profissional e visualmente precisa.
+const prompt = `Você agora é um Especialista de Visão Computacional e Nutrição de Elite da ProFit AI.
+Sua tarefa é analisar a imagem de um prato de comida e fornecer uma análise nutricional MASTER, altamente precisa e profissional.
 
 PRIMEIRO PASSO: Analise a qualidade da imagem.
-Se a foto estiver: desfocada, muito escura, prato não visível ou com o alimento cortado, defina "is_quality_good": false e dê uma dica em "quality_message".
+- Se a foto estiver: desfocada, muito escura, prato não visível ou com o alimento cortado, defina "is_quality_good": false e dê uma dica em "quality_message".
 
 SEGUNDO PASSO: Identificação e Nutrição.
-1. GERAÇÃO DO NOME DO PRATO: Crie um nome CURTO, NATURAL e CLARO (máximo 2 linhas). Exemplos: "Frango grelhado com batata doce" ou "Salada Tropical".
-2. INGREDIENTES: Identifique o máximo de ingredientes visíveis (ex: alface, cebola, tomate).
-3. CALORIAS E MACROS: Estime com precisão as Calorias (kcal), Proteínas (g), Carboidratos (g) e Gorduras (g) do prato total.
+1. GERAÇÃO DO NOME DO PRATO: Crie um nome CURTO, NATURAL e APETITOSO em português (PT-BR).
+2. INGREDIENTES: Identifique detalhadamente todos os ingredientes visíveis.
+3. CALORIAS E MACROS: Estime com máxima precisão as Calorias (kcal), Proteínas (g), Carboidratos (g) e Gorduras (g).
+4. CONFIANÇA: Dê uma nota de 0 a 100 baseada na clareza da identificação.
 
 Retorne APENAS o objeto JSON abaixo:
 {
   "is_quality_good": true,
   "quality_message": null,
-  "dish_name": "Nome curto e claro aqui",
+  "dish_name": "Nome do prato",
   "calories": 450,
   "protein": 32,
   "carbs": 28,
   "fat": 18,
-  "ingredients": ["item 1", "item 2", "item 3"],
-  "nutrition_observation": "Breve comentário profissional sobre o equilíbrio do prato",
-  "recommendation": "Uma dica rápida de nutrição"
+  "ingredients": ["item 1", "item 2"],
+  "nutrition_observation": "Comentário nutricional profissional",
+  "recommendation": "Dica de saúde",
+  "confidence": 95
 }`;
 
   try {

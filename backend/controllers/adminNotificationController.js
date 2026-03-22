@@ -26,6 +26,7 @@ exports.sendNotification = async (req, res) => {
             io.emit('new_notification', newNotif);
             
             // Push notification to all devices
+            console.log(`[Admin] Sending broadcast push: "${newNotif.title}"`);
             await notificationController.sendPushToAll({
                 title: newNotif.title,
                 body: newNotif.message,
@@ -76,6 +77,7 @@ exports.sendNotification = async (req, res) => {
             io.to(userId).emit('new_notification', newNotif);
 
             // Push notification to this specific user
+            console.log(`[Admin] Sending targeted push to user ${userId}: "${newNotif.title}"`);
             await notificationController.sendPushToUser(userId, {
                 title: newNotif.title,
                 body: newNotif.message,

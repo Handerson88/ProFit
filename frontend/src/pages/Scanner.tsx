@@ -128,6 +128,15 @@ export const FoodScanner = () => {
       } else {
         trackingService.logEvent('scan_failed', { type: 'camera', error: err.message }).catch(console.error);
         if (videoRef.current) videoRef.current.play();
+        setConfirmOptions({
+          isOpen: true,
+          title: 'Erro de Análise',
+          message: 'Não conseguimos processar esta imagem. Por favor, verifique sua conexão ou tente novamente.',
+          type: 'danger',
+          confirmText: 'Tentar Novamente',
+          showCancel: false,
+          onConfirm: async () => {}
+        });
       }
     } finally {
       setIsScanning(false);

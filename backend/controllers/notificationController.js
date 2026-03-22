@@ -34,6 +34,19 @@ exports.registerDevice = async (req, res) => {
       [uuidv4(), userId, JSON.stringify(subscription), device_type || 'web']
     );
 
+    // Send immediate welcome push notification
+    try {
+      await exports.sendPushToUser(userId, {
+        title: 'Notificações Ativadas 🔔',
+        body: 'Agora você passará a receber notificações do aplicativo ProFit para sua saúde e bem-estar.',
+        data: { type: 'welcome' }
+      });
+      console.log('Welcome push sent to user:', userId);
+    } catch (pushErr) {
+      console.error('Failed to send welcome push:', pushErr);
+      // Don't fail the whole registration if just the welcome push fails
+    }
+
     res.status(201).json({ message: 'Device registered successfully.' });
   } catch (error) {
     console.error('registerDevice error:', error);

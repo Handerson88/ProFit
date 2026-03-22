@@ -54,8 +54,8 @@ export const NotificationPrompt = () => {
         
         // Show immediate success notification
         if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('ProFit Calories', {
-            body: 'Notificações ativadas com sucesso! Você receberá alertas do ProFit.',
+          new Notification('ProFit Calories 🔔', {
+            body: 'Agora você passará a receber notificações do aplicativo ProFit para sua saúde e bem-estar.',
             icon: '/icon-192.png'
           });
         }
