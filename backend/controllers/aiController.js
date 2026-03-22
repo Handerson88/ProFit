@@ -20,9 +20,14 @@ exports.getMessages = async (req, res) => {
   const user_id = req.user.id;
 
   try {
-    // Verify ownership
+    // Verify ownership or Admin status
     const conv = await db.query('SELECT user_id FROM ai_conversations WHERE id = $1', [conversationId]);
-    if (conv.rows.length === 0 || conv.rows[0].user_id !== user_id) {
+    if (conv.rows.length === 0) {
+      return res.status(404).json({ error: 'Conversa não encontrada.' });
+    }
+
+    const isAdmin = req.user && req.user.role === 'admin';
+    if (!isAdmin && conv.rows[0].user_id !== user_id) {
       return res.status(403).json({ error: 'Acesso negado.' });
     }
 
