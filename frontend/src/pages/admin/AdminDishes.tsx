@@ -11,9 +11,15 @@ import {
   ChevronDown,
   X,
   Save,
-  User as UserIcon
+  User as UserIcon,
+  Activity,
+  ChevronRight,
+  RefreshCcw,
+  Plus
 } from 'lucide-react';
 import { api } from '../../services/api';
+import { socketService } from '../../services/socketService';
+import { toast } from 'react-hot-toast';
 const API_URL = import.meta.env.VITE_API_URL || '';
 import { ConfirmModal } from '../../components/ConfirmModal';
 
@@ -26,6 +32,7 @@ interface ScannedDish {
   protein: number;
   carbs: number;
   fat: number;
+  ingredients: string[] | string;
   scan_source: string;
   created_at: string;
   user_name: string;
@@ -81,6 +88,31 @@ const AdminDishes: React.FC = () => {
     }, 300);
     return () => clearTimeout(timeoutId);
   }, [search, period]);
+
+  // Real-time updates
+  useEffect(() => {
+    socketService.connect();
+    socketService.joinAdminRoom();
+
+    const handleNewDish = (newDish: ScannedDish) => {
+      console.log('Real-time dish received:', newDish);
+      setDishes(prev => {
+        // Avoid duplicates if fetch and socket happen close together
+        if (prev.some(d => d.id === newDish.id)) return prev;
+        return [newDish, ...prev];
+      });
+      toast.success(`Novo scan: ${newDish.dish_name}`, {
+        icon: '📷',
+        position: 'top-right'
+      });
+    };
+
+    socketService.on('new_scanned_dish', handleNewDish);
+
+    return () => {
+      socketService.off('new_scanned_dish', handleNewDish);
+    };
+  }, []);
 
   const handleDelete = async (id: string) => {
     setConfirmOptions({
@@ -210,9 +242,10 @@ const AdminDishes: React.FC = () => {
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Prato</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Macros (C | P | K | F)</th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Macros</th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Ingredientes</th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Usuário</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Data da Análise</th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Data</th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Ações</th>
               </tr>
             </thead>
@@ -256,15 +289,49 @@ const AdminDishes: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded text-xs font-medium">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                          <Activity size={10} className="text-orange-500" />
                           {dish.calories} kcal
                         </span>
                         <div className="flex gap-1">
-                          <span title="Proteínas" className="w-6 h-6 flex items-center justify-center bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold">P</span>
-                          <span title="Carboidratos" className="w-6 h-6 flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-bold">C</span>
-                          <span title="Gorduras" className="w-6 h-6 flex items-center justify-center bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded text-[10px] font-bold">F</span>
+                          <div className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded text-[9px] font-bold border border-blue-100/50 dark:border-blue-800/30">
+                            P: {dish.protein}g
+                          </div>
+                          <div className="px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded text-[9px] font-bold border border-emerald-100/50 dark:border-emerald-800/30">
+                            C: {dish.carbs}g
+                          </div>
+                          <div className="px-1.5 py-0.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded text-[9px] font-bold border border-purple-100/50 dark:border-purple-800/30">
+                            F: {dish.fat}g
+                          </div>
                         </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {(() => {
+                          const ingredients = Array.isArray(dish.ingredients) 
+                            ? dish.ingredients 
+                            : typeof dish.ingredients === 'string' 
+                              ? JSON.parse(dish.ingredients || '[]')
+                              : [];
+                          
+                          return (
+                            <>
+                              {ingredients.slice(0, 2).map((ing: string, idx: number) => (
+                                <span key={idx} className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full text-[10px] border border-slate-200 dark:border-slate-700">
+                                  {ing}
+                                </span>
+                              ))}
+                              {ingredients.length > 2 && (
+                                <span className="px-2 py-0.5 bg-[#56AB2F]/10 text-[#56AB2F] rounded-full text-[10px] font-bold border border-[#56AB2F]/20">
+                                  +{ingredients.length - 2}
+                                </span>
+                              )}
+                              {ingredients.length === 0 && <span className="text-slate-400 text-[10px] italic">Não detectados</span>}
+                            </>
+                          );
+                        })()}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -366,6 +433,27 @@ const AdminDishes: React.FC = () => {
                 <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-2xl text-center border border-purple-100 dark:border-purple-800/30">
                   <p className="text-[10px] uppercase font-bold text-purple-600/70 dark:text-purple-400/70">Fat</p>
                   <p className="text-lg font-bold text-purple-600 dark:text-purple-400">{selectedDish.fat}g</p>
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Composição Detectada</h4>
+                <div className="flex flex-wrap gap-2">
+                  {(() => {
+                    const ingredients = Array.isArray(selectedDish.ingredients) 
+                      ? selectedDish.ingredients 
+                      : typeof selectedDish.ingredients === 'string' 
+                        ? JSON.parse(selectedDish.ingredients || '[]')
+                        : [];
+                    
+                    return ingredients.length > 0 ? ingredients.map((ing: string, idx: number) => (
+                      <span key={idx} className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs border border-slate-200 dark:border-slate-700">
+                        {ing}
+                      </span>
+                    )) : (
+                      <p className="text-xs text-slate-500 italic">Nenhum ingrediente específico detectado.</p>
+                    );
+                  })()}
                 </div>
               </div>
 

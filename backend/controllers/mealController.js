@@ -34,6 +34,52 @@ async function upsertAIDetectedFoods(ingredients) {
   }
 }
 
+/**
+ * Re-calculates and synchronizes daily_logs for a specific user and date
+ * @param {string} user_id 
+ * @param {string} date YYYY-MM-DD
+ */
+async function syncDailyLog(user_id, date) {
+  try {
+    console.log(`--- SYNC DAILY LOG: user ${user_id} on ${date} ---`);
+    
+    // 1. Sum all meals for this user on this date
+    const result = await db.query(
+      `SELECT 
+        SUM(calories) as total_calories,
+        SUM(protein) as total_protein,
+        SUM(carbs) as total_carbs,
+        SUM(fat) as total_fat
+       FROM meals 
+       WHERE user_id = $1 AND date::date = $2::date`,
+      [user_id, date]
+    );
+
+    const totals = result.rows[0];
+    const calories = Math.round(parseFloat(totals.total_calories || 0));
+    const protein = Math.round(parseFloat(totals.total_protein || 0));
+    const carbs = Math.round(parseFloat(totals.total_carbs || 0));
+    const fat = Math.round(parseFloat(totals.total_fat || 0));
+
+    // 2. Upsert into daily_logs
+    await db.query(`
+      INSERT INTO daily_logs (user_id, date, calories, protein, carbs, fat, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id, date)
+      DO UPDATE SET
+        calories = EXCLUDED.calories,
+        protein = EXCLUDED.protein,
+        carbs = EXCLUDED.carbs,
+        fat = EXCLUDED.fat,
+        updated_at = EXCLUDED.updated_at
+    `, [user_id, date, calories, protein, carbs, fat]);
+
+    console.log(`SYNC DAILY LOG SUCCESS: Cal=${calories}, P=${protein}, C=${carbs}, F=${fat}`);
+  } catch (err) {
+    console.error('SYNC DAILY LOG ERROR:', err.message);
+  }
+}
+
 exports.scanMeal = async (req, res) => {
   const user_id = req.user.id;
   
@@ -203,24 +249,57 @@ exports.scanMeal = async (req, res) => {
       }
 
       // 7.2 Save for Admin View / History of Scans (Not active meal)
+      const dishId = uuidv4();
+      const dishName = analysis.dish_name || analysis.meal_name || analysis.food_name;
+      const ingredientsJson = JSON.stringify(analysis.ingredients || []);
+      
       await db.query(
-        `INSERT INTO scanned_dishes (id, user_id, dish_name, image_url, calories, protein, carbs, fat, scan_source)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        `INSERT INTO scanned_dishes (id, user_id, dish_name, image_url, calories, protein, carbs, fat, ingredients, scan_source)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
-          uuidv4(), 
+          dishId, 
           user_id, 
-          analysis.dish_name || analysis.meal_name || analysis.food_name, 
+          dishName, 
           imageUrl, 
           mealCalories, 
           Number(analysis.protein || 0), 
           Number(analysis.carbs || 0), 
           Number(analysis.fat || 0),
+          ingredientsJson,
           'camera' 
         ]
       );
 
       await db.query('COMMIT');
       console.log('SCAN: Analysis recorded in scanned_dishes.');
+
+      // 7.3 Notify Admins in real-time
+      try {
+        const io = req.app.get('socketio');
+        if (io) {
+          // Get user info for the admin notification
+          const userMeta = await db.query('SELECT name, email FROM users WHERE id = $1', [user_id]);
+          const user = userMeta.rows[0];
+          
+          io.to('admin_room').emit('new_scanned_dish', {
+            id: dishId,
+            user_id,
+            user_name: user?.name || 'Usuário',
+            user_email: user?.email || '',
+            dish_name: dishName,
+            image_url: imageUrl,
+            calories: mealCalories,
+            protein: Number(analysis.protein || 0),
+            carbs: Number(analysis.carbs || 0),
+            fat: Number(analysis.fat || 0),
+            ingredients: analysis.ingredients || [],
+            scan_source: 'camera',
+            created_at: new Date()
+          });
+        }
+      } catch (socketErr) {
+        console.error('Admin socket emission failed:', socketErr);
+      }
 
     } catch (saveErr) {
       await db.query('ROLLBACK');
@@ -524,6 +603,7 @@ exports.updateMeal = async (req, res) => {
     );
 
     await syncDailyCalories(user_id, dateStr);
+    await syncDailyLog(user_id, dateStr); // Sync daily log after update
 
     res.json({ message: 'Refeição atualizada com sucesso' });
   } catch (err) {
@@ -545,6 +625,7 @@ exports.deleteMeal = async (req, res) => {
     await db.query('DELETE FROM meals WHERE id = $1 AND user_id = $2', [id, user_id]);
 
     await syncDailyCalories(user_id, dateStr);
+    await syncDailyLog(user_id, dateStr); // Sync daily log after deletion
 
     res.json({ message: 'Refeição removida com sucesso' });
   } catch (err) {

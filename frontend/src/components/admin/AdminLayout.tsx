@@ -32,7 +32,6 @@ const AdminLayout: React.FC = () => {
         { icon: LayoutDashboard, label: 'Painel', path: '/admin' },
         { icon: Users, label: 'Usuários', path: '/admin/users' },
         { icon: Activity, label: 'Treinos IA', path: '/admin/workouts' },
-        { icon: Dumbbell, label: 'Pacotes de Treino', path: '/admin/plans' },
         { icon: Utensils, label: 'Alimentos', path: '/admin/foods' },
         { icon: Shield, label: 'Logs do Sistema', path: '/admin/logs' },
         { icon: CircleDollarSign, label: 'MRR', path: '/admin/mrr' },

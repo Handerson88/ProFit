@@ -80,7 +80,7 @@ exports.sendMessage = async (req, res) => {
     );
 
     // 4. Get User Profile for personalization
-    const userProfileResult = await db.query('SELECT name, email, weight, height, goal, activity_level FROM users WHERE id = $1', [user_id]);
+    const userProfileResult = await db.query('SELECT name, email, weight, height, goal, activity_level, plan_type, ai_language FROM users WHERE id = $1', [user_id]);
     const userProfile = userProfileResult.rows[0];
     
     // Map activity_level to level for AI service compatibility

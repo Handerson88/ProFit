@@ -94,18 +94,18 @@ export const Profile = () => {
     }
   };
 
-  const MenuItem = ({ icon: Icon, title, subtitle, color = "text-gray-400", onClick, rightElement }: any) => (
+  const MenuItem = ({ icon: Icon, title, subtitle, color = "text-[var(--text-muted)]", onClick, rightElement }: any) => (
     <button 
       onClick={onClick}
-      className="w-full flex justify-between items-center py-4 bg-white active:scale-[0.98] transition-all last:border-none border-b border-gray-50/50 group"
+      className="w-full flex justify-between items-center py-4 bg-[var(--bg-container)] active:scale-[0.98] transition-all last:border-none border-b border-[var(--border-main)] group"
     >
       <div className="flex items-center space-x-4">
         <div className={`w-10 h-10 rounded-2xl bg-gray-50 flex items-center justify-center ${color} group-hover:bg-gray-100 transition-colors`}>
           <Icon className="w-5 h-5" />
         </div>
         <div className="text-left">
-          <p className="font-bold text-gray-900 text-[15px] leading-snug">{title}</p>
-          {subtitle && <p className="text-[12px] text-gray-400 font-medium">{subtitle}</p>}
+          <p className="font-bold text-[var(--text-main)] text-[15px] leading-snug">{title}</p>
+          {subtitle && <p className="text-[12px] text-[var(--text-muted)] font-medium">{subtitle}</p>}
         </div>
       </div>
       <div className="flex items-center space-x-2">
@@ -124,20 +124,20 @@ export const Profile = () => {
   }
 
   return (
-    <div className="main-wrapper bg-[#F6F7F9]">
+    <div className="main-wrapper bg-[var(--bg-app)]">
       <div className="app-container pb-32 bg-transparent shadow-none border-none">
       {/* Header */}
-      <div className="px-6 pt-12 pb-6 flex items-center justify-between sticky top-0 z-40 bg-[#F6F7F9]/90 backdrop-blur-sm">
+      <div className="px-6 pt-12 pb-6 flex items-center justify-between sticky top-0 z-40 bg-[var(--bg-app)]/90 backdrop-blur-sm">
         <div className="flex-1 flex justify-start">
           <button 
             onClick={() => navigate(-1)}
-            className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-95 transition-all text-gray-700 hover:text-gray-900"
+            className="w-10 h-10 bg-[var(--bg-container)] rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-95 transition-all text-[var(--text-main)] hover:text-primary"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
         </div>
         <div className="flex-1 flex justify-center">
-          <h1 className="text-[20px] font-black text-gray-900 tracking-tight">Perfil</h1>
+          <h1 className="text-[20px] font-black text-[var(--text-main)] tracking-tight">Perfil</h1>
         </div>
         <div className="flex-1 flex justify-end">
           <button 
@@ -168,9 +168,9 @@ export const Profile = () => {
               <label htmlFor="profile-upload" className="block cursor-pointer group">
                 <motion.div 
                   whileTap={{ scale: 0.95 }}
-                  className="w-[110px] h-[110px] rounded-full border-4 border-[#56AB2F] p-0.5 shadow-[0_8px_20px_rgba(86,171,47,0.15)] relative bg-white"
+                  className="w-[110px] h-[110px] rounded-full border-4 border-[#56AB2F] p-0.5 shadow-[0_8px_20px_rgba(86,171,47,0.15)] relative bg-[var(--bg-container)]"
                 >
-                  <div className="w-full h-full rounded-full bg-gray-50 flex items-center justify-center text-4xl overflow-hidden relative">
+                  <div className="w-full h-full rounded-full bg-[var(--bg-surface)] flex items-center justify-center text-4xl overflow-hidden relative">
                     {(profile?.avatar_url || profile?.profile_photo) ? (
                       <img 
                         src={(() => {
@@ -195,7 +195,7 @@ export const Profile = () => {
               </label>
             </div>
             
-            <h2 className="text-[22px] font-black text-gray-900 leading-tight">
+            <h2 className="text-[22px] font-black text-[var(--text-main)] leading-tight">
               {profile?.name || profile?.first_name ? `${profile.first_name || profile.name} ${profile.last_name || ''}`.trim() : 'Seu nome'}
             </h2>
             
@@ -212,31 +212,31 @@ export const Profile = () => {
 
           {/* Body Metrics Cards Grid */}
           <div className="grid grid-cols-3 gap-3 mb-8">
-            <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.03)] flex flex-col items-center hover:scale-[1.02] transition-transform">
+            <div className="bg-[var(--bg-container)] rounded-[20px] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.03)] flex flex-col items-center hover:scale-[1.02] transition-transform border border-[var(--border-main)]">
               <div className="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center mb-2">
                  <Weight className="w-4 h-4 text-blue-500" />
               </div>
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1 text-center">Peso</span>
-              <span className="text-[17px] font-black text-gray-900 leading-none">{profile?.weight ? `${profile.weight} kg` : '--'}</span>
+              <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1 text-center">Peso</span>
+              <span className="text-[17px] font-black text-[var(--text-main)] leading-none">{profile?.weight ? `${profile.weight} kg` : '--'}</span>
             </div>
-            <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.03)] flex flex-col items-center hover:scale-[1.02] transition-transform">
+            <div className="bg-[var(--bg-container)] rounded-[20px] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.03)] flex flex-col items-center hover:scale-[1.02] transition-transform border border-[var(--border-main)]">
               <div className="w-7 h-7 rounded-xl bg-orange-50 flex items-center justify-center mb-2">
                  <Ruler className="w-4 h-4 text-orange-500" />
               </div>
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1 text-center">Altura</span>
-              <span className="text-[17px] font-black text-gray-900 leading-none">{profile?.height ? `${profile.height} cm` : '--'}</span>
+              <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1 text-center">Altura</span>
+              <span className="text-[17px] font-black text-[var(--text-main)] leading-none">{profile?.height ? `${profile.height} cm` : '--'}</span>
             </div>
-            <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.03)] flex flex-col items-center hover:scale-[1.02] transition-transform">
+            <div className="bg-[var(--bg-container)] rounded-[20px] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.03)] flex flex-col items-center hover:scale-[1.02] transition-transform border border-[var(--border-main)]">
               <div className="w-7 h-7 rounded-xl bg-purple-50 flex items-center justify-center mb-2">
                  <Calendar className="w-4 h-4 text-purple-500" />
               </div>
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1 text-center">Idade</span>
-              <span className="text-[17px] font-black text-gray-900 leading-none">{profile?.age ? `${profile.age} anos` : '--'}</span>
+              <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1 text-center">Idade</span>
+              <span className="text-[17px] font-black text-[var(--text-main)] leading-none">{profile?.age ? `${profile.age} anos` : '--'}</span>
             </div>
           </div>
 
           {/* Settings List */}
-          <div className="bg-white rounded-[24px] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.03)] px-5 py-2 mb-8 border border-gray-50/50">
+          <div className="bg-[var(--bg-container)] rounded-[24px] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.03)] px-5 py-2 mb-8 border border-[var(--border-main)]">
             <MenuItem 
               icon={Bell} 
               title="Notificações" 

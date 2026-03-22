@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 const notificationController = require('../controllers/notificationController');
+const emailService = require('./emailService');
 
 /**
  * Initializes all automated cron jobs for notifications
@@ -29,7 +30,25 @@ exports.initCronJobs = (io) => {
         });
     });
 
-    // 3. Dynamic Scheduled Notifications from Database
+    // 3. Automated Billing Reminders for Overdue Users (10:00 AM)
+    cron.schedule('0 10 * * *', async () => {
+        console.log('[Cron] Running Overdue Billing Check...');
+        try {
+            const result = await db.query(
+                "SELECT id, name, email FROM users WHERE payment_status = 'overdue' AND subscription_active = false"
+            );
+
+            for (const user of result.rows) {
+                const paymentLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/checkout?userId=${user.id}`;
+                await emailService.sendBillingEmail(user, paymentLink);
+                console.log(`[Cron] Billing email sent to overdue user: ${user.email}`);
+            }
+        } catch (err) {
+            console.error('[Cron] Billing Check Error:', err);
+        }
+    });
+
+    // 4. Dynamic Scheduled Notifications from Database
     // Check every minute for any scheduled single-shot notifications
     cron.schedule('* * * * *', async () => {
         try {

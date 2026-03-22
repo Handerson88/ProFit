@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Bell, MoreVertical, Droplets, Footprints, Camera, Target, Flame, Clock, Crown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bell, MoreVertical, Droplets, Footprints, Camera, Target, Flame, Clock, Crown, Sparkles } from 'lucide-react';
 import { AppLayout } from '../components/AppLayout';
 import { BottomNav } from '../components/BottomNav';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -132,7 +132,7 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
   const todayIndex = new Date().getDay();
 
   return (
-    <div className="bg-white rounded-[32px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-8 border border-gray-50/50">
+    <div className="card-premium mb-8">
       {/* Header Info */}
       <div className="flex justify-between items-start mb-8">
         <div className="flex items-center space-x-3">
@@ -141,14 +141,14 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
           </div>
           <div>
             <div className="flex items-baseline space-x-1">
-              <span className="text-3xl font-black text-gray-900 leading-none">{total}</span>
-              <span className="text-sm font-bold text-gray-400">kcal</span>
+              <span className="text-3xl font-black text-[var(--text-main)] leading-none">{total}</span>
+              <span className="text-sm font-bold text-[var(--text-muted)]">kcal</span>
             </div>
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1">Consumido hoje</p>
+            <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">Consumido hoje</p>
           </div>
         </div>
         <div className="text-right pt-1">
-          <p className="text-[13px] font-medium text-gray-400">Meta: <span className="font-bold text-gray-900">{target}</span> kcal</p>
+          <p className="text-[13px] font-medium text-[var(--text-muted)]">Meta: <span className="font-bold text-[var(--text-main)]">{target}</span> kcal</p>
           <div className="mt-1 inline-flex items-center px-2 py-0.5 bg-[#F0F9EB] rounded-full">
             <span className="text-[10px] font-black text-[#56AB2F]">{Math.round(percent)}% da meta</span>
           </div>
@@ -158,7 +158,7 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
       {/* Vertical Chart Section */}
       <div className="flex justify-between items-end h-32 mb-8 px-1 relative">
         {/* Target dashed line */}
-        <div className="absolute top-[30%] left-0 w-full border-t border-dashed border-gray-100 z-0"></div>
+        <div className="absolute top-[30%] left-0 w-full border-t border-dashed border-[var(--border-main)] z-0"></div>
         
         {days.map((day, i) => {
           const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -177,33 +177,33 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
                   <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#1A1A1A] rotate-45"></div>
                 </div>
               )}
-              <div className="w-[18px] bg-gray-50 rounded-full flex-1 mb-2 relative overflow-hidden flex flex-col justify-end">
+              <div className="w-[18px] bg-[var(--bg-surface)] rounded-full flex-1 mb-2 relative overflow-hidden flex flex-col justify-end">
                 <motion.div 
                    initial={{ height: 0 }}
                    animate={{ height: `${barHeight}%` }}
                    transition={{ duration: 1, ease: "easeOut", delay: i * 0.05 }}
-                   className={`w-full rounded-full ${isActive ? 'bg-gradient-to-t from-[#56AB2F] to-[#A8E063]' : 'bg-[#E5E9CA]'}`}
+                   className={`w-full rounded-full ${isActive ? 'bg-gradient-to-t from-[#56AB2F] to-[#A8E063]' : 'bg-[#E5E9CA] opacity-50'}`}
                 />
               </div>
-              <span translate="no" className={`text-[9px] font-bold uppercase ${isActive ? 'text-gray-900' : 'text-gray-300'}`}>{day}</span>
+              <span translate="no" className={`text-[9px] font-bold uppercase ${isActive ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>{day}</span>
             </div>
           );
         })}
       </div>
 
       {/* Macros Row */}
-      <div className="grid grid-cols-3 gap-3 pt-6 border-t border-gray-50">
-        <div className="bg-[#FFF8F1] rounded-2xl p-3 text-center">
+      <div className="grid grid-cols-3 gap-3 pt-6 border-t border-[var(--border-main)]">
+        <div className="bg-[var(--bg-orange-soft)] rounded-2xl p-3 text-center">
           <p className="text-[10px] font-bold text-orange-400 uppercase mb-1">Proteína</p>
-          <p className="text-base font-black text-gray-900">{Math.round(Number(protein) || 0)}g</p>
+          <p className="text-base font-black text-[var(--text-main)]">{Math.round(Number(protein) || 0)}g</p>
         </div>
-        <div className="bg-[#F1F7FF] rounded-2xl p-3 text-center">
+        <div className="bg-[var(--bg-blue-soft)] rounded-2xl p-3 text-center">
           <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Carbos</p>
-          <p className="text-base font-black text-gray-900">{Math.round(Number(carbs) || 0)}g</p>
+          <p className="text-base font-black text-[var(--text-main)]">{Math.round(Number(carbs) || 0)}g</p>
         </div>
-        <div className="bg-[#FFF1F1] rounded-2xl p-3 text-center">
+        <div className="bg-[var(--bg-red-soft)] rounded-2xl p-3 text-center">
           <p className="text-[10px] font-bold text-red-400 uppercase mb-1">Gordura</p>
-          <p className="text-base font-black text-gray-900">{Math.round(Number(fat) || 0)}g</p>
+          <p className="text-base font-black text-[var(--text-main)]">{Math.round(Number(fat) || 0)}g</p>
         </div>
       </div>
     </div>
@@ -235,9 +235,11 @@ export const Dashboard = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
+  const [activeWorkout, setActiveWorkout] = useState<any>(null);
   const [mealToDelete, setMealToDelete] = useState<string | null>(null);
   const [appStatus, setAppStatus] = useState({ totalUsers: 0, monetizationEnabled: false });
   const [showMilestone, setShowMilestone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -283,6 +285,7 @@ export const Dashboard = () => {
         setUnreadNotifications(data.unreadNotificationsCount);
         setRecentMeals(data.recentMeals);
         setWeeklyData(data.weeklyStats);
+        setActiveWorkout(data.activeWorkout);
 
         const ds = data.dailySummary;
         setSummary(ds.summary || []);
@@ -301,8 +304,9 @@ export const Dashboard = () => {
         if (data.profile && (data.profile.notifications_enabled === false || data.profile.notifications_enabled === null) && !promptDismissed) {
           setShowNotificationPrompt(true);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Dashboard Bootstrap Error:", err);
+        setError("Não foi possível carregar seus dados. Verifique sua conexão.");
       } finally {
         setIsLoading(false);
       }
@@ -448,6 +452,145 @@ export const Dashboard = () => {
     return meal ? Number(meal.calories) || 0 : 0;
   };
 
+  const CoachMessageCard = ({ workout }: { workout: any }) => {
+    if (!workout || !workout.structured_plan) return null;
+    const plan = typeof workout.structured_plan === 'string' ? JSON.parse(workout.structured_plan) : workout.structured_plan;
+    const [showAnalysis, setShowAnalysis] = useState(false);
+    
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="card-premium mb-8 border-2 border-[#56AB2F]/10 relative overflow-hidden"
+      >
+        <div className="flex items-start space-x-4 relative z-10">
+          <div className="w-14 h-14 bg-gradient-to-br from-[#A8E063] to-[#56AB2F] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20 flex-shrink-0">
+            <UserPlus className="w-8 h-8" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-black text-[#56AB2F] uppercase tracking-widest bg-[var(--bg-accent-soft)] px-2 py-0.5 rounded-md">Master Coach IA</span>
+              {workout.body_analysis && (
+                <button 
+                  onClick={() => setShowAnalysis(!showAnalysis)}
+                  className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-md hover:bg-blue-100 transition-colors"
+                >
+                  {showAnalysis ? 'Ver Mensagem' : 'Ver Análise Corporal'}
+                </button>
+              )}
+            </div>
+            
+            <AnimatePresence mode="wait">
+              {showAnalysis && workout.body_analysis ? (
+                <motion.div
+                  key="analysis"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  className="space-y-2"
+                >
+                  <p className="text-[var(--text-main)] font-bold text-sm leading-relaxed">
+                    {workout.body_analysis}
+                  </p>
+                  <div className="flex items-center text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Análise Baseada em Visão IA
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.p
+                  key="message"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  className="text-[var(--text-main)] font-bold text-base leading-tight"
+                >
+                  "{plan.message || plan.title}"
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#56AB2F]/5 to-transparent rounded-full -mr-16 -mt-16 blur-2xl"></div>
+      </motion.div>
+    );
+  };
+
+  const WorkoutCard = ({ workout }: { workout: any }) => {
+    if (!workout) {
+      return (
+        <div className="card-premium border border-[var(--border-main)] text-center mb-8">
+           <div className="w-16 h-16 bg-[var(--bg-app)] rounded-full flex items-center justify-center mx-auto mb-4">
+             <Clock className="w-8 h-8 text-[var(--text-muted)]" />
+           </div>
+           <p className="text-[var(--text-muted)] font-bold mb-4">Você ainda não tem um plano de treino.</p>
+           <button 
+             onClick={() => navigate('/workout')}
+             className="px-6 py-2 bg-[#56AB2F] text-white rounded-xl font-bold shadow-md shadow-primary/10"
+           >
+             Criar meu plano
+           </button>
+        </div>
+      );
+    }
+
+    const plan = typeof workout.structured_plan === 'string' ? JSON.parse(workout.structured_plan) : workout.structured_plan;
+    const todayName = new Date().toLocaleDateString('pt-BR', { weekday: 'long' });
+    const capitalizedTodayName = todayName.charAt(0).toUpperCase() + todayName.slice(1);
+    
+    // Find today's workout in daily_workouts.
+    // GPT sometimes returns "segunda-feira" or "Segunda-feira".
+    const todayWorkout = plan.daily_workouts?.find((w: any) => 
+      w.day.toLowerCase() === capitalizedTodayName.toLowerCase() || 
+      w.day.toLowerCase().includes(capitalizedTodayName.toLowerCase())
+    );
+
+    return (
+      <div 
+        onClick={() => navigate('/workout')}
+        className="bg-[#1A1A1A] rounded-[32px] p-6 shadow-xl mb-8 border border-white/5 relative overflow-hidden group cursor-pointer"
+      >
+        <div className="relative z-10">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <span className="text-[10px] font-black text-[#A8E063] uppercase tracking-[0.2em]">Treino de Hoje</span>
+              <h3 className="text-white text-xl font-black mt-1">{todayWorkout?.muscles || 'Descanso Ativo'}</h3>
+            </div>
+            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-[#A8E063]">
+              <Target className="w-6 h-6" />
+            </div>
+          </div>
+          
+          {todayWorkout ? (
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <div className="px-3 py-1 bg-white/10 rounded-lg">
+                  <span className="text-white/60 text-[10px] font-bold block uppercase tracking-wider">Exercícios</span>
+                  <span className="text-white font-black">{todayWorkout.exercises?.length || 0}</span>
+                </div>
+                <div className="px-3 py-1 bg-white/10 rounded-lg">
+                  <span className="text-white/60 text-[10px] font-bold block uppercase tracking-wider">Foco</span>
+                  <span className="text-white font-black truncate max-w-[120px] inline-block">{todayWorkout.muscles}</span>
+                </div>
+              </div>
+              <p className="text-white/40 text-[11px] font-medium italic">"{todayWorkout.coach_tip || plan.message}"</p>
+            </div>
+          ) : (
+            <p className="text-white/60 text-sm font-bold">Aproveite para descansar e recuperar suas energias! ⚡</p>
+          )}
+
+          <div className="mt-6 flex items-center text-[#A8E063] text-sm font-black uppercase tracking-widest group-hover:translate-x-1 transition-transform">
+            Ver plano completo
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </div>
+        </div>
+        {/* Background glow */}
+        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-[#56AB2F]/20 rounded-full blur-[80px] group-hover:bg-[#56AB2F]/30 transition-colors"></div>
+      </div>
+    );
+  };
+
   const RecentMealCard = ({ meal }: { meal: any }) => {
     const formattedTime = meal.created_at ? new Date(meal.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
     const imageSource = (meal?.image_url && typeof meal.image_url === 'string') 
@@ -455,7 +598,7 @@ export const Dashboard = () => {
       : null;
     
     return (
-      <div className="bg-white rounded-[28px] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-4 border border-gray-50/50 hover:shadow-md transition-all group">
+      <div className="card-premium mb-4 hover:shadow-md transition-all group">
         <div className="flex items-center space-x-4 mb-4 relative">
           <div className="w-[85px] h-[85px] rounded-[22px] overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center border border-gray-50">
             {imageSource ? (
@@ -474,9 +617,9 @@ export const Dashboard = () => {
           </div>
           <div className="flex-grow">
             <div className="flex justify-between items-start mb-1">
-              <h4 className="font-black text-gray-900 line-clamp-1 text-base tracking-tight">{meal.meal_name}</h4>
+              <h4 className="font-black text-[var(--text-main)] line-clamp-1 text-base tracking-tight">{meal.meal_name}</h4>
               <div className="flex items-center space-x-2 shrink-0 ml-2">
-                <span className="text-[10px] font-black text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full flex items-center uppercase tracking-widest">
+                <span className="text-[10px] font-black text-[var(--text-muted)] bg-[var(--bg-surface)] px-2.5 py-1 rounded-full flex items-center uppercase tracking-widest">
                   <Clock className="w-3 h-3 mr-1" />
                   {formattedTime}
                 </span>
@@ -497,21 +640,21 @@ export const Dashboard = () => {
               </div>
             </div>
             <div className="flex items-center space-x-1.5 mb-3">
-              <div className="flex items-center bg-orange-50 px-2 py-0.5 rounded-md">
+              <div className="flex items-center bg-[var(--bg-orange-soft)] px-2 py-0.5 rounded-md">
                 <Flame className="w-3.5 h-3.5 text-orange-500 fill-current mr-1" />
-                <span className="text-sm font-black text-gray-900">{meal.calories}</span>
-                <span className="text-[10px] font-bold text-gray-500 ml-0.5">kcal</span>
+                <span className="text-sm font-black text-[var(--text-main)]">{meal.calories}</span>
+                <span className="text-[10px] font-bold text-[var(--text-muted)] ml-0.5">kcal</span>
               </div>
             </div>
             
             <div className="flex flex-wrap gap-3">
                <div className="flex items-center space-x-1">
                  <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
-                 <span className="text-[11px] font-bold text-gray-700">{Math.round(meal.protein)}g proteína</span>
+                 <span className="text-[11px] font-bold text-[var(--text-main)]">{Math.round(meal.protein)}g proteína</span>
                </div>
                <div className="flex items-center space-x-1">
                  <div className="w-1.5 h-1.5 rounded-full bg-orange-400"></div>
-                 <span className="text-[11px] font-bold text-gray-700">{Math.round(meal.carbs)}g carbos</span>
+                 <span className="text-[11px] font-bold text-[var(--text-main)]">{Math.round(meal.carbs)}g carbos</span>
                </div>
             </div>
           </div>
@@ -562,7 +705,7 @@ export const Dashboard = () => {
           })()}
           
           {(meal.nutrition_observation || meal.recommendation) && (
-            <div className="bg-[#F0F9EB] p-3 rounded-2xl border border-[#E6F4E2]">
+            <div className="bg-[var(--bg-accent-soft)] p-3 rounded-2xl border border-[var(--border-main)]">
               <p className="text-[11px] text-[#56AB2F] font-medium leading-relaxed italic">
                 "{meal.nutrition_observation || meal.recommendation}"
               </p>
@@ -577,14 +720,14 @@ export const Dashboard = () => {
     <div className="animate-pulse">
       <div className="mb-5 space-y-4">
         {[1, 2].map((i) => (
-          <div key={i} className="bg-white rounded-[22px] p-[18px] border border-gray-50/50 h-[140px]">
+          <div key={i} className="card-premium h-[140px] opacity-50">
             <div className="flex justify-between items-center mb-[10px]">
-              <div className="h-6 w-32 bg-gray-200 rounded-lg"></div>
-              <div className="h-5 w-5 bg-gray-200 rounded-full"></div>
+              <div className="h-6 w-32 bg-[var(--bg-surface)] rounded-lg"></div>
+              <div className="h-5 w-5 bg-[var(--bg-surface)] rounded-full"></div>
             </div>
-            <div className="h-8 w-24 bg-gray-200 rounded-lg mb-[10px]"></div>
-            <div className="h-[10px] w-full bg-gray-100 rounded-[20px] mb-[12px]"></div>
-            <div className="h-4 w-20 bg-gray-200 rounded-lg"></div>
+            <div className="h-8 w-24 bg-[var(--bg-surface)] rounded-lg mb-[10px]"></div>
+            <div className="h-[10px] w-full bg-[var(--bg-surface)] rounded-[20px] mb-[12px]"></div>
+            <div className="h-4 w-20 bg-[var(--bg-surface)] rounded-lg"></div>
           </div>
         ))}
       </div>
@@ -602,16 +745,34 @@ export const Dashboard = () => {
     </div>
   );
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--bg-app)] p-6 text-center">
+        <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center text-rose-500 mb-4">
+          <AlertCircle size={32} />
+        </div>
+        <h2 className="text-xl font-bold text-[var(--text-main)] mb-2">Ops! Algo deu errado</h2>
+        <p className="text-[var(--text-muted)] mb-6">{error}</p>
+        <button 
+          onClick={() => { setError(null); setIsLoading(true); window.location.reload(); }}
+          className="btn-primary"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    );
+  }
+
   if (isLoading) return <SkeletonLoader />;
 
   return (
     <div className="main-wrapper">
-      <div className="app-container pb-28 min-h-screen bg-[#F6F7F9]">
+      <div className="app-container pb-28 min-h-screen">
       <div className="px-6 pt-12">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <p className="text-sm text-gray-500 font-medium tracking-wide mb-1">
+            <p className="text-sm text-[var(--text-muted)] font-medium tracking-wide mb-1">
               {(() => {
                 const hour = new Date().getHours();
                 if (hour >= 5 && hour < 12) return 'Bom dia';
@@ -620,7 +781,7 @@ export const Dashboard = () => {
               })()} 👋
             </p>
             <div className="flex items-center space-x-2">
-              <h1 className="text-[28px] font-bold text-gray-900 leading-tight">{userName}</h1>
+              <h1 className="text-[28px] font-bold text-[var(--text-main)] leading-tight">{userName}</h1>
               {profile?.plan_type && profile.plan_type !== 'free' && (
                 <span className="bg-[#1A1A1A] text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center mt-1">
                   PRO
@@ -678,6 +839,9 @@ export const Dashboard = () => {
             onOpenCalendar={() => setIsCalendarOpen(true)} 
           />
 
+          <CoachMessageCard workout={activeWorkout} />
+          <WorkoutCard workout={activeWorkout} />
+
           {isLoading ? (
             <SkeletonLoader />
           ) : (
@@ -694,7 +858,7 @@ export const Dashboard = () => {
 
               <div className="mt-8 mb-8">
                 <div className="flex justify-between items-center px-2 mb-4">
-                  <h3 className="text-lg font-black text-gray-900">Refeições registradas</h3>
+                  <h3 className="text-lg font-black text-[var(--text-main)]">Refeições registradas</h3>
                   <button className="text-sm font-bold text-[#56AB2F]" onClick={() => navigate('/history')}>Ver tudo</button>
                 </div>
                 

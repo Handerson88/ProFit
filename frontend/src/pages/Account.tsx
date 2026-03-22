@@ -23,6 +23,7 @@ export const Account = () => {
     height: '',
     weight: '',
     goal: '',
+    gender: '',
     daily_calorie_target: ''
   });
 
@@ -41,6 +42,7 @@ export const Account = () => {
         height: data.height || '',
         weight: data.weight || '',
         goal: data.goal || 'manter',
+        gender: data.gender || 'male',
         daily_calorie_target: data.daily_calorie_target || '2000'
       });
     } catch (err) {
@@ -69,6 +71,7 @@ export const Account = () => {
     if (isNaN(Number(formData.age))) return "Idade deve ser um número.";
     if (isNaN(Number(formData.height))) return "Altura deve ser um número.";
     if (isNaN(Number(formData.weight))) return "Peso deve ser um número.";
+    if (formData.gender !== 'male' && formData.gender !== 'female') return "Selecione um gênero válido.";
     return null;
   };
 
@@ -101,23 +104,23 @@ export const Account = () => {
   };
 
   const ModernInput = ({ label, icon: Icon, value, name, type = "text", disabled = !isEditing }: any) => (
-    <div className={`group bg-white rounded-3xl p-5 border-2 transition-all duration-300 shadow-sm ${
-      isEditing ? 'border-gray-100 focus-within:border-[#56AB2F]/30 focus-within:shadow-lg focus-within:shadow-[#56AB2F]/5' : 'border-transparent'
+    <div className={`group bg-[var(--bg-container)] rounded-3xl p-5 border-2 transition-all duration-300 shadow-sm ${
+      isEditing ? 'border-[var(--border-main)] focus-within:border-[#56AB2F]/30 focus-within:shadow-lg focus-within:shadow-[#56AB2F]/5' : 'border-transparent'
     }`}>
       <div className="flex items-center space-x-4">
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${
-          isEditing ? 'bg-gray-50 text-[#56AB2F]' : 'bg-gray-50 text-gray-400'
+          isEditing ? 'bg-[var(--bg-app)] text-[#56AB2F]' : 'bg-[var(--bg-app)] text-[var(--text-muted)]'
         }`}>
           <Icon className="w-6 h-6" />
         </div>
         <div className="flex-1">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">{label}</p>
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em] mb-1">{label}</p>
           <input 
             type={type}
             disabled={disabled}
             value={value}
             onChange={(e) => setFormData({ ...formData, [name]: e.target.value })}
-            className="w-full bg-transparent text-lg font-bold text-gray-900 outline-none placeholder:text-gray-200 disabled:opacity-100"
+            className="w-full bg-transparent text-lg font-bold text-[var(--text-main)] outline-none placeholder:text-[var(--text-muted)] disabled:opacity-100"
             placeholder={`Digite seu ${label.toLowerCase()}...`}
           />
         </div>
@@ -134,17 +137,17 @@ export const Account = () => {
   }
 
   return (
-    <div className="main-wrapper bg-[#F8FAFC]">
+    <div className="main-wrapper bg-[var(--bg-app)]">
       <div className="app-container min-h-screen flex flex-col pb-24">
         {/* Header */}
-        <div className="px-6 pt-12 pb-8 flex items-center justify-between sticky top-0 z-40 bg-[#F8FAFC]/80 backdrop-blur-md">
+        <div className="px-6 pt-12 pb-8 flex items-center justify-between sticky top-0 z-40 bg-[var(--bg-app)]/80 backdrop-blur-md">
           <button 
             onClick={() => navigate(-1)}
-            className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm active:scale-90 transition-all text-gray-900 border border-gray-100"
+            className="w-12 h-12 bg-[var(--bg-container)] rounded-2xl flex items-center justify-center shadow-sm active:scale-90 transition-all text-[var(--text-main)] border border-[var(--border-main)]"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Conta</h1>
+          <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Conta</h1>
           <div className="w-12" />
         </div>
 
@@ -153,7 +156,7 @@ export const Account = () => {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-[40px] p-8 shadow-xl shadow-gray-200/50 border border-gray-50 mb-10 overflow-hidden relative"
+            className="bg-[var(--bg-container)] rounded-[40px] p-8 shadow-xl border border-[var(--border-main)] mb-10 overflow-hidden relative"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#A8E063]/10 to-transparent rounded-bl-full" />
             
@@ -167,7 +170,7 @@ export const Account = () => {
                   onChange={handlePhotoUpload}
                 />
                 <label htmlFor="account-photo-upload" className="cursor-pointer group block">
-                  <div className="w-32 h-32 rounded-[40px] overflow-hidden border-4 border-gray-50 p-1 shadow-inner bg-gray-50 relative">
+                  <div className="w-32 h-32 rounded-[40px] overflow-hidden border-4 border-[var(--bg-surface)] p-1 shadow-inner bg-[var(--bg-surface)] relative">
                     {(profile?.avatar_url || profile?.profile_photo) ? (
                       <img 
                         src={(() => {
@@ -179,7 +182,7 @@ export const Account = () => {
                         className="w-full h-full object-cover rounded-[35px]" 
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-300">
+                      <div className="w-full h-full flex items-center justify-center bg-[var(--bg-surface)] text-[var(--text-muted)]">
                         <User className="w-16 h-16" />
                       </div>
                     )}
@@ -198,9 +201,9 @@ export const Account = () => {
                 )}
               </div>
 
-              <h2 className="text-2xl font-black text-gray-900 mb-1">{profile?.name || 'Seu Nome'}</h2>
+              <h2 className="text-2xl font-black text-[var(--text-main)] mb-1">{profile?.name || 'Seu Nome'}</h2>
               <div className="flex items-center space-x-2">
-                <p className="text-sm font-bold text-gray-400 bg-gray-50 px-4 py-1.5 rounded-full">{profile?.email || 'seuemail@exemplo.com'}</p>
+                <p className="text-sm font-bold text-[var(--text-muted)] bg-[var(--bg-surface)] px-4 py-1.5 rounded-full">{profile?.email || 'seuemail@exemplo.com'}</p>
                 {profile?.plan_type === 'elite' ? (
                   <span className="bg-gradient-to-r from-indigo-600 to-violet-700 text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg shadow-indigo-200">
                     ELITE
@@ -249,7 +252,7 @@ export const Account = () => {
           {/* Information Section */}
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-2 ml-2">
-              <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Dados Pessoais</h3>
+              <h3 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">Dados Pessoais</h3>
             </div>
             
             <div className="grid gap-4">
@@ -260,6 +263,41 @@ export const Account = () => {
                 <ModernInput label="Altura" icon={Ruler} value={formData.height} name="height" type="number" />
               </div>
               <ModernInput label="Peso" icon={Weight} value={formData.weight} name="weight" type="number" />
+              
+              <div className={`group bg-[var(--bg-container)] rounded-3xl p-5 border-2 transition-all duration-300 shadow-sm ${
+                isEditing ? 'border-[var(--border-main)]' : 'border-transparent'
+              }`}>
+                <div className="flex items-center space-x-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${
+                    isEditing ? 'bg-[var(--bg-app)] text-[#56AB2F]' : 'bg-[var(--bg-app)] text-[var(--text-muted)]'
+                  }`}>
+                    <User className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em] mb-1">Gênero</p>
+                    {isEditing ? (
+                      <div className="flex space-x-2 mt-1">
+                        <button 
+                          onClick={() => setFormData({ ...formData, gender: 'male' })}
+                          className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all border-2 ${formData.gender === 'male' ? 'border-[#56AB2F] bg-[#56AB2F]/5 text-[#56AB2F]' : 'border-[var(--border-main)] bg-[var(--bg-surface)] text-[var(--text-muted)]'}`}
+                        >
+                          Masculino
+                        </button>
+                        <button 
+                          onClick={() => setFormData({ ...formData, gender: 'female' })}
+                          className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all border-2 ${formData.gender === 'female' ? 'border-[#56AB2F] bg-[#56AB2F]/5 text-[#56AB2F]' : 'border-[var(--border-main)] bg-[var(--bg-surface)] text-[var(--text-muted)]'}`}
+                        >
+                          Feminino
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-lg font-bold text-[var(--text-main)] capitalize">
+                        {formData.gender === 'male' ? 'Masculino' : 'Feminino'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -298,10 +336,11 @@ export const Account = () => {
                         height: profile?.height || '',
                         weight: profile?.weight || '',
                         goal: profile?.goal || '',
+                        gender: profile?.gender || 'male',
                         daily_calorie_target: profile?.daily_calorie_target || ''
                       });
                     }}
-                    className="w-full h-16 text-gray-400 font-black text-sm uppercase tracking-widest"
+                    className="w-full h-16 text-[var(--text-muted)] font-black text-sm uppercase tracking-widest"
                   >
                     Cancelar
                   </button>
@@ -315,7 +354,7 @@ export const Account = () => {
                 >
                   <button 
                     onClick={() => setIsEditing(true)}
-                    className="w-full bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-100 h-20 rounded-[35px] font-black text-lg uppercase tracking-widest shadow-sm active:scale-[0.98] transition-all flex items-center justify-center"
+                    className="w-full bg-[var(--bg-container)] hover:bg-[var(--bg-surface)] text-[var(--text-main)] border-2 border-[var(--border-main)] h-20 rounded-[35px] font-black text-lg uppercase tracking-widest shadow-sm active:scale-[0.98] transition-all flex items-center justify-center"
                   >
                     <Edit3 className="w-6 h-6 mr-3 text-[#56AB2F]" />
                     Editar Perfil

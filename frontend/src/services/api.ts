@@ -328,14 +328,17 @@ export const api = {
     }).then(handleResponse)
   },
   workouts: {
-    generate: (data: any) => fetch(`${API_URL}/workouts/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(data)
-    }).then(handleResponse),
+    generate: (data: any) => {
+      const isFormData = data instanceof FormData;
+      return fetch(`${API_URL}/workouts/generate`, {
+        method: 'POST',
+        headers: {
+          ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: isFormData ? data : JSON.stringify(data)
+      }).then(handleResponse);
+    },
     getActive: () => fetch(`${API_URL}/workouts/active`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -560,6 +563,19 @@ export const api = {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse),
     getAll: () => fetch(`${API_URL}/achievements/all`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse)
+  },
+  billing: {
+    sendEmail: (userId: string) => fetch(`${API_URL}/admin/billing/send-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ userId })
+    }).then(handleResponse),
+    getStatus: () => fetch(`${API_URL}/admin/billing/status`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse)
   }

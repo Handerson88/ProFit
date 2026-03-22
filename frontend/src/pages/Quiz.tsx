@@ -92,7 +92,7 @@ export const Quiz = () => {
     try {
       const payload = {
         age: Number(formData.age),
-        gender: formData.gender,
+        gender: formData.gender === 'Masculino' ? 'male' : 'female',
         height: Number(formData.height),
         current_weight: Number(formData.current_weight),
         goal: formData.goal,
@@ -242,7 +242,6 @@ export const Quiz = () => {
           <div className="space-y-4 mt-6">
             {renderSelectableCard('gender', 'Masculino', <User className="w-6 h-6" />)}
             {renderSelectableCard('gender', 'Feminino', <User className="w-6 h-6" />)}
-            {renderSelectableCard('gender', 'Outro')}
           </div>
         );
       case 3:

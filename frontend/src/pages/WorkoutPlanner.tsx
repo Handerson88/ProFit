@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Dumbbell, Sparkles, Clock, ChevronRight, Loader2, Calendar, CheckCircle2, Trophy, Flame, AlertTriangle, Lock } from 'lucide-react';
+import { ArrowLeft, Dumbbell, Sparkles, Clock, ChevronRight, Loader2, Calendar, CheckCircle2, Trophy, Flame, AlertTriangle, Lock, X, Camera, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BottomNav } from '../components/BottomNav';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -21,6 +21,7 @@ export const WorkoutPlanner = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [completedSessions, setCompletedSessions] = useState<string[]>([]);
   const [confirmOptions, setConfirmOptions] = useState({
@@ -34,16 +35,47 @@ export const WorkoutPlanner = () => {
 
   const closeConfirm = () => setConfirmOptions(prev => ({ ...prev, isOpen: false }));
 
+  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     goal: 'ganhar massa',
     level: 'iniciante',
     days_per_week: '5',
     location: 'academia',
-    duration: '45 minutos'
+    duration: '45 min',
+    age: '',
+    weight: '',
+    height: '',
+    has_trained_before: 'Não',
+    training_time: '0 meses',
+    injuries: '',
+    diseases: '',
+    body_focus: 'Equilibrado',
+    intensity: 'Moderado',
+    observations: ''
   });
 
   useEffect(() => {
     fetchActivePlan();
+    
+    // Pre-populate metrics from profile if available
+    const loadProfile = async () => {
+      try {
+        const profile = await api.user.getProfile();
+        if (profile) {
+          setFormData(prev => ({
+            ...prev,
+            age: profile.age?.toString() || '',
+            weight: profile.weight?.toString() || '',
+            height: profile.height?.toString() || ''
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to load profile for pre-population", err);
+      }
+    };
+    loadProfile();
   }, []);
 
   useEffect(() => {
@@ -76,10 +108,25 @@ export const WorkoutPlanner = () => {
   const handleGenerate = async () => {
     try {
       setIsGenerating(true);
-      const newPlan = await api.workouts.generate(formData);
+      
+      let payload: any;
+      if (selectedImage) {
+        const data = new FormData();
+        Object.entries(formData).forEach(([key, value]) => data.append(key, value));
+        data.append('image', selectedImage);
+        data.append('isUpdate', isUpdating.toString());
+        payload = data;
+      } else {
+        payload = { ...formData, isUpdate: isUpdating };
+      }
+
+      const newPlan = await api.workouts.generate(payload);
       setActivePlan(newPlan);
       setIsModalOpen(false);
       setShowWarning(false);
+      setCurrentStep(1);
+      setSelectedImage(null);
+      setImagePreview(null);
     } catch (err: any) {
       console.error('Failed to generate plan', err);
       if (err.status === 403) {
@@ -103,6 +150,7 @@ export const WorkoutPlanner = () => {
       }
     } finally {
       setIsGenerating(false);
+      setIsUpdating(false);
     }
   };
 
@@ -127,70 +175,300 @@ export const WorkoutPlanner = () => {
           <button 
             disabled={isGenerating}
             onClick={handleGenerate}
-            className="w-full py-4 bg-[#56AB2F] text-white rounded-2xl font-black shadow-lg"
+            className="w-full py-4 bg-[#56AB2F] text-white rounded-2xl font-black shadow-lg disabled:opacity-50"
           >
-            {isGenerating ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Gerar Plano'}
+            {isGenerating ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (isUpdating ? 'Atualizar Agora' : 'Confirmar e Gerar')}
           </button>
-          <button onClick={() => setShowWarning(false)} className="w-full py-4 text-gray-400 font-bold">Cancelar</button>
+          <button onClick={() => { setShowWarning(false); setIsUpdating(false); }} className="w-full py-4 text-gray-400 font-bold">Voltar</button>
         </div>
       </motion.div>
     </motion.div>
   );
 
-  const GeneratorModal = () => (
-    <motion.div 
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
-    >
+  const GeneratorModal = () => {
+    const nextStep = () => setCurrentStep(prev => prev + 1);
+    const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+          alert("Imagem muito grande. Máximo 5MB.");
+          return;
+        }
+        setSelectedImage(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    const renderStep = () => {
+      switch (currentStep) {
+        case 1:
+          return (
+            <div className="space-y-6">
+              <div>
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Objetivo</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['emagrecer', 'ganhar massa', 'definição', 'condicionamento'].map(opt => (
+                    <button 
+                      key={opt}
+                      onClick={() => setFormData({...formData, goal: opt})}
+                      className={`p-3 rounded-2xl text-xs font-bold capitalize border-2 transition-all ${formData.goal === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Nível</label>
+                  <select value={formData.level} onChange={(e) => setFormData({...formData, level: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
+                    <option value="iniciante">Iniciante</option>
+                    <option value="intermediário">Intermediário</option>
+                    <option value="avançado">Avançado</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Dias/Semana</label>
+                  <select value={formData.days_per_week} onChange={(e) => setFormData({...formData, days_per_week: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
+                    {[3, 4, 5, 6, 7].map(d => <option key={d} value={`${d}`}>{d} dias</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Local de Treino</label>
+                <div className="flex gap-2">
+                  {['academia', 'casa'].map(opt => (
+                    <button 
+                      key={opt}
+                      onClick={() => setFormData({...formData, location: opt})}
+                      className={`flex-1 p-3 rounded-2xl text-xs font-bold capitalize border-2 transition-all ${formData.location === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        case 2:
+          return (
+            <div className="space-y-6">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Idade</label>
+                  <input type="number" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} placeholder="30" className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none" />
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Peso (kg)</label>
+                  <input type="number" value={formData.weight} onChange={(e) => setFormData({...formData, weight: e.target.value})} placeholder="70" className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none" />
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Altura (cm)</label>
+                  <input type="number" value={formData.height} onChange={(e) => setFormData({...formData, height: e.target.value})} placeholder="175" className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Duração</label>
+                  <select value={formData.duration} onChange={(e) => setFormData({...formData, duration: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
+                    {['20 min', '30 min', '45 min', '60 min'].map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Intensidade</label>
+                  <select value={formData.intensity} onChange={(e) => setFormData({...formData, intensity: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
+                    {['Leve', 'Moderado', 'Intenso'].map(i => <option key={i} value={i}>{i}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+          );
+        case 3:
+          return (
+            <div className="space-y-6">
+              <div>
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Já treinou antes?</label>
+                <div className="flex gap-2">
+                  {['Sim', 'Não'].map(opt => (
+                    <button 
+                      key={opt}
+                      onClick={() => setFormData({...formData, has_trained_before: opt})}
+                      className={`flex-1 p-3 rounded-2xl text-xs font-bold border-2 transition-all ${formData.has_trained_before === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {formData.has_trained_before === 'Sim' && (
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Tempo de treino</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['0 meses', '1-3 meses', '6+ meses'].map(opt => (
+                      <button 
+                        key={opt}
+                        onClick={() => setFormData({...formData, training_time: opt})}
+                        className={`p-2 rounded-2xl text-[10px] font-bold border-2 transition-all ${formData.training_time === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Foco Corporal</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Peito', 'Braços', 'Abdômen', 'Pernas', 'Glúteos', 'Equilibrado'].map(opt => (
+                    <button 
+                      key={opt}
+                      onClick={() => setFormData({...formData, body_focus: opt})}
+                      className={`p-2 rounded-2xl text-[10px] font-bold border-2 transition-all ${formData.body_focus === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        case 4:
+          return (
+            <div className="space-y-6">
+              <div>
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Lesões ou Dores?</label>
+                <textarea 
+                  value={formData.injuries} 
+                  onChange={(e) => setFormData({...formData, injuries: e.target.value})} 
+                  placeholder="Ex: Joelho esquerdo, Coluna..." 
+                  className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none h-20 resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Doenças ou Condições?</label>
+                <textarea 
+                  value={formData.diseases} 
+                  onChange={(e) => setFormData({...formData, diseases: e.target.value})} 
+                  placeholder="Ex: Pressão alta, Diabetes..." 
+                  className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none h-20 resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Algo mais?</label>
+                <textarea 
+                  value={formData.observations} 
+                  onChange={(e) => setFormData({...formData, observations: e.target.value})} 
+                  placeholder="Descreva algo importante sobre você" 
+                  className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none h-20 resize-none"
+                />
+              </div>
+            </div>
+          );
+        case 5:
+          return (
+            <div className="space-y-6">
+              <div className="bg-[#FAF9F6] border-2 border-dashed border-[#56AB2F]/30 rounded-[32px] p-8 text-center relative overflow-hidden group">
+                {imagePreview ? (
+                  <div className="relative aspect-video rounded-2xl overflow-hidden shadow-xl border-4 border-white">
+                    <img src={imagePreview} alt="Corpo" className="w-full h-full object-cover" />
+                    <button 
+                      onClick={() => { setSelectedImage(null); setImagePreview(null); }}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full shadow-lg"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="w-20 h-20 bg-[#EAF5D5] rounded-full flex items-center justify-center mx-auto text-[#56AB2F]">
+                      <Camera className="w-10 h-10" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-black text-gray-900 mb-1">Análise Corporal por IA</h4>
+                      <p className="text-xs font-bold text-gray-400 leading-relaxed px-4">Envie uma foto do seu corpo inteiro (frente) para uma análise MASTER de pontos fortes e fracos.</p>
+                    </div>
+                    <label className="inline-block px-8 py-4 bg-[#56AB2F] text-white rounded-2xl font-black text-sm shadow-lg cursor-pointer hover:scale-105 active:scale-95 transition-all">
+                      Selecionar Foto
+                      <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                    </label>
+                    <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Opcional • Formatos JPG, PNG</p>
+                  </div>
+                )}
+              </div>
+              <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 flex items-start gap-3">
+                <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                <p className="text-[10px] font-bold text-blue-700 leading-relaxed">
+                  A IA analisará seu percentual de gordura estimado e estrutura muscular para hiper-personalizar seu treino. Imagem segura e privada.
+                </p>
+              </div>
+            </div>
+          );
+        default:
+          return null;
+      }
+    };
+
+    const isStepValid = () => {
+      if (currentStep === 2) {
+        return formData.age && formData.weight && formData.height;
+      }
+      return true;
+    };
+
+    return (
       <motion.div 
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-        className="bg-white w-full max-w-lg rounded-[40px] p-8 pb-12 max-h-[85vh] overflow-y-auto"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
       >
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-black text-gray-900">Novo Plano Mensal</h2>
-          <button onClick={() => setIsModalOpen(false)} className="text-gray-400 font-bold">Fechar</button>
-        </div>
-        <div className="space-y-6">
-          <div>
-            <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Objetivo</label>
-            <div className="grid grid-cols-2 gap-2">
-              {['emagrecer', 'ganhar massa', 'definição', 'condicionamento'].map(opt => (
-                <button 
-                  key={opt}
-                  onClick={() => setFormData({...formData, goal: opt})}
-                  className={`p-3 rounded-2xl text-xs font-bold capitalize border-2 transition-all ${formData.goal === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
-                >
-                  {opt}
-                </button>
-              ))}
+        <motion.div 
+          initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+          className="bg-white w-full max-w-lg rounded-[40px] p-8 pb-12 overflow-hidden flex flex-col max-h-[90vh]"
+        >
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex-1">
+              <h2 className="text-2xl font-black text-gray-900">Plano ProFit Elite</h2>
+              <div className="flex gap-1 mt-2">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <div key={s} className={`h-1 flex-1 rounded-full transition-all ${s <= currentStep ? 'bg-[#56AB2F]' : 'bg-gray-100'}`} />
+                ))}
+              </div>
             </div>
+            <button onClick={() => { setIsModalOpen(false); setCurrentStep(1); setIsUpdating(false); setSelectedImage(null); setImagePreview(null); }} className="ml-4 text-gray-400 p-2 hover:bg-gray-100 rounded-full transition-all">
+              <X className="w-6 h-6" />
+            </button>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Nível</label>
-              <select value={formData.level} onChange={(e) => setFormData({...formData, level: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
-                <option value="iniciante">Iniciante</option>
-                <option value="intermediário">Intermediário</option>
-                <option value="avançado">Avançado</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Dias/Semana</label>
-              <select value={formData.days_per_week} onChange={(e) => setFormData({...formData, days_per_week: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
-                {[3, 4, 5, 6, 7].map(d => <option key={d} value={`${d}`}>{d} dias</option>)}
-              </select>
-            </div>
+
+          <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
+            {renderStep()}
           </div>
-          <button 
-            onClick={() => setShowWarning(true)}
-            className="w-full py-5 bg-gradient-to-r from-[#A8E063] to-[#56AB2F] rounded-3xl text-white font-black text-lg shadow-xl mt-4"
-          >
-            Continuar
-          </button>
-        </div>
+
+          <div className="mt-8 flex gap-3">
+            {currentStep > 1 && (
+              <button 
+                onClick={prevStep}
+                className="flex-1 py-5 bg-gray-100 rounded-3xl text-gray-500 font-black text-lg"
+              >
+                Voltar
+              </button>
+            )}
+            <button 
+              onClick={currentStep === 5 ? () => setShowWarning(true) : nextStep}
+              disabled={!isStepValid()}
+              className={`py-5 bg-gradient-to-r from-[#A8E063] to-[#56AB2F] rounded-3xl text-white font-black text-lg shadow-xl transition-all ${currentStep === 1 ? 'w-full' : 'flex-[2]'} disabled:opacity-30`}
+            >
+              {currentStep === 5 ? 'Gerar Plano' : 'Continuar'}
+            </button>
+          </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
-  );
+    );
+  };
 
   return (
     <div className="main-wrapper bg-[#F6F7F9]">
@@ -255,6 +533,22 @@ export const WorkoutPlanner = () => {
                     <Clock className="w-4 h-4 text-[#56AB2F]" />
                     <p className="text-xs font-bold text-gray-500">Renovação: {formatDate(activePlan.plan_renewal_date || activePlan.next_plan_available_at)}</p>
                   </div>
+                </div>
+
+                <div className="mt-8">
+                  <button 
+                    onClick={() => {
+                      setIsUpdating(true);
+                      setIsModalOpen(true);
+                    }}
+                    className="w-full py-4 bg-[#F0F9EB] border-2 border-[#56AB2F]/20 rounded-2xl text-[#56AB2F] font-black text-sm flex items-center justify-center space-x-2 group hover:bg-[#56AB2F] hover:text-white transition-all"
+                  >
+                    <Sparkles className="w-5 h-5 group-hover:animate-pulse" />
+                    <span>Atualizar Treino com IA</span>
+                  </button>
+                  <p className="text-[10px] text-gray-400 font-bold text-center mt-2 px-4 italic">
+                    Gera um novo plano adaptado à sua evolução e histórico recente.
+                  </p>
                 </div>
               </div>
 

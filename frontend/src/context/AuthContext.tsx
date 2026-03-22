@@ -24,6 +24,8 @@ interface User {
   active_discounts?: Array<{ id: string; percentage: number; is_used: boolean }>;
   role?: string;
   onboarding_completed?: boolean;
+  theme_preference?: 'light' | 'dark' | 'system';
+  ai_language?: 'auto' | 'pt' | 'en';
 }
 
 interface AuthContextType {

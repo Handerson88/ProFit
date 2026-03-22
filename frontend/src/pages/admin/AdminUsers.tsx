@@ -20,6 +20,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { api } from '../../services/api';
+import { CreditCard } from 'lucide-react';
 
 const AdminUsers: React.FC = () => {
     const [users, setUsers] = useState<any[]>([]);
@@ -37,6 +38,7 @@ const AdminUsers: React.FC = () => {
     // Invite Form
     const [inviteForm, setInviteForm] = useState({ name: '', email: '', limit: 3 });
     const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
+    const [sendingBillingId, setSendingBillingId] = useState<string | null>(null);
 
     const navigate = useNavigate();
 
@@ -82,6 +84,35 @@ const AdminUsers: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSendBilling = async (userId: string) => {
+      setSendingBillingId(userId);
+      try {
+        await api.billing.sendEmail(userId);
+        setConfirmOptions({
+          isOpen: true,
+          title: 'Sucesso',
+          message: 'E-mail de cobrança enviado com sucesso para o usuário!',
+          type: 'success',
+          confirmText: 'OK',
+          showCancel: false,
+          onConfirm: async () => closeConfirm()
+        });
+      } catch (err) {
+        console.error('Error sending billing email:', err);
+        setConfirmOptions({
+          isOpen: true,
+          title: 'Erro',
+          message: 'Falha ao enviar e-mail de cobrança.',
+          type: 'danger',
+          confirmText: 'Sair',
+          showCancel: false,
+          onConfirm: async () => closeConfirm()
+        });
+      } finally {
+        setSendingBillingId(null);
+      }
     };
 
     const handleDelete = async (id: string) => {
@@ -179,6 +210,8 @@ const AdminUsers: React.FC = () => {
                                 <th className="px-6 py-4 text-[12px] font-bold text-[#A0AEC0] dark:text-slate-500 uppercase tracking-wider text-center">Status / Plano</th>
                                 <th className="px-6 py-4 text-[12px] font-bold text-[#A0AEC0] dark:text-slate-500 uppercase tracking-wider text-center">Referência</th>
                                 <th className="px-6 py-4 text-[12px] font-bold text-[#A0AEC0] dark:text-slate-500 uppercase tracking-wider">Atividade</th>
+                                <th className="px-6 py-4 text-[12px] font-bold text-[#A0AEC0] dark:text-slate-500 uppercase tracking-wider">Plano / Acesso</th>
+                                <th className="px-6 py-4 text-[12px] font-bold text-[#A0AEC0] dark:text-slate-500 uppercase tracking-wider">Pagamento</th>
                                 <th className="px-6 py-4 text-[12px] font-bold text-[#A0AEC0] dark:text-slate-500 uppercase tracking-wider text-right">Ações</th>
                             </tr>
                         </thead>
@@ -248,9 +281,32 @@ const AdminUsers: React.FC = () => {
                                             <span className="text-[#A0AEC0] text-[13px]">Nunca ativo</span>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button 
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[12px] font-semibold text-gray-700 dark:text-slate-300">
+                                                {user.scan_limit_per_day === -1 ? 'Ilimitado' : `${user.scan_limit_per_day} scans/dia`}
+                                            </span>
+                                            <span className={`text-[10px] font-medium ${user.is_admin ? 'text-purple-600' : 'text-gray-500'}`}>
+                                                {user.is_admin ? 'Administrador' : 'Usuário Padrão'}
+                                            </span>
+                                        </div>
+                                    </td>
+                                        <td className="px-6 py-4">
+                                          {user.payment_status === 'paid' && <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-1.5 w-fit">🟢 Pago</span>}
+                                          {user.payment_status === 'pending' && <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-600 border border-amber-100 flex items-center gap-1.5 w-fit">🟡 Pendente</span>}
+                                          {user.payment_status === 'overdue' && <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-600 border border-rose-100 flex items-center gap-1.5 w-fit">🔴 Atrasado</span>}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button 
+                                                  onClick={() => handleSendBilling(user.id)}
+                                                  disabled={sendingBillingId === user.id}
+                                                  className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-md transition-colors disabled:opacity-50"
+                                                  title="Enviar Cobrança"
+                                                >
+                                                  {sendingBillingId === user.id ? <Clock size={16} className="animate-spin" /> : <CreditCard size={16} />}
+                                                </button>
+                                                <button 
                                                 onClick={() => {
                                                     setSelectedUser(user);
                                                     setNewLimit(user.scan_limit_per_day);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Circle, Clock, Loader2, Trophy, Flame, ChevronRight, AlertCircle, PlayCircle, Info } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Circle, Clock, Loader2, Trophy, Flame, ChevronRight, AlertCircle, PlayCircle, Info, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
 
@@ -138,6 +138,28 @@ export const WorkoutSession = () => {
       </div>
 
       <div className="px-6 space-y-6">
+        {/* Coach Tip Header */}
+        {activePlan?.structured_plan?.daily_workouts?.find((dw: any) => dw.day === day)?.coach_tip && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-gradient-to-br from-[#1A1A1A] to-[#2D3436] rounded-[32px] p-6 text-white shadow-lg border border-white/5 relative overflow-hidden"
+          >
+            <div className="relative z-10 flex items-start space-x-4">
+              <div className="w-10 h-10 bg-[#EAF5D5] rounded-xl flex items-center justify-center text-[#56AB2F] shrink-0">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-[#A8E063] uppercase tracking-[0.2em] mb-1 block">Dica do Master Coach</span>
+                <p className="text-sm font-bold leading-relaxed text-white/90">
+                  "{activePlan.structured_plan.daily_workouts.find((dw: any) => dw.day === day).coach_tip}"
+                </p>
+              </div>
+            </div>
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-[#56AB2F]/10 rounded-full blur-2xl"></div>
+          </motion.div>
+        )}
+
         {/* Progress Card */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}

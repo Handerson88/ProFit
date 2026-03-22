@@ -33,7 +33,13 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   const user_id = req.user.id;
-  const { name, email, age, weight, height, goal, daily_calorie_target, plan_type } = req.body;
+  const { name, email, age, weight, height, goal, gender, daily_calorie_target, plan_type, theme_preference, ai_language } = req.body;
+  
+  // 0. Gender Validation
+  if (gender && gender !== 'male' && gender !== 'female') {
+    return res.status(400).json({ message: 'Gênero inválido.' });
+  }
+
   try {
     await db.query(
       `UPDATE users SET 
@@ -43,11 +49,14 @@ exports.updateProfile = async (req, res) => {
         weight = $4, 
         height = $5, 
         goal = $6,
-        daily_calorie_target = $7,
-        plan_type = COALESCE($8, plan_type),
-        onboarding_completed = COALESCE($9, onboarding_completed)
-       WHERE id = $10`,
-      [name, email, age, weight, height, goal, daily_calorie_target, plan_type, req.body.onboarding_completed, user_id]
+        gender = COALESCE($7, gender),
+        daily_calorie_target = $8,
+        plan_type = COALESCE($9, plan_type),
+        onboarding_completed = COALESCE($10, onboarding_completed),
+        theme_preference = COALESCE($11, theme_preference),
+        ai_language = COALESCE($12, ai_language)
+       WHERE id = $13`,
+      [name, email, age, weight, height, goal, gender, daily_calorie_target, plan_type, req.body.onboarding_completed, theme_preference, ai_language, user_id]
     );
     res.json({ message: 'Profile updated successfully' });
   } catch (err) {
@@ -59,6 +68,11 @@ exports.updateProfile = async (req, res) => {
 exports.submitQuiz = async (req, res) => {
   const user_id = req.user.id;
   const { age, gender, height, current_weight, goal, activity_level, target_weight, daily_calorie_target } = req.body;
+
+  // 0. Strict Gender Validation
+  if (gender !== 'male' && gender !== 'female') {
+    return res.status(400).json({ message: 'Gênero inválido. Selecione Masculino ou Feminino.' });
+  }
   
   try {
     // Sanitização e formatação rigorosa para evitar "invalid input syntax for type integer/numeric"
@@ -187,7 +201,8 @@ exports.getDashboardBootstrap = async (req, res) => {
       weeklyStatsRes,
       dailySummaryRes,
       dailyTotalsRes,
-      mealsRes
+      mealsRes,
+      workoutPlanRes
     ] = await Promise.all([
       // 1. Profile
       db.query('SELECT * FROM users WHERE id = $1', [user_id]),
@@ -195,13 +210,12 @@ exports.getDashboardBootstrap = async (req, res) => {
       db.query('SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = false', [user_id]),
       // 3. Recent meals (always fetch global recent regardless of date for the recent list)
       db.query('SELECT * FROM meals WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5', [user_id]),
-      // 4. Weekly stats
+      // 4. Weekly Statistics (last 7 days) from daily_logs
       db.query(`
-        SELECT TO_CHAR(date, 'Dy') as day, SUM(calories) as calories
-        FROM meals 
+        SELECT TO_CHAR(date, 'Dy') as day, calories, protein, carbs, fat, date
+        FROM daily_logs 
         WHERE user_id = $1 AND date >= CURRENT_DATE - INTERVAL '6 days'
-        GROUP BY day, DATE(date)
-        ORDER BY DATE(date) ASC
+        ORDER BY date ASC
       `, [user_id]),
       // 5. Daily Summary (by meal type)
       db.query(`
@@ -216,7 +230,9 @@ exports.getDashboardBootstrap = async (req, res) => {
         FROM meals WHERE user_id = $1 AND date::date = $2
       `, [user_id, dateStr]),
       // 7. Meals for the specific day
-      db.query('SELECT * FROM meals WHERE user_id = $1 AND date::date = $2 ORDER BY created_at DESC', [user_id, dateStr])
+      db.query('SELECT * FROM meals WHERE user_id = $1 AND date::date = $2 ORDER BY created_at DESC', [user_id, dateStr]),
+      // 8. Active Workout Plan
+      db.query('SELECT * FROM workout_plans WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [user_id])
     ]);
 
     const user = profileRes.rows[0];
@@ -229,11 +245,14 @@ exports.getDashboardBootstrap = async (req, res) => {
     const discountsRes = await db.query('SELECT * FROM discounts WHERE user_id = $1 AND is_used = false ORDER BY percentage DESC', [user_id]);
     user.active_discounts = discountsRes.rows;
 
+    const activeWorkout = workoutPlanRes.rows[0];
+
     res.json({
       profile: user,
       unreadNotificationsCount: parseInt(notificationsCountRes.rows[0].count),
       recentMeals: recentMealsRes.rows,
       weeklyStats: weeklyStatsRes.rows,
+      activeWorkout: activeWorkout,
       dailySummary: {
         summary: dailySummaryRes.rows,
         totals: {

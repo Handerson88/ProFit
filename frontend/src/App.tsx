@@ -25,7 +25,7 @@ import LandingPage from './pages/LandingPage';
 import { AcceptInvite } from './pages/AcceptInvite';
 import ActivateAccount from './pages/ActivateAccount';
 import { Plans } from './pages/Plans';
-import { Checkout } from './pages/Checkout';
+import Checkout from './pages/Checkout';
 import { Achievements } from './pages/Achievements';
 import { Invitations } from './pages/Invitations';
 import { Upgrade } from './pages/Upgrade';
@@ -95,9 +95,12 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
   }
 
   if (isAuthenticated) {
-    const { checkOnboardingStatus } = useAuth();
-    if (!checkOnboardingStatus()) {
+    const { checkOnboardingStatus, user } = useAuth();
+    if (!checkOnboardingStatus() && user?.role !== 'admin') {
         return <Navigate to="/quiz" replace />;
+    }
+    if (user?.role === 'admin') {
+        return <Navigate to="/admin" replace />;
     }
     return <Navigate to="/home" replace />;
   }

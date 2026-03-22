@@ -1,40 +1,40 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { api } from '../services/api';
+import { useAuth } from './AuthContext';
 
-type ThemeMode = 'light' | 'dark' | 'auto';
+type ThemePreference = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
-  themeMode: ThemeMode;
-  setThemeMode: (mode: ThemeMode) => void;
+  preference: ThemePreference;
+  setPreference: (pref: ThemePreference) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('auto');
+  const { user } = useAuth() || {};
+  const [preference, setPreferenceState] = useState<ThemePreference>(() => {
+    return (localStorage.getItem('theme_preference') as ThemePreference) || 'system';
+  });
 
+  // Sync with user profile when it loads
   useEffect(() => {
-    // Load initial preference
-    const loadPreference = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-      
-      try {
-        const { theme_mode } = await api.user.getPreferences();
-        setThemeModeState(theme_mode);
-      } catch (err) {
-        console.error('Failed to load theme preference', err);
-      }
-    };
-    loadPreference();
-  }, []);
+    if (user?.theme_preference && user.theme_preference !== preference) {
+      setPreferenceState(user.theme_preference);
+      localStorage.setItem('theme_preference', user.theme_preference);
+    }
+  }, [user?.theme_preference]);
 
-  const setThemeMode = async (mode: ThemeMode) => {
-    setThemeModeState(mode);
+  const setPreference = async (pref: ThemePreference) => {
+    setPreferenceState(pref);
+    localStorage.setItem('theme_preference', pref);
     try {
-      await api.user.updatePreferences(mode);
+      const token = localStorage.getItem('token');
+      if (token) {
+        await api.user.update({ theme_preference: pref });
+      }
     } catch (err) {
-      console.error('Failed to save theme preference', err);
+      console.error('Failed to save theme preference to server', err);
     }
   };
 
@@ -42,31 +42,30 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
 
-    const applyTheme = (mode: ThemeMode) => {
-      if (mode === 'auto') {
+    const applyTheme = (pref: ThemePreference) => {
+      if (pref === 'system') {
         const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         root.classList.add(systemTheme);
       } else {
-        root.classList.add(mode);
+        root.classList.add(pref);
       }
     };
 
-    applyTheme(themeMode);
+    applyTheme(preference);
 
-    // Watch for system theme changes if in 'auto' mode
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
-      if (themeMode === 'auto') {
-        applyTheme('auto');
+      if (preference === 'system') {
+        applyTheme('system');
       }
     };
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [themeMode]);
+  }, [preference]);
 
   return (
-    <ThemeContext.Provider value={{ themeMode, setThemeMode }}>
+    <ThemeContext.Provider value={{ preference, setPreference }}>
       {children}
     </ThemeContext.Provider>
   );

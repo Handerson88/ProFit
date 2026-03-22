@@ -189,23 +189,23 @@ export const AIChat = () => {
   };
 
   return (
-    <div className="main-wrapper bg-[#F6F7F9]">
-      <div className="app-container h-screen flex flex-col bg-white overflow-hidden shadow-none border-none">
+    <div className="main-wrapper bg-[var(--bg-app)]">
+      <div className="app-container h-screen flex flex-col bg-[var(--bg-container)] overflow-hidden shadow-none border-none">
         {/* Header */}
-        <div className="px-6 pt-12 pb-6 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-50">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-500 active:scale-95 transition-all">
+        <div className="px-6 pt-12 pb-6 flex items-center justify-between bg-[var(--bg-container)]/80 backdrop-blur-md sticky top-0 z-40 border-b border-[var(--border-main)]">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-[var(--bg-surface)] rounded-full flex items-center justify-center text-[var(--text-muted)] active:scale-95 transition-all">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex flex-col items-center">
-            <h1 className="text-lg font-black text-gray-900 leading-none">Dúvidas com IA</h1>
+            <h1 className="text-lg font-black text-[var(--text-main)] leading-none">Dúvidas com IA</h1>
             <div className="flex items-center space-x-1 mt-1">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Especialista Fitness</span>
+              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-center">Especialista Fitness</span>
             </div>
           </div>
           <button 
             onClick={() => setShowHistory(!showHistory)} 
-            className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-500 active:scale-95 transition-all"
+            className="w-10 h-10 bg-[var(--bg-surface)] rounded-full flex items-center justify-center text-[var(--text-muted)] active:scale-95 transition-all"
           >
             <MessageSquare className="w-5 h-5" />
           </button>
@@ -234,7 +234,7 @@ export const AIChat = () => {
                   ? 'bg-gradient-to-br from-[#A8E063] to-[#56AB2F] text-white shadow-lg shadow-[#56AB2F]/20 rounded-tr-none' 
                   : msg.sender === 'admin'
                     ? 'bg-blue-600 text-white rounded-tl-none shadow-lg shadow-blue-500/10'
-                    : 'bg-gray-100 text-gray-800 rounded-tl-none'
+                    : 'bg-[var(--bg-surface)] text-[var(--text-main)] rounded-tl-none border border-[var(--border-main)]'
               }`}>
                 {msg.sender === 'admin' && <p className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-70">Suporte</p>}
                 <p className="text-[15px] font-medium leading-relaxed whitespace-pre-wrap">{msg.message}</p>
@@ -263,14 +263,14 @@ export const AIChat = () => {
         </div>
 
         {/* Input Area */}
-        <div className="p-6 bg-white border-t border-gray-50 mb-4">
-          <div className="flex items-center space-x-3 bg-gray-50 p-2 rounded-[32px] border border-gray-100 shadow-sm focus-within:border-[#56AB2F]/30 transition-all">
+        <div className="p-6 bg-[var(--bg-container)] border-t border-[var(--border-main)] mb-4">
+          <div className="flex items-center space-x-3 bg-[var(--bg-surface)] p-2 rounded-[32px] border border-[var(--border-main)] shadow-sm focus-within:border-[#56AB2F]/30 transition-all">
             <input
               value={inputValue}
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Digite sua dúvida..."
-              className="flex-1 bg-transparent px-4 py-2 text-[15px] font-bold outline-none placeholder:text-gray-300"
+              className="flex-1 bg-transparent px-4 py-2 text-[15px] font-bold outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
             />
             <button
               onClick={handleSend}
@@ -297,11 +297,11 @@ export const AIChat = () => {
               />
               <motion.div 
                 initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-                className="fixed right-0 top-0 h-full w-[80%] max-w-sm bg-white z-[60] shadow-2xl p-8 flex flex-col"
+                className="fixed right-0 top-0 h-full w-[80%] max-w-sm bg-[var(--bg-container)] z-[60] shadow-2xl p-8 flex flex-col"
               >
                 <div className="flex justify-between items-center mb-10">
-                  <h3 className="text-xl font-black text-gray-900">Histórico</h3>
-                  <button onClick={() => setShowHistory(false)} className="text-gray-400 font-bold">Fechar</button>
+                  <h3 className="text-xl font-black text-[var(--text-main)]">Histórico</h3>
+                  <button onClick={() => setShowHistory(false)} className="text-[var(--text-muted)] font-bold">Fechar</button>
                 </div>
                 
                 <button 
@@ -319,14 +319,14 @@ export const AIChat = () => {
                       onClick={() => selectConversation(c.id)}
                       className={`w-full p-5 rounded-2xl text-left border-2 transition-all ${
                         activeConversationId === c.id 
-                          ? 'border-[#56AB2F] bg-[#F0F9EB]' 
-                          : 'border-gray-50 hover:border-gray-100'
+                          ? 'border-[#56AB2F] bg-[var(--bg-accent-soft)]' 
+                          : 'border-[var(--border-main)] bg-[var(--bg-surface)] hover:border-gray-100'
                       }`}
                     >
-                      <p className="font-bold text-gray-900 text-sm">
+                      <p className="font-bold text-[var(--text-main)] text-sm">
                         Chat #{c.id.slice(0, 8)}
                       </p>
-                      <p className="text-[10px] text-gray-400 font-medium mt-1 uppercase tracking-widest italic">
+                      <p className="text-[10px] text-[var(--text-muted)] font-medium mt-1 uppercase tracking-widest italic">
                         {new Date(c.created_at).toLocaleDateString('pt-BR')}
                       </p>
                     </button>

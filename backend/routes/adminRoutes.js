@@ -3,6 +3,7 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const workoutController = require('../controllers/workoutController');
 const adminNotificationController = require('../controllers/adminNotificationController');
+const billingController = require('../controllers/billingController');
 const adminMiddleware = require('../middleware/adminMiddleware');
 
 // Public Admin Auth
@@ -53,5 +54,9 @@ router.get('/notifications/templates', adminNotificationController.getTemplates)
 // Preferences
 router.get('/preferences', adminPreferenceController.getPreferences);
 router.put('/preferences', adminPreferenceController.updatePreferences);
+
+// Billing
+router.post('/billing/send-email', billingController.sendManualBillingEmail);
+router.get('/billing/status', billingController.getBillingStatus);
 
 module.exports = router;

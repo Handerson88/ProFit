@@ -75,7 +75,16 @@ exports.login = async (req, res) => {
     await db.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
     const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET);
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    res.json({ 
+        token, 
+        user: { 
+            id: user.id, 
+            name: user.name, 
+            email: user.email, 
+            role: user.role,
+            onboarding_completed: user.onboarding_completed 
+        } 
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Erro ao conectar com servidor' });

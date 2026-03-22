@@ -281,3 +281,23 @@ exports.sendWorkoutPlanEmail = async (user, planTitle) => {
         console.error('Failed to send workout plan email:', err);
     }
 };
+
+exports.sendBillingEmail = async (user, paymentLink) => {
+    const { getBillingEmailTemplate } = require('../templates/billingEmail');
+    const title = "⚠️ Seu acesso ao ProFit pode ser interrompido";
+    
+    try {
+        await resend.emails.send({
+            from: FROM_EMAIL,
+            to: user.email,
+            subject: title,
+            html: getBillingEmailTemplate(user.name || 'Atleta', paymentLink)
+        });
+        await logEmail(user.id, 'billing_reminder', 'sent');
+        return true;
+    } catch (err) {
+        await logEmail(user.id, 'billing_reminder', 'failed', err.message);
+        console.error('Failed to send billing email:', err);
+        throw err;
+    }
+};

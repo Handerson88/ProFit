@@ -81,53 +81,119 @@ Retorne APENAS o objeto JSON abaixo:
   }
 }
 
-async function generateWorkoutStructuredPlan(goal, level, days, location, duration, history = []) {
-  try {
-    const historyContext = history.length > 0 
-      ? `Histórico recente de treinos: ${JSON.stringify(history)}. Analise a consistência. Se o usuário perdeu treinos, ajuste para ser mais realista. Se completou tudo, desafie-o.`
-      : "Este é o primeiro plano do usuário. Crie algo motivador.";
+async function analyzeBodyImage(imageBufferOrPath, { gender, goal, weight, height }) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
-    const prompt = `Você agora é um Personal Trainer de Elite (PT-BR).
-Sua tarefa é criar um plano de treino MASTER e ALTAMENTE MOTIVADOR.
+  let base64Image;
+  if (Buffer.isBuffer(imageBufferOrPath)) {
+    base64Image = imageBufferOrPath.toString('base64');
+  } else {
+    base64Image = fs.readFileSync(imageBufferOrPath).toString('base64');
+  }
+
+  const prompt = `Você é um Especialista em Avaliação Física e Master Coach da ProFit AI.
+Analise a imagem corporal do usuário para orientar a criação de um treino personalizado.
+
+DADOS FORNECIDOS:
+Gênero: ${gender === 'female' ? 'Feminino' : 'Masculino'}
+Objetivo: ${goal}
+Peso: ${weight}kg, Altura: ${height}cm
+
+SUA TAREFA:
+1. Avalie a estrutura corporal (somatotipo aproximado).
+2. Identifique áreas de maior acúmulo de gordura ou menor desenvolvimento muscular.
+3. Observe pontos de postura básica se visíveis.
+4. NUNCA faça diagnósticos médicos. Seja profissional e motivador.
+
+Retorne APENAS um objeto JSON:
+{
+  "analysis": "Texto descrevendo o físico, pontos fortes e áreas que precisam de foco (PT-BR).",
+  "estimated_fat_percentage": "valor em % ou intervalo",
+  "focus_recommendation": "área sugerida para focar no treino"
+}`;
+
+  try {
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: "gpt-4o-mini",
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
+          ]
+        }],
+        response_format: { type: "json_object" }
+      },
+      { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' } }
+    );
+
+    return JSON.parse(response.data.choices[0].message.content);
+  } catch (err) {
+    console.error('OpenAI Body Analysis Error:', err.response?.data || err.message);
+    return { analysis: "Não foi possível analisar a imagem, mas usaremos seus dados informados.", focus_recommendation: "equilibrado" };
+  }
+}
+
+async function generateWorkoutStructuredPlan({ gender, goal, level, days_per_week: days, location, duration, history, age, weight, height, experience, injuries, diseases, body_focus, intensity, observations, bodyAnalysis }) {
+  try {
+    const historyContext = history && history.length > 0 
+        ? `Considere que ele já completou o treino de: ${history.join(', ')}. Evite repetir exatamente o mesmo treino recente.`
+        : '';
+
+    const genderContext = gender === 'female'
+        ? 'Dê uma atenção especial (mais volume) para membros inferiores e glúteos, pois o usuário é do gênero feminino.'
+        : 'Dê uma atenção especial (mais volume) para membros superiores (peito, costas, ombros), pois o usuário é do gênero masculino.';
+
+    const prompt = `Gere um plano de TREINO MENSAL (30 DIAS) estruturado para este usuário.
+Você é um MASTER COACH PERSONAL com 20 anos de experiência. Tone: Motivador, técnico e autoritário.
 
 DADOS DO USUÁRIO:
+Idade: ${age || 'N/A'} anos
+Peso: ${weight || 'N/A'} kg
+Altura: ${height || 'N/A'} cm
+Gênero: ${gender === 'female' ? 'Feminino' : 'Masculino'}
 Objetivo: ${goal}
-Nível: ${level}
+Nível Atual: ${level}
+Experiência: ${experience || 'N/A'}
 Frequência: ${days} dias por semana
-Local: ${location}
-Duração: ${duration}
+Local de Treino: ${location}
+Tempo Disponível: ${duration}
+Intensidade Preferida: ${intensity || 'Moderada'}
+Foco Corporal: ${body_focus || 'Equilibrado'}
+
+SAÚDE E LIMITAÇÕES (MUITO IMPORTANTE):
+Lesões: ${injuries || 'Nenhuma'}
+Doenças/Condições: ${diseases || 'Nenhuma'}
+Observações: ${observations || 'Nenhuma'}
+
+ANÁLISE CORPORAL POR IA (VISÃO):
+${bodyAnalysis || 'Nenhuma imagem enviada.'}
+
 ${historyContext}
+${genderContext}
 
-REGRAS DE ESTRUTURA (OBRIGATÓRIO):
-1. Cada dia de treino DEVE conter entre 6 e 8 exercícios (Volume Master para Hipertrofia).
-2. Se o dia tiver múltiplos grupos (ex: Peito + Tríceps), distribua os exercícios proporcionalmente (ex: 4 para peito, 3 para tríceps).
-3. "muscle_group" deve ser: peito, costas, pernas, biceps, triceps, ombro, abdomem, ou cardio.
-4. Os exercícios devem ser variados e condizentes com o objetivo (ex: hipertrofia = pesos, emagrecimento = circuitos/intensidade).
+REGRAS DE GERAÇÃO (MASTER COACH):
+1. SEGURANÇA: Se houver lesões ou doenças, substitua exercícios perigosos por alternativas seguras e inclua avisos nas instruções.
+2. ADAPTAÇÃO: Se o nível for "iniciante", foque em técnica. Se "avançado", use técnicas como drop-sets ou bi-sets.
+3. LOCAL: Se o local for "Casa", use APENAS exercícios com peso do corpo ou itens domésticos. NUNCA sugira máquinas de academia para treinos em casa.
+4. FOCO: Priorize o grupo muscular "${body_focus}" se especificado, mas mantenha o equilíbrio.
+5. VOLUME: 6 a 8 exercícios por dia. É um plano de elite.
+6. ANALISE VISUAL: Se houver uma "ANÁLISE CORPORAL POR IA", priorize os ajustes sugeridos nela (ex: se indicar gordura abdominal, adicione cardio; se indicar pernas fracas, aumente volume de pernas).
+7. COACH TIPS: Use as dicas para motivar e corrigir a postura.
+8. MENSAGEM DO DIA: A "message" inicial deve ser personalizada (ex: "Mesmo com ${injuries}, vamos superar limites com segurança!").
 
-REGRAS DE SEQUÊNCIA DE DIAS (CRITICAL):
-- Gere treinos APENAS para os dias em sequência, SEMPRE começando na Segunda-feira.
-- Se frequência = 3 dias, gere para: Segunda-feira, Terça-feira, Quarta-feira.
-- Se frequência = 4 dias, gere para: Segunda-feira, Terça-feira, Quarta-feira, Quinta-feira.
-- Se frequência = 5 dias, gere para: Segunda-feira, Terça-feira, Quarta-feira, Quinta-feira, Sexta-feira.
-- Se frequência = 6 dias, gere para: Segunda-feira, Terça-feira, Quarta-feira, Quinta-feira, Sexta-feira, Sábado.
-- Se frequência = 7 dias, gere para: Segunda-feira, Terça-feira, Quarta-feira, Quinta-feira, Sexta-feira, Sábado, Domingo.
-- NUNCA pule dias (ex: nunca gere Segunda e depois Quarta).
-
-REGRAS DE CONTEÚDO PARA CADA EXERCÍCIO:
-- "name": Nome do exercício em português.
-- "sets": Número de séries (normalmente 3 ou 4).
-- "reps": Faixa de repetições (ex: "8-12", "12-15").
-- "rest": Tempo de descanso (ex: "60-90s").
-- "instructions": Uma dica técnica curta e motivadora (ex: "Controle a descida e exploda na subida!").
-
-JSON de Saída:
+JSON de Saída (OBRIGATÓRIO):
 {
-  "title": "${goal} - ${level}",
-  "message": "Feedback inteligente sobre progresso e motivação",
+  "title": "${goal} - Plano Elite ${level}",
+  "message": "Mensagem motivadora e personalizada do Master Coach",
   "daily_workouts": [
     {
       "day": "Segunda-feira",
       "muscles": "Grupo Muscular Alvo",
+      "coach_tip": "Dica de ouro do treinador para hoje",
       "exercises": [
         {
           "name": "Nome",
@@ -174,33 +240,54 @@ async function getSupportAIResponse(userMessage, history = [], userProfile = {})
   if (!apiKey) throw new Error('OPENAI_API_KEY is not configured');
 
   const historyContext = history.map(msg => `${msg.sender === 'user' ? 'Usuário' : 'Assistente'}: ${msg.message}`).join('\n');
+  
+  const aiLang = userProfile.ai_language || 'auto';
+  let languageInstruction = '';
+  if (aiLang === 'en') {
+    languageInstruction = 'ALWAYS respond in English. Regardless of the user\'s language, your response MUST be in natural, professional English.';
+  } else if (aiLang === 'pt') {
+    languageInstruction = 'Sempre responda em Português (PT-BR). Mesmo que o usuário escreva em outro idioma, sua resposta deve ser em português brasileiro natural e profissional.';
+  } else {
+    languageInstruction = 'DETECT the language of the user\'s latest message. If they write in English, respond in English. If they write in Portuguese, respond in Portuguese. Always prioritize the user\'s current language for a natural conversation flow.';
+  }
+
   const profileContext = userProfile 
-    ? `Dados do Usuário: Peso ${userProfile.weight}kg, Altura ${userProfile.height}cm, Objetivo: ${userProfile.goal}, Nível: ${userProfile.level}.` 
+    ? `DADOS DO USUÁRIO: 
+       - Nome: ${userProfile.name}
+       - Sexo: ${userProfile.gender === 'female' ? 'Feminino' : 'Masculino'}
+       - Peso: ${userProfile.weight}kg
+       - Altura: ${userProfile.height}cm
+       - Idade: ${userProfile.age} anos
+       - Objetivo: ${userProfile.goal}
+       - Nível: ${userProfile.level}
+       - Plano: ${userProfile.plan_type === 'premium' ? 'Premium (Elite)' : 'Gratuito'}` 
     : '';
 
-  const systemPrompt = `Você é um Assistente Fitness especializado em treinos, exercícios, suplementos e nutrição esportiva básica.
-  
-  Sua tarefa é ajudar o usuário com dúvidas sobre:
-  - Execução de exercícios.
-  - Divisão de treinos.
-  - Perda de gordura e hipertrofia.
-  - Suplementos (Whey, Creatina, etc).
-  - Alimentação básica fitness (pré/pós treino).
-  - Listas de compras fitness.
-  - Uso do aplicativo ProFit.
+  const systemPrompt = `Você é o ProFit AI, um Coach de Elite que combina o conhecimento de um Personal Trainer Master, um Nutricionista Esportivo e um Mentor Motivacional.
+
+  PERSONALIDADE:
+  - Profissional, técnico, direto e altamente motivador.
+  - Use emojis de forma moderada para incentivar (💪, 🥗, 🔥).
+  - Linguagem natural e fluida (evite termos robóticos).
+
+  SUA MISSÃO:
+  Ajudar o usuário com:
+  1. Treinos: Execução, divisões (ABC, Full Body, etc), volume e intensidade.
+  2. Nutrição: Macros, suplementação (Creatina, Whey), listas de compras saudáveis e refeições pré/pós treino.
+  3. Motivação: Superação de platôs e consistência.
+  4. Suporte: Uso das funcionalidades do App ProFit.
 
   REGRAS CRÍTICAS:
-  1. RESPONDA APENAS sobre fitness/treino. No entanto, sinta-se à vontade para responder a saudações básicas (como "olá", "bom dia", "como vai") de forma cordial antes de guiar o usuário de volta ao tema fitness.
-  2. Se perguntarem sobre política, medicina clínica (exceto lesões comuns de treino de forma superficial), finanças, programação ou qualquer assunto totalmente fora do escopo após a saudação inicial, responda de forma educada que seu foco é fitness.
-  3. NÃO dê conselhos médicos ou dietas clínicas. Se o usuário perguntar algo médico grave, responda: "Para questões médicas ou dietas clínicas é importante consultar um profissional de saúde."
-  4. Use os dados do perfil do usuário para personalizar a resposta.
-  5. Seja motivador, direto e profissional.
-  6. Se solicitado uma lista de compras, gere uma lista clara e simples.
+  - IDIOMA: ${languageInstruction}
+  - CONTEXTO: Use os DADOS DO USUÁRIO fornecidos para dar respostas personalizadas (ex: se ele quer "ganhar massa", não sugira apenas deficit calórico).
+  - ESCOPO: Responda apenas sobre Fitness, Saúde e Bem-estar. Saudações iniciais podem ser retribuídas cordialmente antes de focar no tema.
+  - SEGURANÇA: NÃO dê diagnósticos médicos. Se o assunto for grave ou clínico, oriente a busca por um profissional de saúde.
+  - CONCISÃO: Seja direto. O usuário quer resultados, não textos gigantes.
 
-  CONTEXTO:
+  CONTEXTO DO PERFIL:
   ${profileContext}
   
-  HISTÓRICO DA CONVERSA:
+  HISTÓRICO RECENTE:
   ${historyContext}
   `;
 
@@ -230,8 +317,9 @@ async function getSupportAIResponse(userMessage, history = [], userProfile = {})
   }
 }
 
-module.exports = { 
+module.exports = {
   analyzeFoodImage,
+  analyzeBodyImage,
   generateWorkoutStructuredPlan,
   getSupportAIResponse
 };

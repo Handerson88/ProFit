@@ -104,7 +104,12 @@ const initDB = async () => {
       ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP,
       ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMP,
       ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE,
-      ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE
+      ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'pending',
+      ADD COLUMN IF NOT EXISTS last_payment_date TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS next_billing_date TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS subscription_active BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS ai_language TEXT DEFAULT 'auto';
     `);
 
     await db.query(`
@@ -294,8 +299,17 @@ const initDB = async () => {
         protein NUMERIC,
         carbs NUMERIC,
         fat NUMERIC,
+        ingredients JSONB DEFAULT '[]',
+        scan_source TEXT DEFAULT 'camera',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Ensure columns exist on pre-existing databases
+    await db.query(`
+      ALTER TABLE scanned_dishes 
+      ADD COLUMN IF NOT EXISTS ingredients JSONB DEFAULT '[]',
+      ADD COLUMN IF NOT EXISTS scan_source TEXT DEFAULT 'camera';
     `);
 
     await db.query(`
@@ -358,10 +372,25 @@ const initDB = async () => {
         id UUID PRIMARY KEY,
         title TEXT NOT NULL,
         message TEXT NOT NULL,
-        frequency TEXT DEFAULT 'daily', -- daily, weekly
-        time TIME NOT NULL, -- e.g. '12:00:00'
+        type TEXT DEFAULT 'info',
+        scheduled_time TIMESTAMP,
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS daily_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        calories INTEGER DEFAULT 0,
+        protein INTEGER DEFAULT 0,
+        carbs INTEGER DEFAULT 0,
+        fat INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, date)
       )
     `);
 

@@ -1,48 +1,93 @@
-const { generateWorkoutStructuredPlan } = require('../services/openaiService');
+const { generateWorkoutStructuredPlan, analyzeBodyImage } = require('../services/openaiService');
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
 exports.generateWorkoutPlan = async (req, res) => {
   const user_id = req.user.id;
-  const { goal, level, days_per_week, location, duration } = req.body;
+  const { 
+    goal, level, days_per_week, location, duration, isUpdate,
+    age: bodyAge, weight: bodyWeight, height: bodyHeight,
+    experience, injuries, diseases, body_focus, intensity, observations 
+  } = req.body;
+ 
+   try {
+     console.log(`Generating intelligent workout for user ${user_id}...`);
+     
+     // 0. Check for active plan (Lock 30 days) - SKIP IF IS UPDATE
+     if (!isUpdate) {
+       const activeCheck = await db.query(
+         'SELECT next_plan_available_at FROM workout_plans WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+         [user_id]
+       );
+ 
+       if (activeCheck.rows.length > 0 && activeCheck.rows[0].next_plan_available_at) {
+         const nextAvailable = new Date(activeCheck.rows[0].next_plan_available_at);
+         if (new Date() < nextAvailable) {
+           return res.status(403).json({ 
+             error: 'Você já tem um plano ativo.',
+             available_at: activeCheck.rows[0].next_plan_available_at
+           });
+         }
+       }
+     }
 
-  try {
-    console.log(`Generating intelligent workout for user ${user_id}...`);
+    console.log('Parameters:', { goal, level, days_per_week, location, duration, focus: body_focus });
     
-    // 0. Check for active plan (Lock 30 days)
-    const activeCheck = await db.query(
-      'SELECT next_plan_available_at FROM workout_plans WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
-      [user_id]
-    );
+    // 1. Fetch user data (gender, metrics) and history
+    const [userRes, historyRes] = await Promise.all([
+      db.query('SELECT gender, age, weight, height FROM users WHERE id = $1', [user_id]),
+      db.query(
+        `SELECT day_of_week, completed, completed_at, created_at 
+         FROM workout_progress 
+         WHERE user_id = $1 
+         ORDER BY created_at DESC 
+         LIMIT 21`,
+        [user_id]
+      )
+    ]);
 
-    if (activeCheck.rows.length > 0 && activeCheck.rows[0].next_plan_available_at) {
-      const nextAvailable = new Date(activeCheck.rows[0].next_plan_available_at);
-      if (new Date() < nextAvailable) {
-        return res.status(403).json({ 
-          error: 'Você já tem um plano ativo.',
-          available_at: activeCheck.rows[0].next_plan_available_at
-        });
-      }
-    }
-
-    console.log('Parameters:', { goal, level, days_per_week, location, duration });
+    const user = userRes.rows[0];
+    const gender = user?.gender || 'male';
     
-    // 1. Fetch recent completion history for AI learning
-    const historyRes = await db.query(
-      `SELECT day_of_week, completed, completed_at, created_at 
-       FROM workout_progress 
-       WHERE user_id = $1 
-       ORDER BY created_at DESC 
-       LIMIT 21`,
-      [user_id]
-    );
-
+    // Metrics priority: body if provided, else database
+    const finalAge = bodyAge || user?.age;
+    const finalWeight = bodyWeight || user?.weight;
+    const finalHeight = bodyHeight || user?.height;
+ 
+    console.log('User gender:', gender, 'Final Metrics:', { finalAge, finalWeight, finalHeight });
     console.log('History fetched:', historyRes.rows.length, 'sessions');
 
+    // 1.5 Handle Body Image Analysis if present
+    let bodyAnalysisText = null;
+    if (req.file) {
+      console.log('[Controller] Body image received, starting AI analysis...');
+      const analysisResult = await analyzeBodyImage(req.file.buffer, {
+        gender, goal, weight: finalWeight, height: finalHeight
+      });
+      bodyAnalysisText = analysisResult.analysis;
+      console.log('[Controller] Body analysis complete:', bodyAnalysisText);
+    }
+
     // 2. Generate with OpenAI (Structured JSON)
-    const structuredPlan = await generateWorkoutStructuredPlan(
-      goal, level, days_per_week, location, duration, historyRes.rows
-    );
+    const structuredPlan = await generateWorkoutStructuredPlan({
+      gender,
+      goal,
+      level,
+      days_per_week,
+      location,
+      duration,
+      history: historyRes.rows,
+      age: finalAge,
+      weight: finalWeight,
+      height: finalHeight,
+      experience,
+      injuries,
+      diseases,
+      body_focus,
+      intensity,
+      observations,
+      bodyAnalysis: bodyAnalysisText
+    });
     
     console.log('AI Generation successful');
 
@@ -60,17 +105,25 @@ exports.generateWorkoutPlan = async (req, res) => {
       `INSERT INTO workout_plans (
         id, user_id, title, goal, level, days_per_week, location, duration, 
         plan_text, structured_plan, next_plan_available_at,
-        plan_start_date, plan_renewal_date
+        plan_start_date, plan_renewal_date, body_analysis
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
       [
-        uuidv4(), user_id, structuredPlan.title, goal, level, days_per_week, location, duration, 
-        structuredPlan.message, 
+        uuidv4(),
+        user_id,
+        structuredPlan.title,
+        goal,
+        level,
+        days_per_week,
+        location,
+        duration,
+        structuredPlan.message,
         JSON.stringify(structuredPlan),
         planRenewalDate, // next_plan_available_at still used for locking logic
         planStartDate,
-        planRenewalDate
+        planRenewalDate,
+        bodyAnalysisText
       ]
     );
 

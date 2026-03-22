@@ -9,7 +9,13 @@ router.use(paywallMiddleware);
 
 router.get('/exercise/progress', workoutController.getExerciseProgress);
 router.post('/exercise/complete', workoutController.markExerciseComplete);
-router.post('/generate', workoutController.generateWorkoutPlan);
+const multer = require('multer');
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+router.post('/generate', upload.single('image'), workoutController.generateWorkoutPlan);
 router.get('/', workoutController.getWorkoutPlans);
 router.get('/active', workoutController.getActivePlan);
 router.get('/details/:id', workoutController.getWorkoutPlanDetails);
