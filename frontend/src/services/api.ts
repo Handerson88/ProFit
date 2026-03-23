@@ -91,7 +91,7 @@ export const api = {
     }).then(handleResponse),
 
     getSummary: (date?: string) => {
-      const url = new URL(`${API_URL}/meals/summary`);
+      const url = new URL(`${API_URL}/meals/summary`, window.location.origin);
       if (date) url.searchParams.append('date', date);
       return fetch(url.toString(), {
         headers: { 
@@ -107,7 +107,7 @@ export const api = {
     }).then(handleResponse),
 
     getHistory: (date?: string) => {
-      const url = new URL(`${API_URL}/meals/history`);
+      const url = new URL(`${API_URL}/meals/history`, window.location.origin);
       if (date) url.searchParams.append('date', date);
       return fetch(url.toString(), {
         headers: { 
@@ -208,7 +208,7 @@ export const api = {
     }).then(handleResponse),
     
     getDashboardBootstrap: (date?: string) => {
-      const url = new URL(`${API_URL}/user/dashboard-bootstrap`);
+      const url = new URL(`${API_URL}/user/dashboard-bootstrap`, window.location.origin);
       if (date) url.searchParams.append('date', date);
       return fetch(url.toString(), {
         headers: { 
@@ -458,7 +458,7 @@ export const api = {
     }).then(handleResponse),
 
     getScannedDishes: (search?: string, period?: string) => {
-      const url = new URL(`${API_URL}/admin/scanned-dishes`);
+      const url = new URL(`${API_URL}/admin/scanned-dishes`, window.location.origin);
       if (search) url.searchParams.append('search', search);
       if (period) url.searchParams.append('period', period);
       return fetch(url.toString(), {
