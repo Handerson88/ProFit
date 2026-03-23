@@ -257,9 +257,7 @@ export const Dashboard = () => {
   const handleCloseMilestone = () => {
     localStorage.setItem('milestone_20_users_seen', 'true');
     setShowMilestone(false);
-  };
-
-  useEffect(() => {
+  };  useEffect(() => {
     const loadDashboardData = async () => {
       // Don't set loading if we have cache, unless it's today (to ensure fresh scan results)
       const dateStr = [
@@ -670,7 +668,7 @@ export const Dashboard = () => {
                 className="absolute inset-x-0 inset-y-[-20px] bg-white/95 backdrop-blur-sm z-20 flex items-center justify-between px-2"
               >
                 <div className="flex items-center space-x-2">
-                   <div className="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center text-rose-500">
+                  <div className="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center text-rose-500">
                     <AlertCircle className="w-4 h-4" />
                   </div>
                   <span className="text-sm font-bold text-gray-900">Excluir?</span>
@@ -709,7 +707,7 @@ export const Dashboard = () => {
           {(meal.nutrition_observation || meal.recommendation) && (
             <div className="bg-[var(--bg-accent-soft)] p-3 rounded-2xl border border-[var(--border-main)]">
               <p className="text-[11px] text-[#56AB2F] font-medium leading-relaxed italic">
-                 "{meal.nutrition_observation || meal.recommendation}"
+                "{meal.nutrition_observation || meal.recommendation}"
               </p>
             </div>
           )}
@@ -913,3 +911,4 @@ export const Dashboard = () => {
     </div>
   );
 };
+

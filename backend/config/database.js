@@ -1,13 +1,21 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const connectionString = process.env.DATABASE_URL || process.env.URL_BANCO_DE_DADOS;
+
+if (!connectionString) {
+  console.error('CRITICAL: DATABASE_URL is not defined in environment variables.');
+}
 
 const pool = new Pool({
   connectionString,
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+  connectionTimeoutMillis: 10000, // 10s timeout to connect
+  query_timeout: 30000,          // 30s timeout for queries
+  idleTimeoutMillis: 30000,      // 30s before closing idle connections
 });
 
 pool.on('connect', () => {
