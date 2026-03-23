@@ -325,6 +325,15 @@ export const api = {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
       body: JSON.stringify({ subscription, device_type })
+    }).then(handleResponse),
+
+    saveFCMToken: (fcm_token: string) => fetch(`${API_URL}/notifications/save-fcm-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ fcm_token })
     }).then(handleResponse)
   },
   workouts: {
