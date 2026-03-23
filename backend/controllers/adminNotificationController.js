@@ -36,7 +36,10 @@ exports.sendNotification = async (req, res) => {
             notifications.push(newNotif);
 
         } else if (recipientType === 'active_subscribers') {
-            const subscribers = await db.query("SELECT user_id FROM subscriptions WHERE status = 'active'");
+            // Fix: Use user_devices instead of non-existent subscriptions table
+            // We join with users to ensure we only send to active users if needed, 
+            // but for now, just sending to all who have a device registered.
+            const subscribers = await db.query("SELECT DISTINCT user_id FROM user_devices");
             for (const sub of subscribers.rows) {
                 const newNotif = {
                     id: uuidv4(),

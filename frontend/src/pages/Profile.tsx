@@ -7,6 +7,7 @@ import { neonAuth } from '../services/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotificationModal } from '../components/NotificationModal';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
+import { notificationService } from '../services/notificationService';
 
 export const Profile = () => {
   const navigate = useNavigate();
@@ -62,19 +63,11 @@ export const Profile = () => {
 
   const confirmEnableNotifications = async () => {
     try {
-      if ('Notification' in window) {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          // Only update backend if user granted permission
-          await api.user.updateNotificationSettings(true);
-          setProfile({ ...profile, notifications_enabled: true });
-        } else {
-          console.log("Permission denied by user");
-        }
-      } else {
-        // Fallback or handle cases where notifications are not supported
-        await api.user.updateNotificationSettings(true);
+      const success = await notificationService.subscribe();
+      if (success) {
         setProfile({ ...profile, notifications_enabled: true });
+      } else {
+        console.log("Permission denied or failed to subscribe");
       }
     } catch (err) {
       console.error("Failed to enable notifications", err);
@@ -85,7 +78,7 @@ export const Profile = () => {
 
   const confirmDisableNotifications = async () => {
     try {
-      await api.user.updateNotificationSettings(false);
+      await notificationService.unsubscribe();
       setProfile({ ...profile, notifications_enabled: false });
     } catch (err) {
       console.error(err);

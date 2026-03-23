@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Bell, X, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
+import { notificationService } from '../services/notificationService';
 
 export const NotificationPrompt = () => {
   const [show, setShow] = useState(false);
   const [status, setStatus] = useState<'prompt' | 'loading' | 'success' | 'denied'>('prompt');
+  const [permissionState, setPermissionState] = useState<string>(Notification.permission);
 
   useEffect(() => {
     // Check if notifications are supported and if permission is already granted/denied
@@ -13,8 +15,10 @@ export const NotificationPrompt = () => {
       return;
     }
 
-    const permission = Notification.permission;
-    if (permission === 'default') {
+    const currentPermission = Notification.permission;
+    setPermissionState(currentPermission);
+
+    if (currentPermission === 'default') {
       // Delay to show the prompt after the user has explored a bit
       const timer = setTimeout(() => setShow(true), 3000);
       return () => clearTimeout(timer);
@@ -35,63 +39,26 @@ export const NotificationPrompt = () => {
   };
 
   const handleEnable = async () => {
-    console.log('--- NOTIFICATION ACTIVATE START ---');
-    console.log('Current Permission:', Notification.permission);
-    
-    if (Notification.permission === 'denied') {
-      console.warn('Notification permission was already denied by user/browser.');
-      setStatus('denied');
-      return;
-    }
-
     setStatus('loading');
     try {
-      console.log('Requesting permission...');
-      const permission = await Notification.requestPermission();
-      console.log('Permission Result:', permission);
-
-      if (permission === 'granted') {
-        console.log('Registering Service Worker...');
-        const registration = await navigator.serviceWorker.register('/sw.js');
-        console.log('SW Registered:', !!registration);
-        
-        let subscription = await registration.pushManager.getSubscription();
-        console.log('Existing Subscription:', !!subscription);
-
-        if (!subscription) {
-          console.log('Creating new subscription...');
-          const publicVapidKey = 'BDZj5D4q4-h8VYjQC37AG3yW7Yw6y-oScxrsdwUajfaXXpSBoc_h3S9HwFpb8x0awJTBeEeAR_hwN6MyRPBi050';
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-          });
-          console.log('New Subscription created');
-        }
-
-        console.log('Registering device with backend...');
-        await api.notifications.registerDevice(subscription);
-        console.log('Backend registration success');
-        
-        // Show immediate success notification
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('ProFit Calories 🔔', {
-            body: 'Agora você passará a receber notificações do aplicativo ProFit para sua saúde e bem-estar.',
-            icon: '/icon-192.png'
-          });
-        }
-
+      const success = await notificationService.subscribe();
+      
+      if (success) {
         setStatus('success');
+        setPermissionState('granted');
         setTimeout(() => setShow(false), 3000);
       } else {
         setStatus('denied');
-        setTimeout(() => setShow(false), 3000);
+        setPermissionState(Notification.permission);
+        if (Notification.permission === 'denied') {
+          // Keep showing so they see the manual instructions
+        } else {
+          setTimeout(() => setShow(false), 3000);
+        }
       }
-    } catch (error: any) {
-      console.error('CRITICAL Notification Setup Error:', error);
-      console.error('Error Name:', error.name);
-      console.error('Error Message:', error.message);
+    } catch (error) {
+      console.error('Notification Setup Error:', error);
       setStatus('denied');
-      // Keep visible a bit longer so user can see something happened
       setTimeout(() => setShow(false), 4000);
     }
   };
