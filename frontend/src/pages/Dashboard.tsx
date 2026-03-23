@@ -318,9 +318,10 @@ export const Dashboard = () => {
     };
 
     loadDashboardData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
-  // Separate effect for one-time setup (sockets, events)
+  // Separate effect for one-time setup (sockets, events) - must come after refreshData is defined above
   useEffect(() => {
     
     socketService.connect();
@@ -372,30 +373,7 @@ export const Dashboard = () => {
     };
   }, []);
 
-  const handleEnableNotifications = async () => {
-    try {
-      // Always update backend setting
-      await api.user.updateNotificationSettings(true);
-      
-      if ('Notification' in window) {
-        await Notification.requestPermission();
-      }
-      
-      localStorage.setItem('notification_prompt_dismissed', 'true');
-      setShowNotificationPrompt(false);
-    } catch (err) {
-      console.error("Failed to enable notifications", err);
-      // Still dismiss if it fails to avoid loop
-      setShowNotificationPrompt(false);
-    }
-  };
-
-  const handleDismissNotifications = () => {
-    localStorage.setItem('notification_prompt_dismissed', 'true');
-    setShowNotificationPrompt(false);
-  };
-
-
+  // Define refreshData before the effects that reference it
   const refreshData = async () => {
     const dateStr = [
       selectedDate.getFullYear(),
@@ -425,6 +403,25 @@ export const Dashboard = () => {
     } catch (err) {
       console.error("Failed to refresh data", err);
     }
+  };
+
+  const handleEnableNotifications = async () => {
+    try {
+      await api.user.updateNotificationSettings(true);
+      if ('Notification' in window) {
+        await Notification.requestPermission();
+      }
+      localStorage.setItem('notification_prompt_dismissed', 'true');
+      setShowNotificationPrompt(false);
+    } catch (err) {
+      console.error("Failed to enable notifications", err);
+      setShowNotificationPrompt(false);
+    }
+  };
+
+  const handleDismissNotifications = () => {
+    localStorage.setItem('notification_prompt_dismissed', 'true');
+    setShowNotificationPrompt(false);
   };
 
   const handleEditMeal = (meal: any) => {
