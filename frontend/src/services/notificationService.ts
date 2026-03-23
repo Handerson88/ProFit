@@ -49,7 +49,7 @@ class NotificationService {
       const registration = await navigator.serviceWorker.register('/sw.js');
       let subscription = await registration.pushManager.getSubscription();
       if (!subscription) {
-        const PUBLIC_VAPID_KEY = 'BDZj5D4q4-h8VYjQC37AG3yW7Yw6y-oScxrsdwUajfaXXpSBoc_h3S9HwFpb8x0awJTBeEeAR_hwN6MyRPBi050';
+        const PUBLIC_VAPID_KEY = 'BFICHPidxWTXz3ZTJgOxsz9SPZf3HJS03sPX5x1pG7W6vPdBggkpMduzCyxZy7pWo8-IycNhCAvtHTuaRmO1yal';
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: this.urlBase64ToUint8Array(PUBLIC_VAPID_KEY).buffer as ArrayBuffer,

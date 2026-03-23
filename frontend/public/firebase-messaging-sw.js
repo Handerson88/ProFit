@@ -2,9 +2,6 @@
  * Firebase Cloud Messaging Service Worker
  * 
  * This file handles background push notifications from Firebase.
- * 
- * REQUIRED: Replace the firebaseConfig values below with your actual Firebase project config.
- * Firebase Console → ⚙️ Configurações → Geral → Seus apps → Configuração do SDK
  */
 
 // Import Firebase scripts for the service worker
@@ -12,15 +9,16 @@ importScripts('https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.11.0/firebase-messaging-compat.js');
 
 // ────────────────────────────────────────────────────────────
-// FILL IN YOUR FIREBASE CONFIG BELOW:
+// CONFIGURAÇÃO REAL DO FIREBASE:
 // ────────────────────────────────────────────────────────────
 const firebaseConfig = {
-  apiKey: self.__FIREBASE_CONFIG_API_KEY__ || "FILL_IN_API_KEY",
-  authDomain: self.__FIREBASE_CONFIG_AUTH_DOMAIN__ || "FILL_IN_AUTH_DOMAIN",
-  projectId: self.__FIREBASE_CONFIG_PROJECT_ID__ || "FILL_IN_PROJECT_ID",
-  storageBucket: self.__FIREBASE_CONFIG_STORAGE_BUCKET__ || "FILL_IN_STORAGE_BUCKET",
-  messagingSenderId: self.__FIREBASE_CONFIG_MESSAGING_SENDER_ID__ || "FILL_IN_MESSAGING_SENDER_ID",
-  appId: self.__FIREBASE_CONFIG_APP_ID__ || "FILL_IN_APP_ID",
+  apiKey: "AIzaSyCwshZakv7BWNuFwhnYANezEzamKVRfme0",
+  authDomain: "profit-47c12.firebaseapp.com",
+  projectId: "profit-47c12",
+  storageBucket: "profit-47c12.firebasestorage.app",
+  messagingSenderId: "485837590512",
+  appId: "1:485837590512:web:96b1210be7121b16d05735",
+  measurementId: "G-ZKN7ZFDR09"
 };
 // ────────────────────────────────────────────────────────────
 
