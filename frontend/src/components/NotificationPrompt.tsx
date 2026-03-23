@@ -17,6 +17,19 @@ export const NotificationPrompt = () => {
     }
   }, []);
 
+  // Auto-detect when user returns from settings after granting permission
+  useEffect(() => {
+    const handleFocus = () => {
+      if (status === 'denied' && Notification.permission === 'granted') {
+        console.log('[NotificationPrompt] Permission changed to granted, retrying...');
+        handleEnable();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [status]);
+
   const handleEnable = async () => {
     setStatus('loading');
     try {
@@ -79,9 +92,16 @@ export const NotificationPrompt = () => {
                       <BellOff className="w-7 h-7 text-rose-500" />
                     </div>
                     <h3 className="text-lg font-black text-gray-900 mb-2">Acesso bloqueado</h3>
-                    <div className="bg-rose-50 rounded-xl p-3 text-xs text-rose-600 font-medium leading-relaxed text-left">
+                    <div className="bg-rose-50 rounded-xl p-3 text-xs text-rose-600 font-medium leading-relaxed text-left mb-4">
                       Para ativar, clique no ícone de cadeado 🔒 na barra de endereços do navegador e altere <strong>Notificações</strong> para <strong>Permitir</strong>.
                     </div>
+                    <button
+                      onClick={handleEnable}
+                      className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold text-[13px] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Verificar Novamente</span>
+                    </button>
                   </div>
                 ) : (
                   <>
