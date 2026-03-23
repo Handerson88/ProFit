@@ -36,6 +36,18 @@ class SocketService {
     this.socket?.emit('join_admin');
   }
 
+  joinAdminRoom() {
+    this.socket?.emit('join_admin');
+  }
+
+  on(event: string, callback: (...args: any[]) => void) {
+    this.socket?.on(event, callback);
+  }
+
+  off(event: string, callback: (...args: any[]) => void) {
+    this.socket?.off(event, callback);
+  }
+
   emitTyping(conversationId: string, sender: string, isTyping: boolean) {
     this.socket?.emit('typing', { conversationId, sender, isTyping });
   }

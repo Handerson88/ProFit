@@ -18,7 +18,7 @@ import {
   Plus
 } from 'lucide-react';
 import { api } from '../../services/api';
-import { socketService } from '../../services/socketService';
+import { socketService } from '../../services/socket';
 import { toast } from 'react-hot-toast';
 const API_URL = import.meta.env.VITE_API_URL || '';
 import { ConfirmModal } from '../../components/ConfirmModal';
