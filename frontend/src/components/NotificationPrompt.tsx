@@ -1,145 +1,139 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, X, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
+import { Bell, X, CheckCircle2, ShieldCheck, Loader2, BellOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '../services/api';
 import { notificationService } from '../services/notificationService';
 
 export const NotificationPrompt = () => {
   const [show, setShow] = useState(false);
   const [status, setStatus] = useState<'prompt' | 'loading' | 'success' | 'denied'>('prompt');
-  const [permissionState, setPermissionState] = useState<string>(Notification.permission);
 
   useEffect(() => {
-    // Check if notifications are supported and if permission is already granted/denied
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-      return;
-    }
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
 
-    const currentPermission = Notification.permission;
-    setPermissionState(currentPermission);
-
-    if (currentPermission === 'default') {
-      // Delay to show the prompt after the user has explored a bit
-      const timer = setTimeout(() => setShow(true), 3000);
+    const permission = Notification.permission;
+    if (permission === 'default') {
+      const timer = setTimeout(() => setShow(true), 3500);
       return () => clearTimeout(timer);
     }
   }, []);
-
-  const urlBase64ToUint8Array = (base64String: string) => {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  };
 
   const handleEnable = async () => {
     setStatus('loading');
     try {
       const success = await notificationService.subscribe();
-      
+      setStatus(success ? 'success' : 'denied');
       if (success) {
-        setStatus('success');
-        setPermissionState('granted');
         setTimeout(() => setShow(false), 3000);
-      } else {
-        setStatus('denied');
-        setPermissionState(Notification.permission);
-        if (Notification.permission === 'denied') {
-          // Keep showing so they see the manual instructions
-        } else {
-          setTimeout(() => setShow(false), 3000);
-        }
       }
-    } catch (error) {
-      console.error('Notification Setup Error:', error);
+    } catch {
       setStatus('denied');
-      setTimeout(() => setShow(false), 4000);
     }
+  };
+
+  const handleDismiss = () => {
+    localStorage.setItem('notification_prompt_dismissed', 'true');
+    setShow(false);
   };
 
   return (
     <AnimatePresence>
       {show && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-10 pointer-events-none">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-8 pointer-events-none">
           <motion.div
-            initial={{ y: 50, opacity: 0, scale: 0.9 }}
+            initial={{ y: 80, opacity: 0, scale: 0.94 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 100, opacity: 0, scale: 0.9 }}
-            className="w-full max-w-sm bg-white rounded-[32px] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 pointer-events-auto"
+            exit={{ y: 100, opacity: 0, scale: 0.92 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="w-full max-w-sm pointer-events-auto"
           >
-            <div className="flex justify-between items-start mb-4">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                status === 'success' ? 'bg-green-100 text-green-600' : 
-                status === 'denied' ? 'bg-red-100 text-red-600' :
-                'bg-gray-900 text-white'
-              }`}>
-                {status === 'success' ? <CheckCircle2 className="w-6 h-6" /> :
-                 status === 'denied' ? <X className="w-6 h-6" /> :
-                 <Bell className="w-6 h-6" />}
-              </div>
-              <button 
-                onClick={() => setShow(false)}
-                className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 active:scale-90 transition-all"
+            {/* Card */}
+            <div className="relative bg-white rounded-[28px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-gray-100">
+              
+              {/* Gradient header strip */}
+              <div className="h-1.5 w-full bg-gradient-to-r from-[#56AB2F] via-[#A8E063] to-[#56AB2F]" />
+              
+              {/* Close button */}
+              <button
+                onClick={handleDismiss}
+                className="absolute top-4 right-4 w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-all active:scale-90"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
+
+              <div className="p-6">
+                {status === 'success' ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center text-center py-2"
+                  >
+                    <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mb-4">
+                      <CheckCircle2 className="w-7 h-7 text-green-600" />
+                    </div>
+                    <h3 className="text-lg font-black text-gray-900 mb-1">Notificações ativas!</h3>
+                    <p className="text-sm text-gray-400 font-medium">Você receberá alertas inteligentes sobre suas metas.</p>
+                  </motion.div>
+                ) : status === 'denied' ? (
+                  <div className="flex flex-col items-center text-center py-2">
+                    <div className="w-14 h-14 bg-rose-100 rounded-2xl flex items-center justify-center mb-4">
+                      <BellOff className="w-7 h-7 text-rose-500" />
+                    </div>
+                    <h3 className="text-lg font-black text-gray-900 mb-2">Acesso bloqueado</h3>
+                    <div className="bg-rose-50 rounded-xl p-3 text-xs text-rose-600 font-medium leading-relaxed text-left">
+                      Para ativar, clique no ícone de cadeado 🔒 na barra de endereços do navegador e altere <strong>Notificações</strong> para <strong>Permitir</strong>.
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Icon Row */}
+                    <div className="flex items-center gap-4 mb-5">
+                      <div className="w-14 h-14 bg-gradient-to-br from-[#56AB2F] to-[#A8E063] rounded-[20px] flex items-center justify-center shadow-[0_8px_20px_rgba(86,171,47,0.3)]">
+                        <Bell className="w-7 h-7 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-[18px] font-black text-gray-900 leading-tight">Ativar notificações</h3>
+                        <p className="text-[12px] text-gray-400 font-semibold mt-0.5">Alertas inteligentes para você</p>
+                      </div>
+                    </div>
+
+                    {/* Benefits */}
+                    <div className="space-y-2.5 mb-6">
+                      {[
+                        { emoji: '📊', text: 'Progresso da sua meta diária de calorias' },
+                        { emoji: '🍽️', text: 'Lembretes personalizados de refeições' },
+                        { emoji: '💡', text: 'Dicas e atualizações exclusivas do app' },
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5">
+                          <span className="text-base">{item.emoji}</span>
+                          <span className="text-[13px] text-gray-600 font-medium">{item.text}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* CTA Button */}
+                    <button
+                      onClick={handleEnable}
+                      disabled={status === 'loading'}
+                      className="w-full py-4 bg-gradient-to-r from-[#56AB2F] to-[#A8E063] text-white rounded-[18px] font-black text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_8px_24px_rgba(86,171,47,0.35)] disabled:opacity-70"
+                    >
+                      {status === 'loading' ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /><span>Ativando...</span></>
+                      ) : (
+                        <><ShieldCheck className="w-4 h-4" /><span>Ativar Notificações</span></>
+                      )}
+                    </button>
+
+                    {/* Skip link */}
+                    <button
+                      onClick={handleDismiss}
+                      className="w-full mt-3 py-2 text-[12px] text-gray-400 font-semibold hover:text-gray-600 transition-colors"
+                    >
+                      Agora não
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
-
-            {status === 'prompt' || status === 'loading' ? (
-              <>
-                <h3 className="text-xl font-black text-gray-900 mb-2 leading-tight">Ativar notificações?</h3>
-                <p className="text-sm font-bold text-gray-500 mb-6 leading-relaxed">
-                  Receba alertas inteligentes sobre sua meta de calorias e dicas exclusivas de alimentação.
-                </p>
-
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center space-x-3 text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    <span>Progresso da meta diária</span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    <span>Lembretes de refeições healthy</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleEnable}
-                  disabled={status === 'loading'}
-                  className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-lg"
-                >
-                  {status === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                    <>
-                      <ShieldCheck className="w-5 h-5" />
-                      <span>Ativar Agora</span>
-                    </>
-                  )}
-                </button>
-              </>
-            ) : status === 'success' ? (
-              <div className="text-center py-4">
-                <h3 className="text-xl font-black text-gray-900 mb-2">Notificações Ativadas!</h3>
-                <p className="text-sm font-bold text-gray-500">
-                  Pronto! Agora você receberá alertas inteligentes para manter sua meta diária.
-                </p>
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <h3 className="text-xl font-black text-gray-900 mb-2 text-rose-600">Ops! Acesso Negado</h3>
-                <p className="text-sm font-bold text-gray-500 mb-4">
-                  Parece que as notificações estão bloqueadas no seu navegador ou dispositivo.
-                </p>
-                <div className="bg-rose-50 p-4 rounded-xl text-xs text-rose-700 font-medium leading-relaxed">
-                  Para corrigir, clique no ícone de cadeado na barra de endereços e altere "Notificações" para "Permitir".
-                </div>
-              </div>
-            )}
           </motion.div>
         </div>
       )}

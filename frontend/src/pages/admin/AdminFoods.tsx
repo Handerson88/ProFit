@@ -7,10 +7,14 @@ import {
   RefreshCw,
   Database,
   Loader2,
-  Info
+  Info,
+  CheckCircle2,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { api } from '../../services/api';
-import { motion } from 'framer-motion';
+
+type ToastType = { type: 'success' | 'error'; message: string } | null;
 
 const AdminFoods: React.FC = () => {
     const [foods, setFoods] = useState<any[]>([]);
@@ -18,6 +22,13 @@ const AdminFoods: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('count');
     const [isMigrating, setIsMigrating] = useState(false);
+    const [toast, setToast] = useState<ToastType>(null);
+    const [showConfirm, setShowConfirm] = useState(false);
+
+    const showToast = (type: 'success' | 'error', message: string) => {
+        setToast({ type, message });
+        setTimeout(() => setToast(null), 5000);
+    };
 
     useEffect(() => {
         fetchFoods();
@@ -35,16 +46,15 @@ const AdminFoods: React.FC = () => {
     };
 
     const handleMigrate = async () => {
-        if (!window.confirm('Deseja iniciar a migração de alimentos detectados anteriormente? Isso pode levar alguns segundos.')) return;
-        
+        setShowConfirm(false);
         setIsMigrating(true);
         try {
             const res = await api.admin.migrateAIFoods();
-            alert(`${res.message}: ${res.totalIngredients} alimentos processados.`);
+            showToast('success', `${res.message || 'Migração concluída'}: ${res.totalIngredients || 0} alimentos processados.`);
             fetchFoods();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Migration failed:', err);
-            alert('Falha na migração.');
+            showToast('error', err?.message || 'Falha na migração. Verifique os logs do servidor.');
         } finally {
             setIsMigrating(false);
         }
@@ -52,6 +62,55 @@ const AdminFoods: React.FC = () => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+            {/* Toast Notification */}
+            {toast && (
+                <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-[14px] shadow-xl border animate-in slide-in-from-top-4 duration-300 max-w-[400px] ${
+                    toast.type === 'success'
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:border-emerald-700 dark:text-emerald-300'
+                        : 'bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-900/30 dark:border-rose-700 dark:text-rose-300'
+                }`}>
+                    {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
+                    <span className="text-[13px] font-medium flex-1">{toast.message}</span>
+                    <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100 transition-opacity">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
+            {/* Confirm Modal */}
+            {showConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-6 shadow-2xl border border-slate-200 dark:border-slate-700 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600">
+                                <RefreshCw className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-[#1A202C] dark:text-white">Sincronizar Histórico?</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Esta ação pode levar alguns segundos.</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-5">
+                            Deseja iniciar a migração de alimentos detectados anteriormente? O banco será atualizado com novos ingredientes.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowConfirm(false)}
+                                className="flex-1 py-2.5 rounded-[10px] text-sm font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleMigrate}
+                                className="flex-1 py-2.5 rounded-[10px] text-sm font-bold text-white bg-[#38A169] hover:bg-[#2F855A] transition-all"
+                            >
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -66,7 +125,7 @@ const AdminFoods: React.FC = () => {
                 
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <button
-                        onClick={handleMigrate}
+                        onClick={() => setShowConfirm(true)}
                         disabled={isMigrating}
                         className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-[10px] transition-all disabled:opacity-50 text-sm font-medium border border-slate-200 dark:border-slate-700"
                     >
@@ -97,7 +156,7 @@ const AdminFoods: React.FC = () => {
                 </div>
             </div>
 
-            {/* Stats Overview (Optional subtle hints) */}
+            {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                  <div className="p-5 bg-white dark:bg-[#1E293B] rounded-[16px] border border-[#E6EAF0] dark:border-[#334155] shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
