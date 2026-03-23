@@ -193,7 +193,9 @@ exports.getDashboardBootstrap = async (req, res) => {
   const user_id = req.user.id;
   const dateStr = req.query.date || new Date().toISOString().split('T')[0];
 
+  console.log(`[DashboardBootstrap] Fetching data for user ${user_id} on date ${dateStr}`);
   try {
+    console.log('[DashboardBootstrap] Executing parallel queries...');
     const [
       profileRes,
       notificationsCountRes,
@@ -234,6 +236,7 @@ exports.getDashboardBootstrap = async (req, res) => {
       // 8. Active Workout Plan
       db.query('SELECT * FROM workout_plans WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [user_id])
     ]);
+    console.log('[DashboardBootstrap] All queries completed successfully.');
 
     const user = profileRes.rows[0];
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -268,7 +271,7 @@ exports.getDashboardBootstrap = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('[UserController] Bootstrap error:', err);
-    res.status(500).json({ message: 'Failed to bootstrap dashboard data' });
+    console.error(`[DashboardBootstrap] ERROR for user ${user_id}:`, err);
+    res.status(500).json({ message: 'Failed to bootstrap dashboard data: ' + err.message });
   }
 };

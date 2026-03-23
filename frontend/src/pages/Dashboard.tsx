@@ -307,8 +307,11 @@ export const Dashboard = () => {
           setShowNotificationPrompt(true);
         }
       } catch (err: any) {
-        console.error("Dashboard Bootstrap Error:", err);
-        setError("Não foi possível carregar seus dados. Verifique sua conexão.");
+        console.error('Error loading dashboard data:', err);
+        // We only show full error screen if we don't have cached data
+        if (!dailyCache[dateStr]) {
+          setError(err.message || 'Não foi possível carregar seus dados. Verifique sua conexão.');
+        }
       } finally {
         setIsLoading(false);
       }
