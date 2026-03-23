@@ -124,3 +124,21 @@ exports.getNotifications = async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar histórico de notificações' });
     }
 };
+// Test automated notification trigger
+exports.testAutomatedPush = async (req, res) => {
+    const { title, message } = req.body;
+    const io = req.app.get('socketio');
+    const cronService = require('../services/cronService');
+
+    try {
+        await cronService.sendPushNotification(io, {
+            title: title || 'Teste Automático',
+            message: message || 'Esta é uma notificação de teste do sistema.',
+            type: 'info'
+        });
+        res.json({ success: true, message: 'Notificação automatizada disparada com sucesso.' });
+    } catch (err) {
+        console.error('Test automated push error:', err);
+        res.status(500).json({ error: 'Erro ao disparar teste.' });
+    }
+};

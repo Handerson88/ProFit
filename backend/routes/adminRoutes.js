@@ -48,6 +48,7 @@ const adminPreferenceController = require('../controllers/adminPreferenceControl
 
 // Notifications
 router.post('/notifications/send', adminNotificationController.sendNotification);
+router.post('/notifications/test-automated', adminNotificationController.testAutomatedPush);
 router.get('/notifications', adminNotificationController.getNotifications);
 router.get('/notifications/templates', adminNotificationController.getTemplates);
 

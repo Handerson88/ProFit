@@ -8,29 +8,51 @@ const emailService = require('./emailService');
  * Initializes all automated cron jobs for notifications
  */
 exports.initCronJobs = (io) => {
-    console.log('--- Initializing Notification Cron Jobs ---');
+    console.log('--- Initializing Automated Notification Cron Jobs (Africa/Maputo) ---');
 
-    // 1. Daily Meal Reminder (Example: 12:00 PM)
+    const MAPUTO_TZ = "Africa/Maputo";
+
+    // 1. 08:00 – Pequeno-almoço (Matabicho)
+    cron.schedule('0 8 * * *', async () => {
+        console.log('[Cron] Running Breakfast Reminder (Matabicho)...');
+        await this.sendPushNotification(io, {
+            title: '🍽️ Hora do Matabicho!',
+            message: 'Bom dia! 🌅 Não se esqueça de registrar o seu pequeno-almoço (matabicho) para que a IA possa analisar sua alimentação e ajudar a melhorar sua saúde.',
+            type: 'info'
+        });
+    }, { scheduled: true, timezone: MAPUTO_TZ });
+
+    // 2. 12:00 – Almoço
     cron.schedule('0 12 * * *', async () => {
         console.log('[Cron] Running Lunch Reminder...');
-        await broadcastAutomatedNotification(io, {
-            title: 'Hora do Almoço! 🍽️',
-            message: 'Que tal registrar sua refeição agora para manter o foco na meta?',
+        await this.sendPushNotification(io, {
+            title: '🍛 Hora do Almoço!',
+            message: 'Já é hora do almoço! 😋 Registre a sua refeição agora e deixe a IA acompanhar sua dieta em tempo real.',
             type: 'info'
         });
-    });
+    }, { scheduled: true, timezone: MAPUTO_TZ });
 
-    // 2. Evening Check-in (Example: 7:00 PM)
+    // 3. 15:00 – Hidratação
+    cron.schedule('0 15 * * *', async () => {
+        console.log('[Cron] Running Hydration Reminder...');
+        await this.sendPushNotification(io, {
+            title: '💧 Hora de Beber Água!',
+            message: 'Lembrete importante! 🚰 Beba água e mantenha-se hidratado. Seu corpo agradece!',
+            type: 'info'
+        });
+    }, { scheduled: true, timezone: MAPUTO_TZ });
+
+    // 4. 19:00 – Jantar
     cron.schedule('0 19 * * *', async () => {
         console.log('[Cron] Running Dinner Reminder...');
-        await broadcastAutomatedNotification(io, {
-            title: 'Como foi seu dia? 💪',
-            message: 'Não esqueça de registrar seu jantar e ver como estão seus macros.',
+        await this.sendPushNotification(io, {
+            title: '🍽️ Hora do Jantar!',
+            message: 'Hora do jantar! 🌙 Registre sua refeição para manter seu acompanhamento alimentar completo com a IA.',
             type: 'info'
         });
-    });
+    }, { scheduled: true, timezone: MAPUTO_TZ });
 
-    // 3. Automated Billing Reminders for Overdue Users (10:00 AM)
+    // 5. Automated Billing Reminders for Overdue Users (10:00 AM)
     cron.schedule('0 10 * * *', async () => {
         console.log('[Cron] Running Overdue Billing Check...');
         try {
@@ -46,57 +68,48 @@ exports.initCronJobs = (io) => {
         } catch (err) {
             console.error('[Cron] Billing Check Error:', err);
         }
-    });
-
-    // 4. Dynamic Scheduled Notifications from Database
-    // Check every minute for any scheduled single-shot notifications
-    cron.schedule('* * * * *', async () => {
-        try {
-            const now = new Date();
-            const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
-            
-            const scheduled = await db.query(
-                'SELECT * FROM scheduled_notifications WHERE is_active = true AND time <= $1',
-                [currentTime]
-            );
-
-            // Note: This logic for DB-scheduled tasks is a placeholder. 
-            // In a real production environment, you'd need tracking to avoid double-firing.
-        } catch (err) {
-            console.error('[Cron] DB Scheduled Error:', err);
-        }
-    });
+    }, { scheduled: true, timezone: MAPUTO_TZ });
 };
 
 /**
- * Helper to broadcast an automated notification to all users
+ * Reusable function to send push notifications and save to DB
+ * (Matches user's requested sendPushNotification structure)
  */
-async function broadcastAutomatedNotification(io, payload) {
+exports.sendPushNotification = async (io, payload) => {
     try {
-        // 1. Save to DB for all users (This can be expensive, real apps often use a 'global' notification type)
-        // For simplicity in this MVP, we save a record that marks it as global
+        console.log(`[Push] Sending automated reach: "${payload.title}"`);
+        
+        // 1. Save to DB (Global record)
         const notificationId = uuidv4();
         await db.query(
             'INSERT INTO notifications (id, title, message, type, sent_to_all) VALUES ($1, $2, $3, $4, $5)',
-            [notificationId, payload.title, payload.message, payload.type, true]
+            [notificationId, payload.title, payload.message, payload.type || 'info', true]
         );
 
-        // 2. Emit via Socket.io to all connected users
-        io.emit('new_notification', {
-            id: notificationId,
-            ...payload,
-            sent_to_all: true,
-            created_at: new Date()
-        });
+        // 2. Emit via Socket.io to all online users
+        if (io) {
+            io.emit('new_notification', {
+                id: notificationId,
+                title: payload.title,
+                message: payload.message,
+                type: payload.type || 'info',
+                sent_to_all: true,
+                created_at: new Date()
+            });
+        }
 
-        // 3. Send Push to all registered devices
+        // 3. Send Push via FCM + Web Push (Fallback) to all users with tokens
         await notificationController.sendPushToAll({
             title: payload.title,
             body: payload.message,
-            data: { type: 'automated' }
+            data: { 
+                type: 'automated',
+                click_action: '/'
+            }
         });
 
+        console.log(`[Push] Automated notification broadcasted successfully.`);
     } catch (err) {
-        console.error('[Cron] Broadcast Error:', err);
+        console.error('[Push] Automation Error:', err);
     }
-}
+};
