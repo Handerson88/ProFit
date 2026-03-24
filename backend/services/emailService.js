@@ -110,20 +110,31 @@ exports.sendWelcomeEmail = async (user) => {
 };
 
 exports.sendResetPasswordEmail = async (user, token) => {
-    const title = "Recuperar sua senha";
+    const resetLink = `${APP_URL}/reset-password?token=${token}`;
+    const title = "Recuperar sua senha — ProFit";
     const content = `
-        <p>Olá, recebemos uma solicitação para redefinir sua senha.</p>
-        <p>Para prosseguir com a alteração, clique no botão abaixo:</p>
+        <p>Olá, <strong>${user.name || 'atleta'}</strong>!</p>
+        <p>Recebemos um pedido para redefinir a senha da sua conta ProFit.</p>
+        <p>Clique no botão abaixo para definir uma nova senha. <strong>Este link expira em 1 hora.</strong></p>
     `;
-    const ctaText = "Redefinir Senha";
-    const ctaLink = `${APP_URL}/reset-password?token=${token}`;
+    const footer = `
+        <p style="margin-top: 24px; color: #64748b; font-size: 13px;">
+            Ou copie e cole este link no seu navegador:<br>
+            <span style="color: #10b981; word-break: break-all;">${resetLink}</span>
+        </p>
+        <p style="margin-top: 16px; color: #64748b; font-size: 13px;">
+            Se você não solicitou a redefinição, ignore este e-mail com segurança. Sua senha não será alterada.
+        </p>
+    `;
+    const ctaText = "Recuperar Senha";
+    const ctaLink = resetLink;
 
     try {
         await resend.emails.send({
             from: FROM_EMAIL,
             to: user.email,
             subject: title,
-            html: baseTemplate(title, content, ctaText, ctaLink)
+            html: baseTemplate(title, content + footer, ctaText, ctaLink)
         });
         await logEmail(user.id, 'reset_password', 'sent');
     } catch (err) {
@@ -235,11 +246,12 @@ exports.sendReferralMilestoneEmail = async (user, percentage = 50) => {
 };
 
 exports.sendPasswordChangedEmail = async (user) => {
-    const title = "Sua senha foi alterada";
+    const title = "Senha alterada com sucesso ✅";
     const content = `
-        <p>Olá, <strong>${user.name}</strong>,</p>
-        <p>Confirmamos que a senha da sua conta ProFit foi alterada com sucesso.</p>
-        <p>Se você não realizou esta alteração, entre em contato imediatamente.</p>
+        <p>Olá, <strong>${user.name || 'atleta'}</strong>!</p>
+        <p>Sua senha da conta ProFit foi <strong>alterada com sucesso</strong>. 🎉</p>
+        <p>Agora já pode fazer login com a sua nova senha.</p>
+        <p style="margin-top: 16px; color: #ef4444; font-weight: 600;">⚠️ Se você não fez esta alteração, entre em contato com o suporte imediatamente.</p>
     `;
     const ctaText = "Acessar minha conta";
     const ctaLink = `${APP_URL}/login`;

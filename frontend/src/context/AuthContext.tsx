@@ -129,8 +129,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.token) {
         localStorage.setItem('token', data.token);
         setToken(data.token);
-        setIsAuthenticated(true);
         await refreshUser();
+        setIsAuthenticated(true);
         return data.user;
       }
       throw new Error('Login failed');
@@ -146,8 +146,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.token) {
         localStorage.setItem('token', data.token);
         setToken(data.token);
-        setIsAuthenticated(true);
         await refreshUser();
+        setIsAuthenticated(true);
         return data.user;
       }
       throw new Error('Registration failed');

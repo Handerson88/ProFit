@@ -65,7 +65,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 
   // Paywall Check: Bloquear se o plano não estiver ativo
   // Admin sempre tem acesso
-  const allowedWhenBlocked = ['/upgrade', '/plans', '/checkout', '/profile', '/account', '/notifications', '/convites'];
+  const allowedWhenBlocked = ['/upgrade', '/plans', '/checkout', '/profile', '/account', '/notifications', '/convites', '/quiz', '/onboarding'];
   const currentPath = window.location.pathname;
   const isPlanInactive = user?.plan_status !== 'active' && user?.role !== 'admin';
 
