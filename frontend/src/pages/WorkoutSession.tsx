@@ -115,7 +115,7 @@ export const WorkoutSession = () => {
         >
           <Loader2 className="w-12 h-12 text-[#56AB2F]" />
         </motion.div>
-        <p className="text-gray-400 font-bold italic mt-4">Preparando seu treino de elite...</p>
+        <p className="text-gray-400 font-bold italic mt-4">Preparando seu treino pro...</p>
       </div>
     );
   }

@@ -111,7 +111,7 @@ export const AcceptInvite: React.FC = () => {
             >
                 <div className="bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] p-8 text-center space-y-2">
                     <h1 className="text-3xl font-black text-white">Bem-vindo!</h1>
-                    <p className="text-white/90 font-medium text-sm">Olá, <span className="font-bold underline">{user?.name}</span>. Ative sua conta ProFit Elite.</p>
+                    <p className="text-white/90 font-medium text-sm">Olá, <span className="font-bold underline">{user?.name}</span>. Ative sua conta ProFit Pro.</p>
                 </div>
 
                 <div className="p-8">
@@ -121,7 +121,7 @@ export const AcceptInvite: React.FC = () => {
                                 <CheckCircle size={40} />
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900">Conta Ativada!</h2>
-                            <p className="text-gray-500 text-sm">Entrando no ProFit Elite...</p>
+                            <p className="text-gray-500 text-sm">Entrando no ProFit Pro...</p>
                             <Loader2 className="animate-spin text-[#6366F1] mx-auto mt-4" size={24} />
                         </div>
                     ) : (

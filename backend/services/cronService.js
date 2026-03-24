@@ -69,6 +69,81 @@ exports.initCronJobs = (io) => {
             console.error('[Cron] Billing Check Error:', err);
         }
     }, { scheduled: true, timezone: MAPUTO_TZ });
+
+    // 6. Daily Subscription Expiration & Reminder Check (09:00 AM)
+    cron.schedule('0 9 * * *', async () => {
+        console.log('[Cron] Running Subscription Expiration & Reminders Check...');
+        try {
+            // A. Deactivate Expired Plans
+            const expiredRes = await db.query(`
+                UPDATE users 
+                SET plan_status = 'inactive'
+                WHERE plan_type = 'pro' 
+                  AND plan_status = 'active' 
+                  AND plan_expiration <= CURRENT_TIMESTAMP
+                RETURNING id, name, email
+            `);
+
+            for (const user of expiredRes.rows) {
+                console.log(`[Cron] Plan EXPIRED for user: ${user.email}`);
+                // Send push
+                await notificationController.sendPushToUser(user.id, {
+                    title: 'Seu plano expirou 😢',
+                    body: 'Seu acesso PRO expirou. Renove agora para continuar usando todas as funcionalidades sem interrupções 💪',
+                    data: { type: 'subscription_expired', click_action: '/plans' }
+                }, io);
+                // Send email
+                await emailService.sendSubscriptionExpiredEmail(user);
+                // Log notification in DB
+                await db.query(
+                    'INSERT INTO notifications (id, user_id, title, message, type) VALUES ($1, $2, $3, $4, $5)',
+                    [uuidv4(), user.id, 'Plano Expirado', 'Seu plano PRO expirou. Renove para continuar.', 'warning']
+                );
+            }
+
+            // B. Reminders (3 days, 1 day, 0 days remaining)
+            // Note: INTERVAL '0 days' would be users expiring today
+            const intervals = [3, 1, 0];
+            for (const days of intervals) {
+                const intervalStr = days === 0 ? '0 days' : `${days} days`;
+                const reminderRes = await db.query(`
+                    SELECT id, name, email, plan_expiration 
+                    FROM users 
+                    WHERE plan_type = 'pro' 
+                      AND plan_status = 'active'
+                      AND DATE(plan_expiration) = CURRENT_DATE + INTERVAL '${intervalStr}'
+                `);
+
+                for (const user of reminderRes.rows) {
+                    const title = days === 0 ? '⚠️ Seu plano expira HOJE' : '⚠️ Seu plano está expirando';
+                    const body = days === 0 
+                        ? 'Seu plano PRO expira hoje. Renove agora para manter seu acesso sem interrupções!'
+                        : `Seu plano PRO expira em ${days} ${days === 1 ? 'dia' : 'dias'}. Renove agora para continuar treinando! 💪`;
+
+                    console.log(`[Cron] Sending ${days}-day reminder to: ${user.email}`);
+                    
+                    // Send push
+                    await notificationController.sendPushToUser(user.id, {
+                        title: title,
+                        body: body,
+                        data: { type: 'subscription_reminder', click_action: '/plans' }
+                    }, io);
+
+                    // Send email
+                    await emailService.sendSubscriptionReminderEmail(user, days, user.plan_expiration);
+
+                    // Log in-app notification (avoid duplicates if multiple checks run)
+                    await db.query(
+                        'INSERT INTO notifications (id, user_id, title, message, type) VALUES ($1, $2, $3, $4, $5)',
+                        [uuidv4(), user.id, title, body, 'info']
+                    );
+                }
+            }
+
+        } catch (err) {
+            console.error('[Cron] Subscription Check Error:', err);
+        }
+    }, { scheduled: true, timezone: MAPUTO_TZ });
 };
 
 /**

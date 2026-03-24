@@ -26,6 +26,8 @@ interface User {
   onboarding_completed?: boolean;
   theme_preference?: 'light' | 'dark' | 'system';
   ai_language?: 'auto' | 'pt' | 'en';
+  plan_status?: 'active' | 'inactive';
+  plan_expiration?: string;
 }
 
 interface AuthContextType {

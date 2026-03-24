@@ -96,9 +96,9 @@ const LandingPage: React.FC = () => {
   ];
 
   const faqs = [
-    { q: 'O ProFit é gratuito?', a: 'Sim, você pode começar gratuitamente e acessar as funções básicas. Temos a versão Elite por um preço único para quem quer ir além.' },
-    { q: 'Quanto custa o ProFit Elite?', a: 'O acesso Elite custa apenas 599 MZN. É um pagamento único, sem mensalidades recorrentes.' },
-    { q: 'Posso cancelar quando quiser?', a: 'Como é um pagamento único para acesso vitalício às funções Elite, não há o que cancelar! O acesso é seu para sempre.' },
+    { q: 'O ProFit é gratuito?', a: 'Sim, você pode começar gratuitamente e acessar as funções básicas. Temos o Plano Pro por uma assinatura mensal acessível para quem quer ir além.' },
+    { q: 'Quanto custa o Plano Pro?', a: 'O acesso Pro custa apenas 349 MZN por mês. Com ele você desbloqueia scanner de IA ilimitado, treinos personalizados e estatísticas avançadas.' },
+    { q: 'Posso cancelar quando quiser?', a: 'Sim! Como é uma assinatura mensal, você tem total controle e pode cancelar a renovação a qualquer momento diretamente no app.' },
     { q: 'Funciona no celular?', a: 'Sim! O ProFit foi desenhado primeiro para mobile, garantindo uma experiência fluida em qualquer smartphone.' },
     { q: 'Preciso de experiência com treino?', a: 'Não. O app se adapta ao seu nível, seja você um iniciante ou um atleta experiente.' },
   ];
@@ -540,24 +540,24 @@ const LandingPage: React.FC = () => {
                 whileHover={{ y: -10 }}
                 className="p-16 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-[4rem] shadow-[0_40px_100px_rgba(79,70,229,0.3)] relative overflow-hidden group transition-all text-center"
               >
-                <div className="absolute top-10 right-10 px-6 py-2 bg-white/20 rounded-full text-[11px] font-black uppercase tracking-widest text-white border border-white/20">Acesso Vitalício</div>
+                <div className="absolute top-10 right-10 px-6 py-2 bg-white/20 rounded-full text-[11px] font-black uppercase tracking-widest text-white border border-white/20">Assinatura Mensal</div>
                 <div className="space-y-12 relative z-10">
                   <div className="space-y-4">
-                    <h3 className="text-2xl font-black uppercase tracking-widest text-white/70">ProFit Elite</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-widest text-white/70">Plano Pro</h3>
                     <div className="flex items-baseline justify-center gap-1 text-white">
-                      <span className="text-8xl font-black">599</span>
+                      <span className="text-8xl font-black">349</span>
                       <span className="font-bold mb-4 uppercase tracking-tighter">MZN</span>
                     </div>
-                    <p className="text-indigo-100 font-bold opacity-80 uppercase tracking-widest text-xs">Pague uma vez, use para sempre</p>
+                    <p className="text-indigo-100 font-bold opacity-80 uppercase tracking-widest text-xs">Desbloqueie o poder total da IA</p>
                   </div>
                   <ul className="grid md:grid-cols-2 gap-6 text-left max-w-2xl mx-auto">
                     {[
                       'Scanner IA ilimitado', 
-                      'Planos de treino personalizados', 
+                      'Treinos personalizados', 
                       'Suporte prioritário 24/7', 
                       'Estatísticas avançadas', 
-                      'Zero mensalidades',
-                      'Macros detalhados'
+                      'Análise de macros IA',
+                      'Dicas de coach diárias'
                     ].map(item => (
                       <li key={item} className="flex items-center gap-4 text-lg font-bold text-white">
                         <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white"><CheckCircle2 size={14} /></div> {item}
@@ -565,7 +565,7 @@ const LandingPage: React.FC = () => {
                     ))}
                   </ul>
                   <button onClick={() => navigate('/login')} className="w-full max-w-md mx-auto py-7 bg-white text-indigo-600 font-black text-2xl rounded-3xl transition-all shadow-2xl hover:bg-indigo-50 active:scale-95 uppercase tracking-tighter">
-                    Garantir Acesso Elite
+                    Ativar Plano Pro
                   </button>
                 </div>
               </motion.div>

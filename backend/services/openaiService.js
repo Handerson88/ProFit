@@ -16,7 +16,7 @@ async function analyzeFoodImage(imageBufferOrPath) {
     base64Image = imageBuffer.toString('base64');
   }
 
-const prompt = `Você agora é um Especialista de Visão Computacional e Nutrição de Elite da ProFit AI.
+const prompt = `Você agora é um Especialista de Visão Computacional e Nutrição Pro da ProFit AI.
 Sua tarefa é analisar a imagem de um prato de comida e fornecer uma análise nutricional MASTER, altamente precisa e profissional.
 
 PRIMEIRO PASSO: Analise a qualidade da imagem.
@@ -180,14 +180,14 @@ REGRAS DE GERAÇÃO (MASTER COACH):
 2. ADAPTAÇÃO: Se o nível for "iniciante", foque em técnica. Se "avançado", use técnicas como drop-sets ou bi-sets.
 3. LOCAL: Se o local for "Casa", use APENAS exercícios com peso do corpo ou itens domésticos. NUNCA sugira máquinas de academia para treinos em casa.
 4. FOCO: Priorize o grupo muscular "${body_focus}" se especificado, mas mantenha o equilíbrio.
-5. VOLUME: 6 a 8 exercícios por dia. É um plano de elite.
+5. VOLUME: 6 a 8 exercícios por dia. É um plano de alta performance.
 6. ANALISE VISUAL: Se houver uma "ANÁLISE CORPORAL POR IA", priorize os ajustes sugeridos nela (ex: se indicar gordura abdominal, adicione cardio; se indicar pernas fracas, aumente volume de pernas).
 7. COACH TIPS: Use as dicas para motivar e corrigir a postura.
 8. MENSAGEM DO DIA: A "message" inicial deve ser personalizada (ex: "Mesmo com ${injuries}, vamos superar limites com segurança!").
 
 JSON de Saída (OBRIGATÓRIO):
 {
-  "title": "${goal} - Plano Elite ${level}",
+  "title": "${goal} - Plano Pro ${level}",
   "message": "Mensagem motivadora e personalizada do Master Coach",
   "daily_workouts": [
     {
@@ -260,10 +260,10 @@ async function getSupportAIResponse(userMessage, history = [], userProfile = {})
        - Idade: ${userProfile.age} anos
        - Objetivo: ${userProfile.goal}
        - Nível: ${userProfile.level}
-       - Plano: ${userProfile.plan_type === 'premium' ? 'Premium (Elite)' : 'Gratuito'}` 
+       - Plano: ${userProfile.plan_status === 'active' ? 'Pro' : 'Gratuito'}` 
     : '';
 
-  const systemPrompt = `Você é o ProFit AI, um Coach de Elite que combina o conhecimento de um Personal Trainer Master, um Nutricionista Esportivo e um Mentor Motivacional.
+  const systemPrompt = `Você é o ProFit AI, um Coach Pro que combina o conhecimento de um Personal Trainer Master, um Nutricionista Esportivo e um Mentor Motivacional.
 
   PERSONALIDADE:
   - Profissional, técnico, direto e altamente motivador.

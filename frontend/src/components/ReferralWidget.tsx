@@ -51,7 +51,7 @@ const ReferralWidget: React.FC<ReferralWidgetProps> = ({
                         </div>
                         <div>
                             <h3 className="font-bold text-lg leading-tight">Convide e Ganhe</h3>
-                            <p className="text-white/70 text-xs italic">Ganhe 50% OFF no ProFit Elite</p>
+                            <p className="text-white/70 text-xs italic">Ganhe 50% OFF no ProFit Pro</p>
                         </div>
                     </div>
                 </div>

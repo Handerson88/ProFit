@@ -1,16 +1,12 @@
 /**
- * Firebase Cloud Messaging Service Worker
- * 
- * This file handles background push notifications from Firebase.
+ * Unified Service Worker: PWA Caching + Firebase Cloud Messaging
  */
 
-// Import Firebase scripts for the service worker
+// 1. Import Firebase scripts
 importScripts('https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.11.0/firebase-messaging-compat.js');
 
-// ────────────────────────────────────────────────────────────
-// CONFIGURAÇÃO REAL DO FIREBASE:
-// ────────────────────────────────────────────────────────────
+// 2. Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCwshZakv7BWNuFwhnYANezEzamKVRfme0",
   authDomain: "profit-47c12.firebaseapp.com",
@@ -20,21 +16,75 @@ const firebaseConfig = {
   appId: "1:485837590512:web:96b1210be7121b16d05735",
   measurementId: "G-ZKN7ZFDR09"
 };
-// ────────────────────────────────────────────────────────────
 
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// Handle background push messages from FCM
+// 3. PWA Caching Logic
+const CACHE_NAME = 'profit-v2';
+const URLS_TO_CACHE = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/faviconnovo.png'
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(URLS_TO_CACHE);
+    })
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', (event) => {
+  // Only cache GET requests and non-api calls
+  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request).then((fetchResponse) => {
+        // Optional: Cache new successful responses
+        // return caches.open(CACHE_NAME).then((cache) => {
+        //   cache.put(event.request, fetchResponse.clone());
+        //   return fetchResponse;
+        // });
+        return fetchResponse;
+      });
+    }).catch(() => {
+        // Fallback or custom offline page could go here
+    })
+  );
+});
+
+// 4. FCM Background Messaging
 messaging.onBackgroundMessage((payload) => {
   console.log('[SW] FCM Background message received:', payload);
 
-  const notificationTitle = payload.notification?.title || 'ProFit';
+  const notificationTitle = payload.notification?.title || 'Profit';
   const notificationOptions = {
     body: payload.notification?.body || '',
-    icon: '/icon-192.png',
-    badge: '/badge-72.png',
-    vibrate: [100, 50, 100],
+    icon: '/faviconnovo.png',
+    badge: '/faviconnovo.png',
+    vibrate: [200, 100, 200],
     data: {
       url: payload.data?.click_action || '/',
       ...payload.data,
@@ -48,10 +98,9 @@ messaging.onBackgroundMessage((payload) => {
   return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// Handle notification click
+// 5. Notification Click Handling
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-
   const urlToOpen = event.notification.data?.url || '/';
 
   event.waitUntil(

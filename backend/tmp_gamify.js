@@ -40,7 +40,7 @@ async function migrate() {
         ('Explorador de Sabores', 'Registre 10 refeições diferentes.', 'Utensils', 'scan_count', 10),
         ('Consistência é Tudo', 'Atinja sua meta calórica por 3 dias seguidos.', 'Zap', 'streak_days', 3),
         ('Mestre do Foco', 'Complete 7 dias de registros sem falhar.', 'Target', 'streak_days', 7),
-        ('Atleta de Elite', 'Complete seu primeiro plano de treino de 30 dias.', 'Crown', 'workout_plan_completion', 1)
+        ('Atleta Pro', 'Complete seu primeiro plano de treino de 30 dias.', 'Crown', 'workout_plan_completion', 1)
       ON CONFLICT DO NOTHING;
     `;
 

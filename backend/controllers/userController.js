@@ -181,8 +181,8 @@ exports.getAppStatus = async (req, res) => {
     const total_users = parseInt(result.rows[0].count);
     res.json({ 
       total_users,
-      paywall_active: total_users > 20,
-      limit: 20
+      paywall_active: false, // Removido: agora baseado em assinatura mensal
+      limit: 0
     });
   } catch (err) {
     console.error('[UserController] getAppStatus error:', err);

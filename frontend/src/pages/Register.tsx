@@ -45,7 +45,8 @@ export const Register = () => {
     }
 
     try {
-      await register(formData.name, formData.email, formData.password, referralCodeFromUrl);
+      const normalizedEmail = formData.email.trim().toLowerCase();
+      await register(formData.name, normalizedEmail, formData.password, referralCodeFromUrl);
       navigate('/quiz');
     } catch (err: any) {
       console.error("Erro:", err);
@@ -58,7 +59,7 @@ export const Register = () => {
 
 
   return (
-    <div className="main-wrapper bg-[#F6F7F9]">
+    <div className="main-wrapper bg-[var(--bg-app)] transition-colors duration-300">
       <div className="app-container p-8 flex flex-col justify-center bg-transparent shadow-none border-none">
       <motion.div
         initial={{ opacity: 0, y: 20 }}

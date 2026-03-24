@@ -204,16 +204,23 @@ export const Account = () => {
               <h2 className="text-2xl font-black text-[var(--text-main)] mb-1">{profile?.name || 'Seu Nome'}</h2>
               <div className="flex items-center space-x-2">
                 <p className="text-sm font-bold text-[var(--text-muted)] bg-[var(--bg-surface)] px-4 py-1.5 rounded-full">{profile?.email || 'seuemail@exemplo.com'}</p>
-                {profile?.plan_type === 'elite' ? (
-                  <span className="bg-gradient-to-r from-indigo-600 to-violet-700 text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg shadow-indigo-200">
-                    ELITE
-                  </span>
+                {profile?.plan_status === 'active' ? (
+                  <div className="flex flex-col items-start bg-[var(--bg-surface)] px-4 py-1.5 rounded-2xl">
+                    <span className="text-[#56AB2F] text-[9px] font-black uppercase tracking-widest flex items-center">
+                      PRO ATIVO ✅
+                    </span>
+                    {profile?.plan_expiration && (
+                      <span className="text-[8px] font-bold text-[var(--text-muted)] mt-0.5 uppercase tracking-tighter">
+                        Expira em: {new Date(profile.plan_expiration).toLocaleDateString('pt-BR')}
+                      </span>
+                    )}
+                  </div>
                 ) : (
                    <button 
-                     onClick={() => navigate('/checkout')}
-                     className="bg-indigo-50 text-indigo-600 text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest active:scale-95 transition-all border border-indigo-100"
+                     onClick={() => navigate('/plans')}
+                     className="bg-emerald-50 text-[#56AB2F] text-[9px] font-black px-4 py-2 rounded-full uppercase tracking-widest active:scale-95 transition-all border border-emerald-100 shadow-sm"
                    >
-                     🚀 Upgrade Elite
+                     {profile?.plan_type === 'pro' ? 'Renovar Plano' : '🚀 Upgrade Pro'}
                    </button>
                 )}
               </div>

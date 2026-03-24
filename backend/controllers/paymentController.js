@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const emailService = require('../services/emailService');
 
 /**
- * ProFit Elite - Payment Controller
+ * ProFit Pro - Payment Controller
  * Suporta M-Pesa e e-Mola (Moçambique)
  */
 
@@ -12,17 +12,9 @@ exports.createPayment = async (req, res) => {
     const userId = req.user.id;
     const { amount, method, phone } = req.body;
 
-    // Verificar desconto de indicação (Referral)
-    const userRes = await db.query('SELECT discount_earned, discount_used FROM users WHERE id = $1', [userId]);
-    const user = userRes.rows[0];
-    let finalAmount = Number(amount);
-    let appliedDiscount = false;
-
-    if (user && user.discount_earned && !user.discount_used) {
-        finalAmount = Number(amount) * 0.7; // 30% de desconto
-        appliedDiscount = true;
-        console.log(`[PAYMENT] Desconto de 30% aplicado para o usuário ${userId}. Valor original: ${amount}, Novo valor: ${finalAmount}`);
-    }
+    // O novo Plano Pro custa fixo 349 MZN.
+    // Aceitamos o valor do frontend mas podemos validar aqui.
+    const finalAmount = 349;
 
 
     if (!amount || !method || !phone) {
@@ -50,21 +42,19 @@ exports.createPayment = async (req, res) => {
                     "UPDATE payments SET status = 'approved', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
                     [paymentId]
                 );
-                // Atualizar plano para elite
-                await db.query(
-                    "UPDATE users SET plan_type = 'elite' WHERE id = $1",
+                // Ativar Plano Pro (30 dias)
+                await db.query(`
+                    UPDATE users 
+                    SET plan_type = 'pro', 
+                        plan_status = 'active', 
+                        plan_expiration = GREATEST(COALESCE(plan_expiration, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP) + INTERVAL '30 days',
+                        has_paid = true
+                    WHERE id = $1`, 
                     [userId]
                 );
 
-                // Marcar usuário como tendo pago (has_paid = true) para bônus de indicação
-                await db.query("UPDATE users SET has_paid = true WHERE id = $1", [userId]);
-
-                // Marcar desconto como usado se foi aplicado (fluxo antigo de 30%)
-                if (appliedDiscount) {
-                    await db.query("UPDATE users SET discount_used = true WHERE id = $1", [userId]);
-                    // Tentar marcar na nova tabela de descontos também
-                    await db.query("UPDATE discounts SET is_used = true WHERE user_id = $1 AND is_used = false LIMIT 1", [userId]);
-                }
+                // (Opcional) Marcar descontos antigos como usados se necessário
+                await db.query("UPDATE discounts SET is_used = true WHERE user_id = $1 AND is_used = false", [userId]);
 
                 // 🏅 LÓGICA DE INDICAÇÃO v2 (50% OFF por 10 pagantes)
                 const currentUserRes = await db.query("SELECT referred_by FROM users WHERE id = $1", [userId]);

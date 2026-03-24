@@ -10,19 +10,34 @@ export const NotificationPrompt = () => {
   const [status, setStatus] = useState<'prompt' | 'loading' | 'success' | 'denied'>('prompt');
 
   const handleEnable = useCallback(async () => {
-    // Only proceed if authenticated, as we need a user ID to save the token
     if (!isAuthenticated) return;
+    
+    // Check if we already have permission before loading
+    const initialPermission = Notification.permission;
     
     setStatus('loading');
     try {
       const success = await notificationService.subscribe();
       setStatus(success ? 'success' : 'denied');
+      
       if (success) {
-        // If it was already active or just activated, hide after a bit
+        // CASE: Just granted permission -> Send test notification immediately
+        if (initialPermission !== 'granted') {
+          try {
+            const swRegistration = await navigator.serviceWorker.ready;
+            await swRegistration.showNotification('🎉 Notificações Ativas!', {
+              body: 'Agora você vai receber lembretes importantes do seu plano alimentar 💪',
+              icon: '/faviconnovo.png',
+              badge: '/faviconnovo.png',
+              vibrate: [200, 100, 200]
+            } as any);
+          } catch (notifErr) {
+            console.error('[NotificationPrompt] Failed to show test notification:', notifErr);
+          }
+        }
+        
         setTimeout(() => setShow(false), 3000);
       } else {
-        // If subscription failed (e.g. FCM token couldn't be generated),
-        // show the prompt to inform the user.
         setShow(true);
       }
     } catch (err) {
@@ -35,27 +50,24 @@ export const NotificationPrompt = () => {
   useEffect(() => {
     if (!('Notification' in window) || !('serviceWorker' in navigator) || !isAuthenticated) return;
 
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
     const permission = Notification.permission;
     
-    // CASE 1: Already granted -> Auto-subscribe silently
     if (permission === 'granted') {
       handleEnable();
       return;
     }
 
-    // CASE 2: Default -> Show prompt after a delay
     if (permission === 'default') {
+      // If PWA (standalone), show prompt faster
+      const delay = isStandalone ? 1500 : 4000;
       const timer = setTimeout(() => {
-        // Only show if not dismissed before
         if (!localStorage.getItem('notification_prompt_dismissed')) {
           setShow(true);
         }
-      }, 4000);
+      }, delay);
       return () => clearTimeout(timer);
     }
-    
-    // CASE 3: Denied -> Only show if triggered by a previous action in this session
-    // (We don't show on start to avoid annoying users who explicitly blocked)
   }, [isAuthenticated, handleEnable]);
 
   // Auto-detect when user returns from settings after granting permission
@@ -115,8 +127,8 @@ export const NotificationPrompt = () => {
                     <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mb-4">
                       <CheckCircle2 className="w-7 h-7 text-green-600" />
                     </div>
-                    <h3 className="text-lg font-black text-gray-900 mb-1">Notificações ativas!</h3>
-                    <p className="text-sm text-gray-400 font-medium">Você receberá alertas inteligentes sobre suas metas.</p>
+                    <h3 className="text-lg font-black text-gray-900 mb-1">Notificações ativadas com sucesso 🔔</h3>
+                    <p className="text-sm text-gray-400 font-medium">Você agora receberá lembretes e atualizações do Profit.</p>
                   </motion.div>
                 ) : status === 'denied' ? (
                   <div className="flex flex-col items-center text-center py-2">

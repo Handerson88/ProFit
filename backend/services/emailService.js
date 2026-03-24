@@ -89,7 +89,7 @@ exports.sendWelcomeEmail = async (user) => {
     const content = `
         <p>Olá, <strong>${user.name || 'Atleta'}</strong>!</p>
         <p>Sua conta está ativa e pronta para uso.</p>
-        <p>A partir de agora, você tem acesso às ferramentas de elite para transformar seu corpo e sua saúde.</p>
+        <p>A partir de agora, você tem acesso às ferramentas premium para transformar seu corpo e sua saúde.</p>
         <p>Comece tirando sua primeira foto de refeição ou explorando seu novo plano de treino.</p>
     `;
     const ctaText = "Ir para o meu Painel";
@@ -136,7 +136,7 @@ exports.sendPaymentApprovedEmail = async (user, amount) => {
     const title = "Pagamento confirmado 🎉";
     const content = `
         <p>Olá, confirmamos o recebimento do seu pagamento de <strong>${amount} MZN</strong>.</p>
-        <p>Seu plano ProFit Elite foi ativado e todas as funcionalidades ilimitadas foram desbloqueadas.</p>
+        <p>Seu Plano Pro foi ativado e todas as funcionalidades ilimitadas foram desbloqueadas.</p>
     `;
     const ctaText = "Acessar ProFit";
     const ctaLink = `${APP_URL}/dashboard`;
@@ -299,5 +299,64 @@ exports.sendBillingEmail = async (user, paymentLink) => {
         await logEmail(user.id, 'billing_reminder', 'failed', err.message);
         console.error('Failed to send billing email:', err);
         throw err;
+    }
+};
+
+exports.sendSubscriptionReminderEmail = async (user, daysLeft, expirationDate) => {
+    const formattedDate = new Date(expirationDate).toLocaleDateString('pt-BR');
+    let title = "Seu plano ProFit Pro expira em breve";
+    let message = "";
+
+    if (daysLeft === 0) {
+        title = "Seu plano ProFit Pro expira hoje ⚠️";
+        message = `Notamos que seu plano PRO expira hoje, dia ${formattedDate}. Para continuar sem interrupções, renove agora.`;
+    } else {
+        message = `Notamos que seu plano PRO está prestes a expirar no dia ${formattedDate} (${daysLeft} ${daysLeft === 1 ? 'dia' : 'dias'} restante${daysLeft === 1 ? '' : 's'}).`;
+    }
+
+    const content = `
+        <p>Olá, <strong>${user.name || 'Atleta'}</strong>!</p>
+        <p>${message}</p>
+        <p>Para continuar aproveitando todos os recursos do aplicativo sem interrupções, recomendamos que faça a renovação agora.</p>
+        <p>Não perca acesso às suas funcionalidades e progresso.</p>
+    `;
+    const ctaText = "Renovar Plano Pro";
+    const ctaLink = `${APP_URL}/plans`;
+
+    try {
+        await resend.emails.send({
+            from: FROM_EMAIL,
+            to: user.email,
+            subject: title,
+            html: baseTemplate(title, content, ctaText, ctaLink)
+        });
+        await logEmail(user.id, 'subscription_reminder', 'sent', `Days left: ${daysLeft}`);
+    } catch (err) {
+        await logEmail(user.id, 'subscription_reminder', 'failed', err.message);
+        console.error('Failed to send subscription reminder email:', err);
+    }
+};
+
+exports.sendSubscriptionExpiredEmail = async (user) => {
+    const title = "Seu acesso ProFit Pro expirou 😢";
+    const content = `
+        <p>Olá, <strong>${user.name || 'Atleta'}</strong>!</p>
+        <p>Seu plano PRO expirou e as funcionalidades premium foram bloqueadas.</p>
+        <p>Mas não se preocupe! Seu progresso e dados continuam salvos. Basta renovar para voltar a ter acesso total.</p>
+    `;
+    const ctaText = "Renovar Agora";
+    const ctaLink = `${APP_URL}/plans`;
+
+    try {
+        await resend.emails.send({
+            from: FROM_EMAIL,
+            to: user.email,
+            subject: title,
+            html: baseTemplate(title, content, ctaText, ctaLink)
+        });
+        await logEmail(user.id, 'subscription_expired', 'sent');
+    } catch (err) {
+        await logEmail(user.id, 'subscription_expired', 'failed', err.message);
+        console.error('Failed to send subscription expired email:', err);
     }
 };

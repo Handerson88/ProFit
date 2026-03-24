@@ -36,6 +36,8 @@ export const WorkoutPlanner = () => {
   const closeConfirm = () => setConfirmOptions(prev => ({ ...prev, isOpen: false }));
 
   const [currentStep, setCurrentStep] = useState(1);
+  const [direction, setDirection] = useState(1);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -186,8 +188,23 @@ export const WorkoutPlanner = () => {
   );
 
   const GeneratorModal = () => {
-    const nextStep = () => setCurrentStep(prev => prev + 1);
-    const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+    const triggerTransition = (next: number, dir: number) => {
+      setIsTransitioning(true);
+      setDirection(dir);
+      // Small delay to allow button interaction feel
+      setTimeout(() => {
+        setCurrentStep(next);
+        setIsTransitioning(false);
+      }, 300);
+    };
+
+    const nextStep = () => {
+      if (currentStep < 5) triggerTransition(currentStep + 1, 1);
+    };
+    
+    const prevStep = () => {
+      if (currentStep > 1) triggerTransition(currentStep - 1, -1);
+    };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -205,213 +222,255 @@ export const WorkoutPlanner = () => {
       }
     };
 
+    const variants = {
+      initial: (dir: number) => ({
+        opacity: 0,
+        x: dir > 0 ? 30 : -30,
+        filter: 'blur(4px)'
+      }),
+      animate: {
+        opacity: 1,
+        x: 0,
+        filter: 'blur(0px)'
+      },
+      exit: (dir: number) => ({
+        opacity: 0,
+        x: dir > 0 ? -30 : 30,
+        filter: 'blur(4px)'
+      })
+    };
+
     const renderStep = () => {
-      switch (currentStep) {
-        case 1:
-          return (
-            <div className="space-y-6">
-              <div>
-                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Objetivo</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {['emagrecer', 'ganhar massa', 'definição', 'condicionamento'].map(opt => (
-                    <button 
-                      key={opt}
-                      onClick={() => setFormData({...formData, goal: opt})}
-                      className={`p-3 rounded-2xl text-xs font-bold capitalize border-2 transition-all ${formData.goal === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+      const stepContent = (() => {
+        switch (currentStep) {
+          case 1:
+            return (
+              <div className="space-y-6">
                 <div>
-                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Nível</label>
-                  <select value={formData.level} onChange={(e) => setFormData({...formData, level: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
-                    <option value="iniciante">Iniciante</option>
-                    <option value="intermediário">Intermediário</option>
-                    <option value="avançado">Avançado</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Dias/Semana</label>
-                  <select value={formData.days_per_week} onChange={(e) => setFormData({...formData, days_per_week: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
-                    {[3, 4, 5, 6, 7].map(d => <option key={d} value={`${d}`}>{d} dias</option>)}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Local de Treino</label>
-                <div className="flex gap-2">
-                  {['academia', 'casa'].map(opt => (
-                    <button 
-                      key={opt}
-                      onClick={() => setFormData({...formData, location: opt})}
-                      className={`flex-1 p-3 rounded-2xl text-xs font-bold capitalize border-2 transition-all ${formData.location === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-        case 2:
-          return (
-            <div className="space-y-6">
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Idade</label>
-                  <input type="number" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} placeholder="30" className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Peso (kg)</label>
-                  <input type="number" value={formData.weight} onChange={(e) => setFormData({...formData, weight: e.target.value})} placeholder="70" className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Altura (cm)</label>
-                  <input type="number" value={formData.height} onChange={(e) => setFormData({...formData, height: e.target.value})} placeholder="175" className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Duração</label>
-                  <select value={formData.duration} onChange={(e) => setFormData({...formData, duration: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
-                    {['20 min', '30 min', '45 min', '60 min'].map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Intensidade</label>
-                  <select value={formData.intensity} onChange={(e) => setFormData({...formData, intensity: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
-                    {['Leve', 'Moderado', 'Intenso'].map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
-          );
-        case 3:
-          return (
-            <div className="space-y-6">
-              <div>
-                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Já treinou antes?</label>
-                <div className="flex gap-2">
-                  {['Sim', 'Não'].map(opt => (
-                    <button 
-                      key={opt}
-                      onClick={() => setFormData({...formData, has_trained_before: opt})}
-                      className={`flex-1 p-3 rounded-2xl text-xs font-bold border-2 transition-all ${formData.has_trained_before === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {formData.has_trained_before === 'Sim' && (
-                <div>
-                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Tempo de treino</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['0 meses', '1-3 meses', '6+ meses'].map(opt => (
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Objetivo</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['emagrecer', 'ganhar massa', 'definição', 'condicionamento'].map(opt => (
                       <button 
                         key={opt}
-                        onClick={() => setFormData({...formData, training_time: opt})}
-                        className={`p-2 rounded-2xl text-[10px] font-bold border-2 transition-all ${formData.training_time === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
+                        onClick={() => setFormData({...formData, goal: opt})}
+                        className={`p-3 rounded-2xl text-xs font-bold capitalize border-2 transition-all ${formData.goal === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
                       >
                         {opt}
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
-              <div>
-                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Foco Corporal</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['Peito', 'Braços', 'Abdômen', 'Pernas', 'Glúteos', 'Equilibrado'].map(opt => (
-                    <button 
-                      key={opt}
-                      onClick={() => setFormData({...formData, body_focus: opt})}
-                      className={`p-2 rounded-2xl text-[10px] font-bold border-2 transition-all ${formData.body_focus === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Nível</label>
+                    <select value={formData.level} onChange={(e) => setFormData({...formData, level: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
+                      <option value="iniciante">Iniciante</option>
+                      <option value="intermediário">Intermediário</option>
+                      <option value="avançado">Avançado</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Dias/Semana</label>
+                    <select value={formData.days_per_week} onChange={(e) => setFormData({...formData, days_per_week: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
+                      {[3, 4, 5, 6, 7].map(d => <option key={d} value={`${d}`}>{d} dias</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Local de Treino</label>
+                  <div className="flex gap-2">
+                    {['academia', 'casa'].map(opt => (
+                      <button 
+                        key={opt}
+                        onClick={() => setFormData({...formData, location: opt})}
+                        className={`flex-1 p-3 rounded-2xl text-xs font-bold capitalize border-2 transition-all ${formData.location === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        case 4:
-          return (
-            <div className="space-y-6">
-              <div>
-                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Lesões ou Dores?</label>
-                <textarea 
-                  value={formData.injuries} 
-                  onChange={(e) => setFormData({...formData, injuries: e.target.value})} 
-                  placeholder="Ex: Joelho esquerdo, Coluna..." 
-                  className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none h-20 resize-none"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Doenças ou Condições?</label>
-                <textarea 
-                  value={formData.diseases} 
-                  onChange={(e) => setFormData({...formData, diseases: e.target.value})} 
-                  placeholder="Ex: Pressão alta, Diabetes..." 
-                  className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none h-20 resize-none"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Algo mais?</label>
-                <textarea 
-                  value={formData.observations} 
-                  onChange={(e) => setFormData({...formData, observations: e.target.value})} 
-                  placeholder="Descreva algo importante sobre você" 
-                  className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none h-20 resize-none"
-                />
-              </div>
-            </div>
-          );
-        case 5:
-          return (
-            <div className="space-y-6">
-              <div className="bg-[#FAF9F6] border-2 border-dashed border-[#56AB2F]/30 rounded-[32px] p-8 text-center relative overflow-hidden group">
-                {imagePreview ? (
-                  <div className="relative aspect-video rounded-2xl overflow-hidden shadow-xl border-4 border-white">
-                    <img src={imagePreview} alt="Corpo" className="w-full h-full object-cover" />
-                    <button 
-                      onClick={() => { setSelectedImage(null); setImagePreview(null); }}
-                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full shadow-lg"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+            );
+          case 2:
+            return (
+              <div className="space-y-6">
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Idade</label>
+                    <input type="number" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} placeholder="30" className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none" />
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="w-20 h-20 bg-[#EAF5D5] rounded-full flex items-center justify-center mx-auto text-[#56AB2F]">
-                      <Camera className="w-10 h-10" />
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Peso (kg)</label>
+                    <input type="number" value={formData.weight} onChange={(e) => setFormData({...formData, weight: e.target.value})} placeholder="70" className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Altura (cm)</label>
+                    <input type="number" value={formData.height} onChange={(e) => setFormData({...formData, height: e.target.value})} placeholder="175" className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Duração</label>
+                    <select value={formData.duration} onChange={(e) => setFormData({...formData, duration: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
+                      {['20 min', '30 min', '45 min', '60 min'].map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Intensidade</label>
+                    <select value={formData.intensity} onChange={(e) => setFormData({...formData, intensity: e.target.value})} className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none">
+                      {['Leve', 'Moderado', 'Intenso'].map(i => <option key={i} value={i}>{i}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            );
+          case 3:
+            return (
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Já treinou antes?</label>
+                  <div className="flex gap-2">
+                    {['Sim', 'Não'].map(opt => (
+                      <button 
+                        key={opt}
+                        onClick={() => setFormData({...formData, has_trained_before: opt})}
+                        className={`flex-1 p-3 rounded-2xl text-xs font-bold border-2 transition-all ${formData.has_trained_before === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {formData.has_trained_before === 'Sim' && (
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Tempo de treino</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['0 meses', '1-3 meses', '6+ meses'].map(opt => (
+                        <button 
+                          key={opt}
+                          onClick={() => setFormData({...formData, training_time: opt})}
+                          className={`p-2 rounded-2xl text-[10px] font-bold border-2 transition-all ${formData.training_time === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
                     </div>
-                    <div>
-                      <h4 className="text-lg font-black text-gray-900 mb-1">Análise Corporal por IA</h4>
-                      <p className="text-xs font-bold text-gray-400 leading-relaxed px-4">Envie uma foto do seu corpo inteiro (frente) para uma análise MASTER de pontos fortes e fracos.</p>
-                    </div>
-                    <label className="inline-block px-8 py-4 bg-[#56AB2F] text-white rounded-2xl font-black text-sm shadow-lg cursor-pointer hover:scale-105 active:scale-95 transition-all">
-                      Selecionar Foto
-                      <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                    </label>
-                    <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Opcional • Formatos JPG, PNG</p>
                   </div>
                 )}
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Foco Corporal</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['Peito', 'Braços', 'Abdômen', 'Pernas', 'Glúteos', 'Equilibrado'].map(opt => (
+                      <button 
+                        key={opt}
+                        onClick={() => setFormData({...formData, body_focus: opt})}
+                        className={`p-2 rounded-2xl text-[10px] font-bold border-2 transition-all ${formData.body_focus === opt ? 'bg-[#F0F9EB] border-[#56AB2F] text-[#56AB2F]' : 'bg-gray-50 border-transparent text-gray-500'}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 flex items-start gap-3">
-                <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                <p className="text-[10px] font-bold text-blue-700 leading-relaxed">
-                  A IA analisará seu percentual de gordura estimado e estrutura muscular para hiper-personalizar seu treino. Imagem segura e privada.
-                </p>
+            );
+          case 4:
+            return (
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Lesões ou Dores?</label>
+                  <textarea 
+                    value={formData.injuries} 
+                    onChange={(e) => setFormData({...formData, injuries: e.target.value})} 
+                    placeholder="Ex: Joelho esquerdo, Coluna..." 
+                    className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none h-20 resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Doenças ou Condições?</label>
+                  <textarea 
+                    value={formData.diseases} 
+                    onChange={(e) => setFormData({...formData, diseases: e.target.value})} 
+                    placeholder="Ex: Pressão alta, Diabetes..." 
+                    className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none h-20 resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Algo mais?</label>
+                  <textarea 
+                    value={formData.observations} 
+                    onChange={(e) => setFormData({...formData, observations: e.target.value})} 
+                    placeholder="Descreva algo importante sobre você" 
+                    className="w-full bg-gray-50 p-4 rounded-2xl text-sm font-bold border-none h-20 resize-none"
+                  />
+                </div>
               </div>
-            </div>
-          );
-        default:
-          return null;
-      }
+            );
+          case 5:
+            return (
+              <div className="space-y-6">
+                <div className="bg-[#FAF9F6] border-2 border-dashed border-[#56AB2F]/30 rounded-[32px] p-8 text-center relative overflow-hidden group">
+                  {imagePreview ? (
+                    <div className="relative aspect-video rounded-2xl overflow-hidden shadow-xl border-4 border-white">
+                      <img src={imagePreview} alt="Corpo" className="w-full h-full object-cover" />
+                      <button 
+                        onClick={() => { setSelectedImage(null); setImagePreview(null); }}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full shadow-lg"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="w-20 h-20 bg-[#EAF5D5] rounded-full flex items-center justify-center mx-auto text-[#56AB2F]">
+                        <Camera className="w-10 h-10" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-black text-gray-900 mb-1">Análise Corporal por IA</h4>
+                        <p className="text-xs font-bold text-gray-400 leading-relaxed px-4">Envie uma foto do seu corpo inteiro (frente) para uma análise MASTER de pontos fortes e fracos.</p>
+                      </div>
+                      <label className="inline-block px-8 py-4 bg-[#56AB2F] text-white rounded-2xl font-black text-sm shadow-lg cursor-pointer hover:scale-105 active:scale-95 transition-all">
+                        Selecionar Foto
+                        <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                      </label>
+                      <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Opcional • Formatos JPG, PNG</p>
+                    </div>
+                  )}
+                </div>
+                <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 flex items-start gap-3">
+                  <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                  <p className="text-[10px] font-bold text-blue-700 leading-relaxed">
+                    A IA analisará seu percentual de gordura estimado e estrutura muscular para hiper-personalizar seu treino. Imagem segura e privada.
+                  </p>
+                </div>
+              </div>
+            );
+          default:
+            return null;
+        }
+      })();
+
+      return (
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={currentStep}
+            custom={direction}
+            variants={variants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ 
+              type: 'spring', 
+              stiffness: 300, 
+              damping: 30,
+              opacity: { duration: 0.2 }
+            }}
+            className="w-full"
+          >
+            {stepContent}
+          </motion.div>
+        </AnimatePresence>
+      );
     };
 
     const isStepValid = () => {
@@ -432,7 +491,7 @@ export const WorkoutPlanner = () => {
         >
           <div className="flex justify-between items-center mb-6">
             <div className="flex-1">
-              <h2 className="text-2xl font-black text-gray-900">Plano ProFit Elite</h2>
+              <h2 className="text-2xl font-black text-gray-900">Plano Pro</h2>
               <div className="flex gap-1 mt-2">
                 {[1, 2, 3, 4, 5].map(s => (
                   <div key={s} className={`h-1 flex-1 rounded-full transition-all ${s <= currentStep ? 'bg-[#56AB2F]' : 'bg-gray-100'}`} />
@@ -444,7 +503,7 @@ export const WorkoutPlanner = () => {
             </button>
           </div>
 
-          <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
+          <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar min-h-[420px] overflow-x-hidden flex flex-col justify-center">
             {renderStep()}
           </div>
 
@@ -452,17 +511,20 @@ export const WorkoutPlanner = () => {
             {currentStep > 1 && (
               <button 
                 onClick={prevStep}
-                className="flex-1 py-5 bg-gray-100 rounded-3xl text-gray-500 font-black text-lg"
+                disabled={isTransitioning}
+                className="flex-1 py-5 bg-gray-100 rounded-3xl text-gray-500 font-black text-lg disabled:opacity-50"
               >
                 Voltar
               </button>
             )}
             <button 
               onClick={currentStep === 5 ? () => setShowWarning(true) : nextStep}
-              disabled={!isStepValid()}
-              className={`py-5 bg-gradient-to-r from-[#A8E063] to-[#56AB2F] rounded-3xl text-white font-black text-lg shadow-xl transition-all ${currentStep === 1 ? 'w-full' : 'flex-[2]'} disabled:opacity-30`}
+              disabled={!isStepValid() || isTransitioning}
+              className={`py-5 bg-gradient-to-r from-[#A8E063] to-[#56AB2F] rounded-3xl text-white font-black text-lg shadow-xl transition-all ${currentStep === 1 ? 'w-full' : 'flex-[2]'} disabled:opacity-30 flex items-center justify-center`}
             >
-              {currentStep === 5 ? 'Gerar Plano' : 'Continuar'}
+              {isTransitioning ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : currentStep === 5 ? 'Gerar Plano' : 'Continuar'}
             </button>
           </div>
         </motion.div>
@@ -669,7 +731,7 @@ export const WorkoutPlanner = () => {
                 <Sparkles className="w-10 h-10 text-[#56AB2F]" />
               </div>
               <h2 className="text-2xl font-black text-gray-900 mb-2">Sem Plano Ativo</h2>
-              <p className="text-gray-400 font-bold mb-10 max-w-xs mx-auto">Gere agora seu plano de elite válido pelos próximos 30 dias.</p>
+              <p className="text-gray-400 font-bold mb-10 max-w-xs mx-auto">Gere agora seu plano inteligente válido pelos próximos 30 dias.</p>
               <button 
                 onClick={() => setIsModalOpen(true)}
                 className="w-full py-5 bg-[#56AB2F] rounded-3xl text-white font-black text-lg shadow-xl active:scale-95 transition-all"

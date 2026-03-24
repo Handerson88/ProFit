@@ -7,33 +7,33 @@ module.exports = async (req, res, next) => {
       return next();
     }
 
-    // 2. Fetch current user plan
-    const userResult = await db.query('SELECT plan_type FROM users WHERE id = $1', [req.user.id]);
+    // 2. Fetch current user plan status
+    const userResult = await db.query('SELECT plan_type, plan_status FROM users WHERE id = $1', [req.user.id]);
     if (userResult.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const { plan_type } = userResult.rows[0];
+    const { plan_type, plan_status } = userResult.rows[0];
 
-    // 3. If user is PRO, always allow
-    if (plan_type === 'pro') {
-      return next();
-    }
-
-    // 4. Check total user count (excluding admins)
-    const countResult = await db.query("SELECT COUNT(*) FROM users WHERE role = 'user'");
-    const totalUsers = parseInt(countResult.rows[0].count);
-
-    // 5. If limit reached (20) and user is FREE, block
-    if (totalUsers > 20) {
+    // 3. Strict Subscription Check
+    // If user is PRO but status is NOT active, block access
+    if (plan_type === 'pro' && plan_status !== 'active') {
       return res.status(402).json({ 
-        message: 'Free limit reached', 
-        error: 'PAYWALL_ACTIVE',
-        total_users: totalUsers
+        message: 'Subscription expired', 
+        error: 'SUBSCRIPTION_EXPIRED'
       });
     }
 
-    // 6. Otherwise allow
+    // 4. If user is FREE (or any other non-pro type), block premium features
+    // (Assuming this middleware is only applied to premium routes)
+    if (plan_type !== 'pro') {
+      return res.status(402).json({ 
+        message: 'Premium feature requires PRO plan', 
+        error: 'PAYWALL_ACTIVE'
+      });
+    }
+
+    // 5. Otherwise allow
     next();
   } catch (err) {
     console.error('[PaywallMiddleware] Error:', err);

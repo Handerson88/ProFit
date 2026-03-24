@@ -31,6 +31,7 @@ import { Invitations } from './pages/Invitations';
 import { Upgrade } from './pages/Upgrade';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 
 // Admin Imports
 import AdminLayout from './components/admin/AdminLayout';
@@ -52,7 +53,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   
   if (isLoading || authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F6F7F9]">
+      <div className="flex items-center justify-center min-h-screen w-full bg-[var(--bg-app)] transition-colors duration-300">
         <div className="w-12 h-12 border-4 border-[#56AB2F] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -62,14 +63,14 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Paywall Check: Block FREE users if total_users > 20
-  // Allowed routes: /upgrade, /plans, /checkout, /profile, /account, /notifications
+  // Paywall Check: Bloquear se o plano não estiver ativo
+  // Admin sempre tem acesso
   const allowedWhenBlocked = ['/upgrade', '/plans', '/checkout', '/profile', '/account', '/notifications', '/convites'];
   const currentPath = window.location.pathname;
-  const isPaywallActive = totalUsersCount > 20 && user?.plan_type === 'free' && user?.role !== 'admin';
+  const isPlanInactive = user?.plan_status !== 'active' && user?.role !== 'admin';
 
-  if (isPaywallActive && !allowedWhenBlocked.some(path => currentPath.startsWith(path))) {
-    return <Navigate to="/upgrade" replace />;
+  if (isPlanInactive && !allowedWhenBlocked.some(path => currentPath.startsWith(path))) {
+    return <Navigate to="/plans" replace />;
   }
 
   // Onboarding Check: Force users to quiz if not completed
@@ -88,7 +89,7 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
   
   if (isLoading || authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F6F7F9]">
+      <div className="flex items-center justify-center min-h-screen w-full bg-[var(--bg-app)] transition-colors duration-300">
         <div className="w-12 h-12 border-4 border-[#56AB2F] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -113,7 +114,7 @@ const AdminProtectedRoute = ({ children }: { children: JSX.Element }) => {
   
   if (isLoading || authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F6F7F9]">
+      <div className="flex items-center justify-center min-h-screen w-full bg-[var(--bg-app)] transition-colors duration-300">
         <div className="w-12 h-12 border-4 border-[#56AB2F] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -127,6 +128,28 @@ const AdminProtectedRoute = ({ children }: { children: JSX.Element }) => {
 };
 
 const RootRoute = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen w-full bg-[var(--bg-app)]">
+        <div className="w-12 h-12 border-4 border-[#56AB2F] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Se já estiver logado, sempre vai para o dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/home" replace />;
+  }
+
+  // Se for PWA (standalone) mas não estiver logado, vai para o login (nunca mostra a página de vendas)
+  if (isStandalone) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Caso contrário (navegador + deslogado), mostra a landing page
   return <LandingPage />;
 };
 
@@ -189,6 +212,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <NotificationPrompt />
+      <PWAInstallPrompt />
       <Toaster position="top-center" />
       </BrowserRouter>
     </ThemeProvider>

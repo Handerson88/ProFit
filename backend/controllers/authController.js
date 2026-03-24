@@ -5,7 +5,8 @@ const { v4: uuidv4 } = require('uuid');
 const emailService = require('../services/emailService');
 
 exports.register = async (req, res) => {
-  const { name, email, password, referralCode } = req.body;
+  const { name, password, referralCode } = req.body;
+  const email = req.body.email ? req.body.email.trim().toLowerCase() : '';
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const userId = uuidv4();
@@ -58,10 +59,16 @@ exports.register = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const { password } = req.body;
+  const email = req.body.email ? req.body.email.trim().toLowerCase() : '';
   try {
     const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (result.rows.length === 0) return res.status(404).json({ message: 'Conta não encontrada' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        message: 'Nenhuma conta encontrada com este e-mail. Deseja criar uma conta?',
+        code: 'USER_NOT_FOUND'
+      });
+    }
 
     const user = result.rows[0];
     if (user.status === 'blocked') {
@@ -69,7 +76,12 @@ exports.login = async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) return res.status(401).json({ message: 'Email ou senha incorretos.' });
+    if (!isMatch) {
+      return res.status(401).json({ 
+        message: 'Senha incorreta. Tente novamente.',
+        code: 'INVALID_PASSWORD'
+      });
+    }
 
     // Update last_login_at
     await db.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
@@ -237,7 +249,8 @@ exports.activateInvite = async (req, res) => {
 
 // New: Create Invite
 exports.createInvite = async (req, res) => {
-  const { name, email } = req.body;
+  const { name } = req.body;
+  const email = req.body.email ? req.body.email.trim().toLowerCase() : '';
   try {
     const checkUser = await db.query('SELECT id FROM users WHERE email = $1', [email]);
     if (checkUser.rows.length > 0) return res.status(400).json({ message: 'Email já cadastrado.' });

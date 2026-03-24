@@ -51,21 +51,21 @@ const CalendarSlider = ({ selectedDate, onSelectDate, onOpenCalendar }: { select
   }, []);
 
   return (
-    <div className="bg-[#EAF5D5] rounded-[32px] p-6 mb-6">
+    <div className="bg-[var(--bg-accent-soft)] rounded-[32px] p-6 mb-6">
       <div className="flex justify-between items-center mb-6">
         <div 
           onClick={onOpenCalendar}
-          className="flex items-center space-x-2 cursor-pointer active:scale-95 transition-transform bg-white/50 px-3 py-1.5 rounded-full shadow-sm"
+          className="flex items-center space-x-2 cursor-pointer active:scale-95 transition-transform bg-[var(--bg-app)]/50 px-3 py-1.5 rounded-full shadow-sm"
         >
           <span className="font-bold text-lg text-gray-900">{formatDateHeader(selectedDate)}</span>
           <ChevronRight className="w-4 h-4 text-gray-700 rotate-90" />
         </div>
         <div className="flex space-x-2">
-          <button className="w-8 h-8 flex justify-center items-center bg-white rounded-full shadow-sm active:scale-95 transition-all text-gray-700">
+          <button className="w-8 h-8 flex justify-center items-center bg-[var(--bg-card)] rounded-full shadow-sm active:scale-95 transition-all text-[var(--text-main)]">
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <button className="w-8 h-8 flex justify-center items-center border-2 border-white/50 bg-white/50 rounded-full cursor-not-allowed">
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+          <button className="w-8 h-8 flex justify-center items-center border-2 border-[var(--border-main)] bg-[var(--bg-app)]/50 rounded-full cursor-not-allowed">
+            <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
         </div>
       </div>
@@ -85,7 +85,7 @@ const CalendarSlider = ({ selectedDate, onSelectDate, onOpenCalendar }: { select
               <div className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 relative ${
                 isSelected 
                   ? 'bg-gradient-to-r from-[#A8E063] to-[#56AB2F] shadow-md shadow-primary/20 text-white' 
-                  : 'bg-white text-gray-700 shadow-sm'
+                  : 'bg-[var(--bg-card)] text-[var(--text-main)] shadow-sm'
               }`}>
                 <span className={`text-sm font-bold`}>{item.dayNum}</span>
                 {isToday && !isSelected && (
@@ -136,7 +136,7 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
       {/* Header Info */}
       <div className="flex justify-between items-start mb-8">
         <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-[#F0F9EB] rounded-2xl flex items-center justify-center text-[#56AB2F]">
+          <div className="w-12 h-12 bg-[var(--bg-accent-soft)] rounded-2xl flex items-center justify-center text-[#56AB2F]">
             <Flame className="w-6 h-6 fill-current" />
           </div>
           <div>
@@ -149,7 +149,7 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
         </div>
         <div className="text-right pt-1">
           <p className="text-[13px] font-medium text-[var(--text-muted)]">Meta: <span className="font-bold text-[var(--text-main)]">{target}</span> kcal</p>
-          <div className="mt-1 inline-flex items-center px-2 py-0.5 bg-[#F0F9EB] rounded-full">
+          <div className="mt-1 inline-flex items-center px-2 py-0.5 bg-[var(--bg-accent-soft)] rounded-full">
             <span className="text-[10px] font-black text-[#56AB2F]">{Math.round(percent)}% da meta</span>
           </div>
         </div>
@@ -182,7 +182,7 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
                    initial={{ height: 0 }}
                    animate={{ height: `${barHeight}%` }}
                    transition={{ duration: 1, ease: "easeOut", delay: i * 0.05 }}
-                   className={`w-full rounded-full ${isActive ? 'bg-gradient-to-t from-[#56AB2F] to-[#A8E063]' : 'bg-[#E5E9CA] opacity-50'}`}
+                   className={`w-full rounded-full ${isActive ? 'bg-gradient-to-t from-[#56AB2F] to-[#A8E063]' : 'bg-[var(--bg-accent-soft)] opacity-50'}`}
                 />
               </div>
               <span translate="no" className={`text-[9px] font-bold uppercase ${isActive ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>{day}</span>
@@ -602,7 +602,7 @@ export const Dashboard = () => {
     return (
       <div className="card-premium mb-4 hover:shadow-md transition-all group">
         <div className="flex items-center space-x-4 mb-4 relative">
-          <div className="w-[85px] h-[85px] rounded-[22px] overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center border border-gray-50">
+          <div className="w-[85px] h-[85px] rounded-[22px] overflow-hidden bg-[var(--bg-app)] flex-shrink-0 flex items-center justify-center border border-[var(--border-main)]">
             {imageSource ? (
               <img 
                 src={imageSource} 
@@ -628,13 +628,13 @@ export const Dashboard = () => {
                 <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
                     onClick={() => handleEditMeal(meal)}
-                    className="w-7 h-7 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center active:scale-90 transition-all"
+                    className="w-7 h-7 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center active:scale-90 transition-all font-bold"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                   </button>
                   <button 
                     onClick={() => setMealToDelete(meal.id)}
-                    className="w-7 h-7 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center active:scale-90 transition-all"
+                    className="w-7 h-7 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center active:scale-90 transition-all font-bold"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -670,10 +670,10 @@ export const Dashboard = () => {
                 className="absolute inset-x-0 inset-y-[-20px] bg-white/95 backdrop-blur-sm z-20 flex items-center justify-between px-2"
               >
                 <div className="flex items-center space-x-2">
-                   <div className="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center text-rose-500">
+                   <div className="w-8 h-8 bg-rose-500/20 rounded-full flex items-center justify-center text-rose-500">
                     <AlertCircle className="w-4 h-4" />
                   </div>
-                  <span className="text-sm font-bold text-gray-900">Excluir?</span>
+                  <span className="text-sm font-bold text-[var(--text-main)]">Excluir?</span>
                 </div>
                 <div className="flex space-x-1">
                   <button onClick={() => setMealToDelete(null)} className="px-3 py-1.5 rounded-lg text-gray-400 font-bold text-[10px] uppercase">Não</button>
@@ -693,7 +693,7 @@ export const Dashboard = () => {
                 return (
                   <div className="flex flex-wrap gap-1.5">
                     {ingredients.map((ing: any, i: number) => (
-                      <span key={i} className="px-2 py-0.5 bg-[#F6F7F9] text-[#718096] text-[10px] font-bold rounded-md uppercase tracking-wider border border-gray-100">
+                      <span key={i} className="px-2 py-0.5 bg-[var(--bg-app)] text-[var(--text-muted)] text-[10px] font-bold rounded-md uppercase tracking-wider border border-[var(--border-main)]">
                         {typeof ing === 'string' ? ing : ing.name}
                       </span>
                     ))}
@@ -724,23 +724,23 @@ export const Dashboard = () => {
         {[1, 2].map((i) => (
           <div key={i} className="card-premium h-[140px] opacity-50">
             <div className="flex justify-between items-center mb-[10px]">
-              <div className="h-6 w-32 bg-[var(--bg-surface)] rounded-lg"></div>
-              <div className="h-5 w-5 bg-[var(--bg-surface)] rounded-full"></div>
+              <div className="h-6 w-32 bg-[var(--bg-skeleton)] rounded-lg"></div>
+              <div className="h-5 w-5 bg-[var(--bg-skeleton)] rounded-full"></div>
             </div>
-            <div className="h-8 w-24 bg-[var(--bg-surface)] rounded-lg mb-[10px]"></div>
-            <div className="h-[10px] w-full bg-[var(--bg-surface)] rounded-[20px] mb-[12px]"></div>
-            <div className="h-4 w-20 bg-[var(--bg-surface)] rounded-lg"></div>
+            <div className="h-8 w-24 bg-[var(--bg-skeleton)] rounded-lg mb-[10px]"></div>
+            <div className="h-[10px] w-full bg-[var(--bg-skeleton)] rounded-[20px] mb-[12px]"></div>
+            <div className="h-4 w-20 bg-[var(--bg-skeleton)] rounded-lg"></div>
           </div>
         ))}
       </div>
       <div className="grid grid-cols-2 gap-4">
         {[1, 2].map(i => (
-          <div key={i} className="bg-white rounded-[22px] p-4 border border-gray-50/50 h-[120px]">
+          <div key={i} className="bg-[var(--bg-card)] rounded-[22px] p-4 border border-[var(--border-main)] h-[120px]">
              <div className="flex justify-between items-start mb-4">
-               <div className="h-5 w-20 bg-gray-200 rounded-lg"></div>
-               <div className="w-8 h-8 rounded-full bg-gray-200"></div>
+               <div className="h-5 w-20 bg-[var(--bg-skeleton)] rounded-lg"></div>
+               <div className="w-8 h-8 rounded-full bg-[var(--bg-skeleton)]"></div>
              </div>
-             <div className="h-8 w-16 bg-gray-200 rounded-lg"></div>
+             <div className="h-8 w-16 bg-[var(--bg-skeleton)] rounded-lg"></div>
           </div>
         ))}
       </div>
@@ -784,10 +784,17 @@ export const Dashboard = () => {
             </p>
             <div className="flex items-center space-x-2">
               <h1 className="text-[28px] font-bold text-[var(--text-main)] leading-tight">{userName}</h1>
-              {profile?.plan_type && profile.plan_type !== 'free' && (
-                <span className="bg-[#1A1A1A] text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center mt-1">
-                  PRO
-                </span>
+              {profile?.plan_type === 'pro' && profile?.plan_status === 'active' && (
+                <div className="flex flex-col items-start mt-1">
+                  <span className="bg-[#10b981] text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center">
+                    PRO ATIVO ✅
+                  </span>
+                  {profile?.plan_expiration && (
+                    <span className="text-[8px] font-bold text-[var(--text-muted)] mt-0.5 uppercase tracking-tighter">
+                      Válido até: {new Date(profile.plan_expiration).toLocaleDateString('pt-BR')}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -796,35 +803,50 @@ export const Dashboard = () => {
           </div>
         </div>
 
-        {appStatus.monetizationEnabled && profile?.plan_type === 'free' && (
-          <div className="mb-8">
-            <PremiumBanner onUpgrade={() => navigate('/plans')} />
-          </div>
-        )}
-
-        {profile?.plan_type === 'free' && totalUsersCount >= 15 && totalUsersCount <= 20 && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="mb-8 bg-gradient-to-r from-orange-500 to-rose-500 rounded-[32px] p-6 text-white shadow-lg shadow-orange-500/20 relative overflow-hidden group cursor-pointer"
-            onClick={() => navigate('/upgrade')}
-          >
-            <div className="relative z-10 flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-black text-lg">Limite Próximo!</h3>
-                  <p className="text-white/80 text-sm font-bold">Restam apenas {20 - totalUsersCount} vagas gratuitas.</p>
-                </div>
+        {/* Banner de Plano/Pagamento */}
+        {(() => {
+          const isPro = profile?.plan_type === 'pro' && profile?.plan_status === 'active';
+          
+          // Se não for Pro ou estiver inativo, mostra banner para assinar/renovar
+          if (!isPro && appStatus.monetizationEnabled) {
+            return (
+              <div className="mb-8">
+                <PremiumBanner onUpgrade={() => navigate('/plans')} />
               </div>
-              <ChevronRight className="w-6 h-6 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-            </div>
-            {/* Animated background element */}
-            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-          </motion.div>
-        )}
+            );
+          }
+
+          // Se for Pro, verifica expiração próxima
+          if (isPro && profile?.plan_expiration) {
+            const expDate = new Date(profile.plan_expiration);
+            const today = new Date();
+            const diffDays = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+            if (diffDays <= 3 && diffDays > 0) {
+              return (
+                <motion.div 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-8 bg-amber-50 border border-amber-200 rounded-[32px] p-6 flex items-center justify-between"
+                  onClick={() => navigate('/plans')}
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600">
+                      <AlertCircle size={24} />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-amber-900 leading-tight">Plano Expira em {diffDays} {diffDays === 1 ? 'dia' : 'dias'}</h4>
+                      <p className="text-amber-700/80 text-xs font-bold uppercase tracking-wider mt-0.5">Renove agora para manter o Pro</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={20} className="text-amber-400" />
+                </motion.div>
+              );
+            }
+          }
+
+          return null;
+        })()}
 
 
 
@@ -871,8 +893,8 @@ export const Dashboard = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-white rounded-[32px] p-8 border border-gray-50/50 text-center">
-                    <p className="text-gray-400 text-sm font-bold">Nenhuma refeição registrada recentemente.</p>
+                  <div className="bg-[var(--bg-card)] rounded-[32px] p-8 border border-[var(--border-main)] text-center">
+                    <p className="text-[var(--text-muted)] text-sm font-bold">Nenhuma refeição registrada recentemente.</p>
                   </div>
                 )}
               </div>

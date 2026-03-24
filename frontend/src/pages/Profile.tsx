@@ -195,9 +195,9 @@ export const Profile = () => {
                <div className="inline-flex items-center justify-center space-x-1.5 mt-2 px-4 py-1.5 bg-[#A8E063]/15 rounded-full relative">
                  <Target className="w-3.5 h-3.5 text-[#56AB2F]" />
                  <span className="text-[10px] font-bold text-[#56AB2F] uppercase tracking-wider">{profile?.goal || 'OBJETIVO GERAL'}</span>
-                 {profile?.plan_type === 'elite' && (
-                   <div className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-lg shadow-indigo-200 animate-pulse">
-                     ELITE
+                 {profile?.plan_status === 'active' && (
+                   <div className="absolute -top-2 -right-2 bg-[#56AB2F] text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-lg shadow-emerald-200 animate-pulse">
+                     PRO
                    </div>
                  )}
                </div>

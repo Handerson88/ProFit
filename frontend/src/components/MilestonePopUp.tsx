@@ -41,7 +41,7 @@ export const MilestonePopUp: React.FC<MilestonePopUpProps> = ({ isOpen, onClose 
               </h2>
               
               <p className="text-gray-500 font-medium mb-8 leading-relaxed">
-                Atingimos a marca de 20 usuários e acabamos de lançar a versão **Elite**. Explore recursos exclusivos e leve seus resultados para o próximo nível!
+                Atingimos a marca de 20 usuários e acabamos de lançar a versão **Pro**. Explore recursos exclusivos e leve seus resultados para o próximo nível!
               </p>
               
               <div className="space-y-3">

@@ -27,23 +27,23 @@ export const PremiumBanner: React.FC<PremiumBannerProps> = ({ onUpgrade }) => {
         <div className="text-center sm:text-left">
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold mb-3 backdrop-blur-md">
             <Crown size={12} className="mr-1.5" />
-            PROFIT ELITE
+            PLANO PRO
           </div>
           <h3 className="text-2xl font-black text-white mb-2 leading-tight">
-            Desbloqueie seu Potencial Máximo
+            Acesso Total à IA
           </h3>
           <p className="text-indigo-100 text-sm font-medium opacity-90 max-w-xs mx-auto sm:mx-0">
-            Digitalizações ilimitadas, planos personalizados e suporte prioritário com IA.
+            Digitalizações ilimitadas, treinos de alta performance e suporte prioritário.
           </p>
         </div>
 
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={onUpgrade || (() => navigate('/checkout'))}
+          onClick={onUpgrade || (() => navigate('/plans'))}
           className="bg-white text-indigo-600 px-8 py-4 rounded-2xl font-black text-sm shadow-lg shadow-black/10 flex items-center gap-2 transition-colors hover:bg-indigo-50"
         >
-          Seja Elite
+          Ativar Agora
           <ArrowRight size={18} />
         </motion.button>
       </div>

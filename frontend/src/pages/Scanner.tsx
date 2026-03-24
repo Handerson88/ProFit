@@ -394,7 +394,7 @@ export const FoodScanner = () => {
                       onClick={() => navigate('/checkout')}
                       className="w-full py-5 bg-[#56AB2F] text-white font-black rounded-2xl text-sm uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-primary/20"
                     >
-                      Seja Elite Agora 🚀
+                      Ativar Plano Pro 🚀
                     </button>
                     <button 
                       onClick={() => navigate('/home')}

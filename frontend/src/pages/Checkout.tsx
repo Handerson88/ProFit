@@ -9,35 +9,50 @@ const Checkout = () => {
   const navigate = useNavigate();
   const userId = searchParams.get('userId');
   const [status, setStatus] = useState<'idle' | 'processing' | 'success'>('idle');
-  const [plan, setPlan] = useState('premium');
+  const [error, setError] = useState<string | null>(null);
 
   const handlePayment = async (method: string) => {
     setStatus('processing');
-    // Simulate payment processing
-    setTimeout(() => {
-      setStatus('success');
-      // In a real app, you would call api.billing.confirmPayment() here
-    }, 2000);
+    setError(null);
+    try {
+      // Chamada real para o backend usando o serviço correto
+      await api.payments.create({
+        amount: 349,
+        method: method,
+        phone: '840000000' // Placeholder
+      });
+      
+      // Simulação de confirmação
+      setTimeout(() => {
+        setStatus('success');
+      }, 3000);
+    } catch (err: any) {
+      console.error('Payment error:', err);
+      setError(err.message || 'Falha ao processar pagamento.');
+      setStatus('idle');
+    }
   };
 
   if (status === 'success') {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[var(--bg-app)] flex items-center justify-center p-6 text-[var(--text-main)]">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full bg-[#1e293b] rounded-[24px] p-8 text-center border border-emerald-500/20 shadow-2xl shadow-emerald-500/10"
+          className="max-w-md w-full bg-[var(--bg-card)] rounded-[24px] p-8 text-center border border-emerald-500/20 shadow-2xl shadow-emerald-500/10"
         >
           <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={40} className="text-emerald-500" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Pagamento Confirmado!</h1>
-          <p className="text-slate-400 mb-8">Seu plano ProFit foi atualizado com sucesso. Aproveite todos os recursos agora!</p>
+          <h1 className="text-2xl font-bold mb-2">Plano ativado com sucesso 🎉</h1>
+          <p className="text-[var(--text-muted)] mb-8 font-bold">Aproveite todos os recursos ilimitados do ProFit agora!</p>
           <button 
-            onClick={() => navigate('/dashboard')}
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+            onClick={() => {
+              window.location.href = '/dashboard';
+            }}
+            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-black transition-all flex items-center justify-center gap-2"
           >
-            Ir para o Dashboard <ArrowRight size={20} />
+            Começar Agora <ArrowRight size={20} />
           </button>
         </motion.div>
       </div>
@@ -45,7 +60,7 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-slate-100 font-sans selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] font-sans selection:bg-primary/30">
       <div className="max-w-4xl mx-auto px-6 py-12 md:py-20">
         
         {/* Header */}
@@ -53,12 +68,12 @@ const Checkout = () => {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold uppercase tracking-wider mb-4"
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-4"
           >
             <ShieldCheck size={14} /> Checkout Seguro
           </motion.div>
-          <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-4">Escolha sua forma de pagamento</h1>
-          <p className="text-slate-400">Complete sua atualização para o plano Premium e desbloqueie o poder total da IA.</p>
+          <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-4">Ative seu Plano Pro</h1>
+          <p className="text-[var(--text-muted)] font-medium">Complete sua assinatura mensal e desbloqueie o poder total da IA.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
@@ -67,42 +82,48 @@ const Checkout = () => {
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-[#1e293b] rounded-3xl p-8 border border-slate-800 shadow-xl"
+            className="bg-[var(--bg-card)] rounded-3xl p-8 border border-[var(--border-main)] shadow-xl"
           >
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500">
+                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
                   <Star size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-white">Plano Premium</h3>
-                  <p className="text-xs text-slate-500">Assinatura Mensal</p>
+                  <h3 className="font-bold text-lg">Plano Pro</h3>
+                  <p className="text-xs text-[var(--text-muted)] font-bold">Assinatura Mensal</p>
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-2xl font-black text-white">R$ 59,90</span>
-                <p className="text-xs text-slate-500">/mês</p>
+                <span className="text-2xl font-black">349 MZN</span>
+                <p className="text-xs text-[var(--text-muted)] font-bold">/mês</p>
               </div>
             </div>
 
             <div className="space-y-4 mb-8">
-              <div className="flex items-center gap-3 text-sm text-slate-300">
+              <div className="flex items-center gap-3 text-sm font-bold text-[var(--text-muted)]">
                 <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500"><CheckCircle2 size={12} /></div>
-                Scans de IA ILIMITADOS
+                Acesso ILIMITADO
               </div>
-              <div className="flex items-center gap-3 text-sm text-slate-300">
+              <div className="flex items-center gap-3 text-sm font-bold text-[var(--text-muted)]">
                 <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500"><CheckCircle2 size={12} /></div>
-                Planos de Treino Personalizados
+                Planos de Treino com IA
               </div>
-              <div className="flex items-center gap-3 text-sm text-slate-300">
+              <div className="flex items-center gap-3 text-sm font-bold text-[var(--text-muted)]">
                 <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500"><CheckCircle2 size={12} /></div>
-                Suporte Chatbot ProFit 24/7
+                Análise de Refeições IA
               </div>
             </div>
 
-            <div className="pt-6 border-t border-slate-800 flex justify-between items-center text-white font-bold">
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-xs font-bold text-center">
+                {error}
+              </div>
+            )}
+
+            <div className="pt-6 border-t border-[var(--border-main)] flex justify-between items-center font-black">
               <span>Total a pagar</span>
-              <span className="text-xl">R$ 59,90</span>
+              <span className="text-xl">349 MZN</span>
             </div>
           </motion.div>
 
@@ -112,54 +133,53 @@ const Checkout = () => {
             animate={{ opacity: 1, x: 0 }}
             className="space-y-4"
           >
-            <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest pl-2 mb-2">Métodos Disponíveis</h4>
+            <h4 className="text-sm font-black text-[var(--text-muted)] uppercase tracking-widest pl-2 mb-2">Pagamento Móvel</h4>
             
-            <button 
-              onClick={() => handlePayment('card')}
-              disabled={status === 'processing'}
-              className="w-full group bg-slate-800/50 hover:bg-emerald-500 transition-all p-5 rounded-2xl border border-slate-700 hover:border-emerald-400 flex items-center justify-between disabled:opacity-50"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#1e293b] group-hover:bg-white/10 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-white transition-colors">
-                  <CreditCard size={24} />
-                </div>
-                <div className="text-left">
-                  <p className="font-bold text-white">Cartão de Crédito</p>
-                  <p className="text-xs text-slate-500 group-hover:text-white/70">Aprovação imediata</p>
-                </div>
-              </div>
-              <ArrowRight size={20} className="text-slate-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
-            </button>
-
             <button 
               onClick={() => handlePayment('mpesa')}
               disabled={status === 'processing'}
-              className="w-full group bg-slate-800/50 hover:bg-red-600 transition-all p-5 rounded-2xl border border-slate-700 hover:border-red-400 flex items-center justify-between disabled:opacity-50"
+              className="w-full group bg-[var(--bg-accent-soft)] hover:bg-red-600 transition-all p-5 rounded-2xl border border-[var(--border-main)] hover:border-red-400 flex items-center justify-between disabled:opacity-50"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#1e293b] group-hover:bg-white/10 rounded-xl flex items-center justify-center text-red-500 group-hover:text-white transition-colors">
+                <div className="w-12 h-12 bg-[var(--bg-card)] group-hover:bg-white/10 rounded-xl flex items-center justify-center text-red-500 group-hover:text-white transition-colors">
                   <Zap size={24} />
                 </div>
                 <div className="text-left">
-                  <p className="font-bold text-white">M-Pesa</p>
-                  <p className="text-xs text-slate-500 group-hover:text-white/70">Transferência rápida</p>
+                  <p className="font-bold">M-Pesa</p>
+                  <p className="text-xs text-[var(--text-muted)] font-black group-hover:text-white/70">84xxxxxxx</p>
                 </div>
               </div>
-              <ArrowRight size={20} className="text-slate-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
+              <ArrowRight size={20} className="text-[var(--text-muted)] group-hover:text-white group-hover:translate-x-1 transition-all" />
+            </button>
+
+            <button 
+              onClick={() => handlePayment('emola')}
+              disabled={status === 'processing'}
+              className="w-full group bg-[var(--bg-accent-soft)] hover:bg-orange-600 transition-all p-5 rounded-2xl border border-[var(--border-main)] hover:border-orange-400 flex items-center justify-between disabled:opacity-50"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-[var(--bg-card)] group-hover:bg-white/10 rounded-xl flex items-center justify-center text-orange-500 group-hover:text-white transition-colors">
+                  <CreditCard size={24} />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold">e-Mola</p>
+                  <p className="text-xs text-[var(--text-muted)] font-black group-hover:text-white/70">86xxxxxxx / 87xxxxxxx</p>
+                </div>
+              </div>
+              <ArrowRight size={20} className="text-[var(--text-muted)] group-hover:text-white group-hover:translate-x-1 transition-all" />
             </button>
 
             {status === 'processing' && (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex items-center justify-center gap-3 py-4 text-emerald-500 font-bold"
+                className="flex items-center justify-center gap-3 py-4 text-primary font-black uppercase text-xs tracking-widest"
               >
-                <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 Processando seu pagamento...
               </motion.div>
             )}
           </motion.div>
-
         </div>
       </div>
     </div>
