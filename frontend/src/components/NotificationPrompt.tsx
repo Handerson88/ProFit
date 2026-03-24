@@ -1,52 +1,84 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, X, CheckCircle2, ShieldCheck, Loader2, BellOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { notificationService } from '../services/notificationService';
+import { useAuth } from '../context/AuthContext';
 
 export const NotificationPrompt = () => {
+  const { user, isAuthenticated } = useAuth();
   const [show, setShow] = useState(false);
   const [status, setStatus] = useState<'prompt' | 'loading' | 'success' | 'denied'>('prompt');
 
+  const handleEnable = useCallback(async () => {
+    // Only proceed if authenticated, as we need a user ID to save the token
+    if (!isAuthenticated) return;
+    
+    setStatus('loading');
+    try {
+      const success = await notificationService.subscribe();
+      setStatus(success ? 'success' : 'denied');
+      if (success) {
+        // If it was already active or just activated, hide after a bit
+        setTimeout(() => setShow(false), 3000);
+      } else {
+        // If subscription failed (e.g. FCM token couldn't be generated),
+        // show the prompt to inform the user.
+        setShow(true);
+      }
+    } catch (err) {
+      console.error('[NotificationPrompt] Subscription error:', err);
+      setStatus('denied');
+      setShow(true); 
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !isAuthenticated) return;
 
     const permission = Notification.permission;
+    
+    // CASE 1: Already granted -> Auto-subscribe silently
+    if (permission === 'granted') {
+      handleEnable();
+      return;
+    }
+
+    // CASE 2: Default -> Show prompt after a delay
     if (permission === 'default') {
-      const timer = setTimeout(() => setShow(true), 3500);
+      const timer = setTimeout(() => {
+        // Only show if not dismissed before
+        if (!localStorage.getItem('notification_prompt_dismissed')) {
+          setShow(true);
+        }
+      }, 4000);
       return () => clearTimeout(timer);
     }
-  }, []);
+    
+    // CASE 3: Denied -> Only show if triggered by a previous action in this session
+    // (We don't show on start to avoid annoying users who explicitly blocked)
+  }, [isAuthenticated, handleEnable]);
 
   // Auto-detect when user returns from settings after granting permission
   useEffect(() => {
     const handleFocus = () => {
-      if (status === 'denied' && Notification.permission === 'granted') {
-        console.log('[NotificationPrompt] Permission changed to granted, retrying...');
+      const permission = Notification.permission;
+      if (permission === 'granted' && (status === 'denied' || status === 'prompt')) {
+        console.log('[NotificationPrompt] Permission detected as granted on focus, activating...');
         handleEnable();
       }
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [status]);
-
-  const handleEnable = async () => {
-    setStatus('loading');
-    try {
-      const success = await notificationService.subscribe();
-      setStatus(success ? 'success' : 'denied');
-      if (success) {
-        setTimeout(() => setShow(false), 3000);
-      }
-    } catch {
-      setStatus('denied');
-    }
-  };
+  }, [status, handleEnable]);
 
   const handleDismiss = () => {
     localStorage.setItem('notification_prompt_dismissed', 'true');
     setShow(false);
   };
+
+  // If user is not logged in, don't show the prompt at all
+  if (!isAuthenticated) return null;
 
   return (
     <AnimatePresence>

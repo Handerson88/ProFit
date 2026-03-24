@@ -24,24 +24,34 @@ exports.saveFCMToken = async (req, res) => {
       return res.status(400).json({ error: 'fcm_token is required.' });
     }
 
-    // Save token on user row (upsert style)
+    // Save token on user row
     await db.query(
-      'UPDATE users SET fcm_token = $1 WHERE id = $2',
+      'UPDATE users SET fcm_token = $1, notifications_enabled = true WHERE id = $2',
       [fcm_token, userId]
     );
 
-    // Send welcome notification
+    // Send welcome notification (Push + In-app)
     try {
+      const welcomeTitle = 'Notificações Ativadas 🔔';
+      const welcomeBody = 'Agora você receberá alertas inteligentes do aplicativo ProFit!';
+      
+      // 1. Persist to DB for in-app history
+      await db.query(
+        `INSERT INTO notifications (id, user_id, title, message, type) VALUES ($1, $2, $3, $4, $5)`,
+        [uuidv4(), userId, welcomeTitle, welcomeBody, 'success']
+      );
+
+      // 2. Send Push via FCM
       await sendFCMNotification([fcm_token], {
-        title: 'Notificações Ativadas 🔔',
-        body: 'Agora você receberá alertas inteligentes do aplicativo ProFit!',
+        title: welcomeTitle,
+        body: welcomeBody,
         data: { type: 'welcome' }
       });
     } catch (e) {
-      console.warn('[FCM] Welcome notification failed:', e.message);
+      console.warn('[FCM] Welcome notification flow failed:', e.message);
     }
 
-    res.json({ success: true, message: 'FCM token salvo com sucesso.' });
+    res.json({ success: true, message: 'FCM token salvo e notificações ativadas.' });
   } catch (error) {
     console.error('saveFCMToken error:', error);
     res.status(500).json({ error: 'Erro ao salvar token FCM.' });
