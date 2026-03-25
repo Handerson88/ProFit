@@ -35,7 +35,7 @@ module.exports = (req, res, next) => {
     
     // Ensure id mapping (Neon Auth uses 'sub', custom token uses 'id')
     const userId = decoded.id || decoded.sub;
-    req.user = decoded; // Initialize req.user so we can set properties on it
+    req.user = { ...decoded, id: userId }; // Ensure id is always present on req.user
     
     // Ensure we have the latest data from DB (including role, plan, subscription_status)
     try {
