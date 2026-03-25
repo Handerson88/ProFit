@@ -1,9 +1,10 @@
 import { api } from './api';
-import { getFCMToken } from './firebaseService';
 
 export type NotificationStatus = 'granted' | 'denied' | 'default' | 'unsupported';
 
 class NotificationService {
+  private PUBLIC_VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
+
   /**
    * Check real browser permission status
    */
@@ -15,7 +16,7 @@ class NotificationService {
   }
 
   /**
-   * Subscribe to push notifications using FCM (primary) + Web Push (fallback)
+   * Subscribe to push notifications using Web Push
    */
   async subscribe(): Promise<boolean> {
     const status = this.getPermissionStatus();
@@ -29,35 +30,48 @@ class NotificationService {
       return false;
     }
 
-    try {
-      // --- FCM Path (primary) ---
-      const fcmToken = await getFCMToken();
-      if (fcmToken) {
-        // Send FCM token to backend
-        await api.notifications.saveFCMToken(fcmToken);
-        // Mark user as notifications_enabled
-        await api.user.updateNotificationSettings(true);
-        console.log('[Notifications] FCM subscription successful');
-        return true;
-      }
+    if (!this.PUBLIC_VAPID_KEY) {
+      console.error('[Notifications] VAPID Public Key not configured');
+      return false;
+    }
 
-      // --- Web Push Fallback ---
-      console.log('[Notifications] FCM not available, using Web Push fallback');
+    try {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') return false;
 
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      let subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
-        const PUBLIC_VAPID_KEY = 'BFICHPidxWTXz3ZTJgOxsz9SPZf3HJS03sPX5x1pG7W6vPdBggkpMduzCyxZy7pWo8-IycNhCAvtHTuaRmO1yal';
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: this.urlBase64ToUint8Array(PUBLIC_VAPID_KEY).buffer as ArrayBuffer,
-        });
+      // Unregister any existing SW to ensure fresh start
+      const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+      for (const reg of existingRegistrations) {
+        if (reg.active?.scriptURL.includes('firebase-messaging-sw.js')) {
+          await reg.unregister();
+        }
       }
+
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      
+      // Wait for SW to be ready
+      await navigator.serviceWorker.ready;
+
+      let subscription = await registration.pushManager.getSubscription();
+      
+      if (subscription) {
+        // If subscription exists, check if keys match (optional but good)
+        // For simplicity, we'll just re-subscribe if needed
+        await subscription.unsubscribe();
+      }
+
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: this.urlBase64ToUint8Array(this.PUBLIC_VAPID_KEY).buffer as ArrayBuffer,
+      });
+
+      // Send subscription to backend
       await api.notifications.registerDevice(subscription);
+      
+      // Mark user as notifications_enabled
       await api.user.updateNotificationSettings(true);
 
+      console.log('[Notifications] Web Push subscription successful');
       return true;
     } catch (error) {
       console.error('[Notifications] Subscribe error:', error);
@@ -70,7 +84,6 @@ class NotificationService {
    */
   async unsubscribe(): Promise<void> {
     try {
-      // Remove Web Push subscription
       const registration = await navigator.serviceWorker.getRegistration('/sw.js');
       if (registration) {
         const subscription = await registration.pushManager.getSubscription();

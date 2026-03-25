@@ -3,7 +3,8 @@ import { User, Bell, ChevronRight, Settings, Shield, HelpCircle, LogOut, Award, 
 import { BottomNav } from '../components/BottomNav';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import { neonAuth } from '../services/auth';
+import { supabaseAuth } from '../services/auth';
+import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotificationModal } from '../components/NotificationModal';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
@@ -11,6 +12,7 @@ import { notificationService } from '../services/notificationService';
 
 export const Profile = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showDisableModal, setShowDisableModal] = useState(false);
@@ -44,13 +46,10 @@ export const Profile = () => {
 
   const handleLogout = async () => {
     try {
-      await neonAuth.signOut();
+      logout();
     } catch(err) {
       console.error(err);
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
   };
 
   const handleToggleNotifications = async () => {

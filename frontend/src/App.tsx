@@ -153,7 +153,7 @@ const RootRoute = () => {
   return <LandingPage />;
 };
 
-import { neonAuth } from './services/auth';
+
 
 function App() {
   return (

@@ -13,12 +13,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 )
 
-// Register Service Worker for PWA
+// Register Service Worker for PWA + Web Push
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    navigator.serviceWorker.register('/sw.js')
       .then(registration => {
-        console.log('Unified SW registered: ', registration);
+        console.log('Web Push SW registered: ', registration);
       })
       .catch(registrationError => {
         console.log('SW registration failed: ', registrationError);

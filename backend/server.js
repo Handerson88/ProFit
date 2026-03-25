@@ -17,14 +17,15 @@ console.log('mealRoutes loaded');
 const userRoutes = require('./routes/userRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const workoutRoutes = require('./routes/workoutRoutes');
-const adminRoutes = require('./routes/adminRoutes');
+const { setupWebPush } = require('./services/webPushService');
 const aiRoutes = require('./routes/aiRoutes');
 const achievementRoutes = require('./routes/achievementRoutes');
 console.log('notificationRoutes loaded');
-const quizRoutes = require('./routes/quizRoutes');
-const activityRoutes = require('./routes/activityRoutes');
 const appRoutes = require('./routes/appRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const quizRoutes = require('./routes/quizRoutes');
+const activityRoutes = require('./routes/activityRoutes');
 const activityMiddleware = require('./middleware/activityMiddleware');
 const authMiddleware = require('./middleware/auth');
 
@@ -100,6 +101,7 @@ const initDB = async () => {
       ADD COLUMN IF NOT EXISTS scans_used_today INTEGER DEFAULT 0,
       ADD COLUMN IF NOT EXISTS last_scan_date TIMESTAMP,
       ADD COLUMN IF NOT EXISTS has_paid BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS referral_code TEXT,
       ADD COLUMN IF NOT EXISTS referred_by UUID REFERENCES users(id) ON DELETE SET NULL,
       ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user',
       ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP,
@@ -112,7 +114,9 @@ const initDB = async () => {
       ADD COLUMN IF NOT EXISTS subscription_active BOOLEAN DEFAULT FALSE,
       ADD COLUMN IF NOT EXISTS ai_language TEXT DEFAULT 'auto',
       ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'free',
-      ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'inactive';
+      ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'inactive',
+      ADD COLUMN IF NOT EXISTS discount_earned BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS total_referrals INTEGER DEFAULT 0;
     `);
 
     await db.query(`
@@ -473,6 +477,27 @@ const initDB = async () => {
     `);
 
     await db.query(`
+      CREATE TABLE IF NOT EXISTS email_logs (
+        id SERIAL PRIMARY KEY,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        email_type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        details TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS discounts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        percentage INTEGER NOT NULL,
+        is_used BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.query(`
       CREATE TABLE IF NOT EXISTS payments (
         id UUID PRIMARY KEY,
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -522,7 +547,8 @@ const initDB = async () => {
 
 console.log('Initializing database...');
 initDB();
-console.log('Database init called');
+setupWebPush();
+console.log('Database init and Web Push setup called');
 
 // Health Check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));

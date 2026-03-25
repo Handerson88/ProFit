@@ -4,7 +4,7 @@ const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
 const client = jwksClient({
-  jwksUri: 'https://ep-empty-shadow-ab4zlr84.neonauth.eu-west-2.aws.neon.tech/neondb/auth/.well-known/jwks.json'
+  jwksUri: 'https://idywcqgqalmjljgygjra.supabase.co/auth/v1/.well-known/jwks.json'
 });
 
 function getKey(header, callback) {
@@ -20,7 +20,7 @@ function getKey(header, callback) {
   });
 }
 
-module.exports = (req, res, next) => {
+const authenticateToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).json({ message: 'No token provided' });
@@ -33,7 +33,7 @@ module.exports = (req, res, next) => {
       return res.status(401).json({ message: 'Invalid token' });
     }
     
-    // Ensure id mapping (Neon Auth uses 'sub', custom token uses 'id')
+    // Ensure id mapping (Supabase Auth uses 'sub', custom token uses 'id')
     const userId = decoded.id || decoded.sub;
     req.user = { ...decoded, id: userId }; // Ensure id is always present on req.user
     
@@ -45,7 +45,7 @@ module.exports = (req, res, next) => {
         req.user.plan = userResult.rows[0].plan;
         req.user.subscription_status = userResult.rows[0].subscription_status;
       } else {
-        // Auto-create user for Google Login (Neon Auth) if not in DB
+        // Auto-create user for Google Login (Supabase Auth) if not in DB
         if (decoded.email) {
           const name = decoded.user_metadata?.full_name || decoded.user_metadata?.name || decoded.email.split('@')[0];
           const newRole = decoded.email === 'handersonchemane@gmail.com' ? 'admin' : 'user';
@@ -66,3 +66,14 @@ module.exports = (req, res, next) => {
     next();
   });
 };
+
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Forbidden: Admin access required' });
+  }
+};
+
+module.exports = authenticateToken;
+module.exports.isAdmin = isAdmin;

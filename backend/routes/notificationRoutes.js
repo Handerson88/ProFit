@@ -7,7 +7,6 @@ router.get('/', authMiddleware, notificationController.getNotifications);
 router.put('/read-all', authMiddleware, notificationController.markAllAsRead);
 router.put('/:id/read', authMiddleware, notificationController.markAsRead);
 router.post('/register-device', authMiddleware, notificationController.registerDevice);
-router.post('/save-fcm-token', authMiddleware, notificationController.saveFCMToken);
 
 module.exports = router;
 

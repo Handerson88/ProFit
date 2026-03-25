@@ -3,6 +3,13 @@ const router = express.Router();
 const workoutController = require('../controllers/workoutController');
 const authMiddleware = require('../middleware/auth');
 const paywallMiddleware = require('../middleware/paywallMiddleware');
+const multer = require('multer');
+
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 router.use(authMiddleware);
 

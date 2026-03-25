@@ -1,65 +1,9 @@
 const db = require('../config/database');
-const { sendFCMNotification } = require('../services/firebaseAdmin');
-const webpush = require('web-push'); // keep for legacy Web Push fallback
+const { sendWebPushNotification } = require('../services/webPushService');
 const { v4: uuidv4 } = require('uuid');
 
-// Configure web-push as fallback
-if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(
-    'mailto:support@profit.app',
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-  );
-}
-
 // ============================================================
-// Save FCM token from frontend
-// ============================================================
-exports.saveFCMToken = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { fcm_token } = req.body;
-
-    if (!fcm_token) {
-      return res.status(400).json({ error: 'fcm_token is required.' });
-    }
-
-    // Save token on user row
-    await db.query(
-      'UPDATE users SET fcm_token = $1, notifications_enabled = true WHERE id = $2',
-      [fcm_token, userId]
-    );
-
-    // Send welcome notification (Push + In-app)
-    try {
-      const welcomeTitle = 'Notificações Ativadas 🔔';
-      const welcomeBody = 'Agora você receberá alertas inteligentes do aplicativo ProFit!';
-      
-      // 1. Persist to DB for in-app history
-      await db.query(
-        `INSERT INTO notifications (id, user_id, title, message, type) VALUES ($1, $2, $3, $4, $5)`,
-        [uuidv4(), userId, welcomeTitle, welcomeBody, 'success']
-      );
-
-      // 2. Send Push via FCM
-      await sendFCMNotification([fcm_token], {
-        title: welcomeTitle,
-        body: welcomeBody,
-        data: { type: 'welcome' }
-      });
-    } catch (e) {
-      console.warn('[FCM] Welcome notification flow failed:', e.message);
-    }
-
-    res.json({ success: true, message: 'FCM token salvo e notificações ativadas.' });
-  } catch (error) {
-    console.error('saveFCMToken error:', error);
-    res.status(500).json({ error: 'Erro ao salvar token FCM.' });
-  }
-};
-
-// ============================================================
-// Legacy: Register Web Push device subscription (kept for compatibility)
+// Register Web Push device subscription
 // ============================================================
 exports.registerDevice = async (req, res) => {
   try {
@@ -70,8 +14,9 @@ exports.registerDevice = async (req, res) => {
       return res.status(400).json({ error: 'Subscription is required.' });
     }
 
+    // Check if subscription already exists for this user
     const checkResult = await db.query(
-      'SELECT id FROM user_devices WHERE user_id = $1 AND subscription = $2',
+      'SELECT id FROM user_devices WHERE user_id = $1 AND subscription::text = $2::text',
       [userId, JSON.stringify(subscription)]
     );
 
@@ -79,20 +24,50 @@ exports.registerDevice = async (req, res) => {
       return res.status(200).json({ message: 'Device already registered.' });
     }
 
+    // Save subscription
     await db.query(
       `INSERT INTO user_devices (id, user_id, subscription, device_type) VALUES ($1, $2, $3, $4)`,
       [uuidv4(), userId, JSON.stringify(subscription), device_type || 'web']
     );
 
-    res.status(201).json({ message: 'Device registered successfully.' });
+    // Update users table to mark notifications as enabled
+    await db.query('UPDATE users SET notifications_enabled = true WHERE id = $1', [userId]);
+
+    // Send welcome notification
+    try {
+      const welcomeTitle = 'Notificações Ativadas 🔔';
+      const welcomeBody = 'Agora você receberá alertas inteligentes do aplicativo ProFit!';
+      
+      // 1. Persist to DB for in-app history
+      await db.query(
+        `INSERT INTO notifications (id, user_id, title, message, type) VALUES ($1, $2, $3, $4, $5)`,
+        [uuidv4(), userId, welcomeTitle, welcomeBody, 'success']
+      );
+
+      // 2. Send Push
+      await sendWebPushNotification(subscription, {
+        title: welcomeTitle,
+        body: welcomeBody,
+        data: { type: 'welcome' }
+      });
+    } catch (e) {
+      console.warn('[WebPush] Welcome notification flow failed:', e.message);
+    }
+
+    res.status(201).json({ success: true, message: 'Dispositivo registrado e notificações ativadas.' });
   } catch (error) {
     console.error('registerDevice error:', error);
     res.status(500).json({ error: 'Erro ao registrar dispositivo.' });
   }
 };
 
+// Deprecated: FCM token handler (redirects to registerDevice context if ever called)
+exports.saveFCMToken = async (req, res) => {
+  res.status(410).json({ error: 'FCM is deprecated. Please use /register-device with Web Push subscription.' });
+};
+
 // ============================================================
-// Send push to a single user — FCM primary, Web Push fallback
+// Send push to a single user
 // ============================================================
 exports.sendPushToUser = async (userId, payload, io = null) => {
   try {
@@ -101,23 +76,7 @@ exports.sendPushToUser = async (userId, payload, io = null) => {
       io.to(`user_${userId}`).emit('new_notification', payload);
     }
 
-    // 2. FCM push (primary)
-    const userResult = await db.query(
-      'SELECT fcm_token FROM users WHERE id = $1 AND fcm_token IS NOT NULL',
-      [userId]
-    );
-
-    if (userResult.rows.length > 0) {
-      const token = userResult.rows[0].fcm_token;
-      const { invalidTokens } = await sendFCMNotification([token], payload);
-      // Clean up invalid token
-      if (invalidTokens.length > 0) {
-        await db.query('UPDATE users SET fcm_token = NULL WHERE id = $1', [userId]);
-        console.log(`[FCM] Cleared invalid token for user ${userId}`);
-      }
-    }
-
-    // 3. Legacy Web Push fallback
+    // 2. Web Push
     const devicesResult = await db.query(
       'SELECT subscription FROM user_devices WHERE user_id = $1',
       [userId]
@@ -128,10 +87,11 @@ exports.sendPushToUser = async (userId, payload, io = null) => {
         ? JSON.parse(row.subscription)
         : row.subscription;
       try {
-        await webpush.sendNotification(subscription, JSON.stringify(payload));
+        await sendWebPushNotification(subscription, payload);
       } catch (err) {
-        if (err.statusCode === 404 || err.statusCode === 410) {
-          await db.query('DELETE FROM user_devices WHERE subscription = $1', [JSON.stringify(row.subscription)]);
+        if (err.type === 'REPLACEMENT_REQUIRED') {
+          await db.query('DELETE FROM user_devices WHERE subscription::text = $1::text', [JSON.stringify(subscription)]);
+          console.log(`[WebPush] Removed invalid subscription for user ${userId}`);
         }
       }
     }
@@ -141,36 +101,20 @@ exports.sendPushToUser = async (userId, payload, io = null) => {
 };
 
 // ============================================================
-// Broadcast to ALL users — FCM multicast + Web Push fallback
+// Broadcast to ALL users
 // ============================================================
 exports.sendPushToAll = async (payload) => {
   try {
-    // 1. FCM multicast (send to all users with fcm_token)
-    const fcmResult = await db.query(
-      'SELECT fcm_token FROM users WHERE fcm_token IS NOT NULL AND fcm_token != \'\''
-    );
-    const tokens = fcmResult.rows.map(r => r.fcm_token);
-
-    if (tokens.length > 0) {
-      const { invalidTokens } = await sendFCMNotification(tokens, payload);
-      // Clean up expired tokens
-      if (invalidTokens.length > 0) {
-        await db.query(
-          'UPDATE users SET fcm_token = NULL WHERE fcm_token = ANY($1)',
-          [invalidTokens]
-        );
-      }
-    }
-
-    // 2. Legacy Web Push fallback
-    const webPushResult = await db.query('SELECT subscription FROM user_devices');
+    const webPushResult = await db.query('SELECT user_id, subscription FROM user_devices');
     for (const row of webPushResult.rows) {
-      const subscription = row.subscription;
+      const subscription = typeof row.subscription === 'string'
+        ? JSON.parse(row.subscription)
+        : row.subscription;
       try {
-        await webpush.sendNotification(subscription, JSON.stringify(payload));
+        await sendWebPushNotification(subscription, payload);
       } catch (err) {
-        if (err.statusCode === 404 || err.statusCode === 410) {
-          await db.query('DELETE FROM user_devices WHERE subscription = $1', [JSON.stringify(subscription)]);
+        if (err.type === 'REPLACEMENT_REQUIRED') {
+          await db.query('DELETE FROM user_devices WHERE subscription::text = $1::text', [JSON.stringify(subscription)]);
         }
       }
     }

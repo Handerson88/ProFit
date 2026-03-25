@@ -1,24 +1,24 @@
-const CACHE_NAME = 'profit-v1';
+/**
+ * Unified Service Worker: PWA Caching + Web Push
+ */
+
+const CACHE_NAME = 'profit-v2';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicona.png',
-  '/favicon.png'
+  '/faviconnovo.png'
 ];
 
-// Install Event - Cache assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(URLS_TO_CACHE);
-      })
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(URLS_TO_CACHE);
+    })
   );
+  self.skipWaiting();
 });
 
-// Activate Event - Clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -31,50 +31,71 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  self.clients.claim();
 });
 
-// Fetch Event - Serve from cache or network
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      })
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request).then((fetchResponse) => {
+        return fetchResponse;
+      });
+    }).catch(() => {
+        // Fallback or custom offline page could go here
+    })
   );
 });
 
-// Existing Push Notification Logic
-self.addEventListener('push', function(event) {
-  if (event.data) {
+// Web Push Notification Event
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  try {
     const data = event.data.json();
+    const title = data.title || 'ProFit';
     const options = {
-      body: data.body,
-      icon: '/icon-192.png', // Assuming icons exist or using a default
-      badge: '/badge-72.png',
-      vibrate: [100, 50, 100],
+      body: data.body || '',
+      icon: '/faviconnovo.png',
+      badge: '/faviconnovo.png',
+      vibrate: [200, 100, 200],
       data: {
-        dateOfArrival: Date.now(),
-        primaryKey: '1'
+        url: data.data?.url || '/',
+        ...data.data
       },
       actions: [
-        { action: 'explore', title: 'Ver agora', icon: '/checkmark.png' },
-        { action: 'close', title: 'Fechar', icon: '/xmark.png' },
-      ]
+        { action: 'open', title: 'Abrir' },
+        { action: 'close', title: 'Fechar' },
+      ],
     };
 
-    event.waitUntil(
-      self.registration.showNotification(data.title, options)
-    );
+    event.waitUntil(self.registration.showNotification(title, options));
+  } catch (error) {
+    console.error('[SW] Push event error:', error);
+    // Fallback if data is not JSON
+    const textData = event.data.text();
+    event.waitUntil(self.registration.showNotification('ProFit', { body: textData }));
   }
 });
 
-self.addEventListener('notificationclick', function(event) {
+// Notification Click Handling
+self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  // Open the app when the notification is clicked
+  const urlToOpen = event.notification.data?.url || '/';
+
   event.waitUntil(
-    clients.openWindow('/')
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
   );
 });

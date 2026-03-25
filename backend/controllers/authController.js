@@ -7,6 +7,11 @@ const emailService = require('../services/emailService');
 exports.register = async (req, res) => {
   const { name, password, referralCode } = req.body;
   const email = req.body.email ? req.body.email.trim().toLowerCase() : '';
+  
+  if (!email || !password || !name) {
+    return res.status(400).json({ message: 'Nome, e-mail e senha são obrigatórios.' });
+  }
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const userId = uuidv4();
@@ -22,9 +27,11 @@ exports.register = async (req, res) => {
     }
 
     const result = await db.query(
-      'INSERT INTO users (id, name, email, password_hash, referral_code, referred_by, plan, subscription_status, role, scan_limit_per_day) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, name, email, role, plan, subscription_status',
-      [userId, name, email, hashedPassword, myReferralCode, referredBy, 'free', 'inactive', 'user', 0]
+      'INSERT INTO users (id, name, email, password_hash, referral_code, referred_by, plan, subscription_status, role, scan_limit_per_day, onboarding_completed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id, name, email, role, plan, subscription_status',
+      [userId, name, email, hashedPassword, myReferralCode, referredBy, 'free', 'inactive', 'user', 5, false]
     );
+
+    const user = result.rows[0];
 
     // Increment total_referrals for the referrer
     if (referredBy) {
@@ -38,18 +45,19 @@ exports.register = async (req, res) => {
         }
     }
 
-    const token = jwt.sign({ id: result.rows[0].id }, process.env.JWT_SECRET);
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET);
     
     // Dispara email de boas vindas
-    emailService.sendWelcomeEmail(result.rows[0]).catch(err => console.error('[Auth] Erro ao enviar email de boas-vindas:', err));
+    console.log(`[Auth] Registrando usuário ${email}, enviando e-mail de boas-vindas...`);
+    emailService.sendWelcomeEmail(user).catch(err => console.error('[Auth] Erro ao enviar email de boas-vindas:', err));
     
-    res.status(201).json({ token, user: result.rows[0] });
+    res.status(201).json({ token, user });
   } catch (err) {
-    console.error(err);
+    console.error('[Auth] Register Error:', err);
     if (err.code === '23505') { // Unique violation in Postgres
-      return res.status(409).json({ message: 'Este email já está registrado.' });
+      return res.status(409).json({ message: 'Este email já está registrado. Tente fazer login.' });
     }
-    res.status(500).json({ message: 'Erro ao conectar com servidor' });
+    res.status(500).json({ message: 'Erro ao processar registro. Tente novamente mais tarde.' });
   }
 };
 

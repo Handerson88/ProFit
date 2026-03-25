@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { neonAuth } from '../services/auth';
+import { supabaseAuth } from '../services/auth';
 
 interface User {
   id: string;
@@ -108,8 +108,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchAppStatus();
     refreshUser();
 
-    // Listen for Neon Auth changes (Google login)
-    const { data: { subscription } } = neonAuth.onAuthStateChange((event, session) => {
+    // Listen for Supabase Auth changes (Google login)
+    const { data: { subscription } } = supabaseAuth.onAuthStateChange((event, session) => {
       if (session?.access_token) {
         localStorage.setItem('token', session.access_token);
         setToken(session.access_token);

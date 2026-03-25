@@ -19,11 +19,11 @@ const pool = new Pool({
 });
 
 pool.on('connect', () => {
-  console.log('Connected to Neon PostgreSQL successfully.');
+  console.log('Connected to Supabase PostgreSQL successfully.');
 });
 
 pool.on('error', (err) => {
-  console.error('Database connection failed. Check Neon DATABASE_URL.', err);
+  console.error('Database connection failed. Check Supabase DATABASE_URL.', err);
 });
 
 module.exports = {

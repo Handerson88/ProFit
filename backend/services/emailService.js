@@ -13,47 +13,62 @@ const baseTemplate = (title, content, ctaText, ctaLink) => `
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            background-color: #0f172a; 
+            font-family: 'Inter', -apple-system, BlinkMacMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: #020617; 
             margin: 0; padding: 40px 20px;
             color: #f8fafc;
         }
         .wrapper { width: 100%; max-width: 600px; margin: 0 auto; }
         .container { 
-            background-color: #1e293b; 
-            padding: 48px; 
-            border-radius: 24px; 
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            background-color: #0f172a; 
+            padding: 56px; 
+            border-radius: 32px; 
+            border: 1px solid #1e293b;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
         .logo { 
-            font-size: 24px; font-weight: 800; color: #10b981; 
-            margin-bottom: 32px; letter-spacing: -0.02em; 
+            font-size: 28px; font-weight: 900; 
+            background: linear-gradient(135deg, #A8E063 0%, #56AB2F 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 40px; letter-spacing: -0.04em; 
         }
-        .content { font-size: 16px; line-height: 1.6; color: #cbd5e1; margin-bottom: 32px; }
+        .title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 24px;
+            line-height: 1.2;
+        }
+        .content { font-size: 16px; line-height: 1.7; color: #94a3b8; margin-bottom: 32px; }
         .content p { margin-bottom: 20px; }
-        .cta-container { text-align: center; margin: 40px 0; }
+        .content strong { color: #f8fafc; }
+        .cta-container { text-align: center; margin: 48px 0; }
         .button { 
             display: inline-block; 
-            padding: 16px 32px; 
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 18px 40px; 
+            background: linear-gradient(135deg, #A8E063 0%, #56AB2F 100%);
             color: #ffffff !important; 
             text-decoration: none; 
-            border-radius: 12px; 
-            font-weight: 700; 
+            border-radius: 16px; 
+            font-weight: 800; 
             font-size: 16px;
             text-align: center;
+            box-shadow: 0 10px 15px -3px rgba(86, 171, 47, 0.3);
         }
         .footer { 
-            text-align: center; margin-top: 32px; 
-            font-size: 13px; color: #64748b; 
+            text-align: center; margin-top: 40px; 
+            font-size: 13px; color: #475569; 
         }
-        .divider { height: 1px; background: #334155; margin: 24px 0; }
+        .divider { height: 1px; background: linear-gradient(90deg, transparent, #1e293b, transparent); margin: 32px 0; }
+        .highlight { color: #10b981; font-weight: 700; }
     </style>
 </head>
 <body>
     <div class="wrapper">
         <div class="container">
             <div class="logo">ProFit</div>
+            <div class="title">${title}</div>
             <div class="content">
                 ${content}
             </div>
@@ -64,7 +79,7 @@ const baseTemplate = (title, content, ctaText, ctaLink) => `
             ` : ''}
         </div>
         <div class="footer">
-            <p>— Equipe ProFit</p>
+            <p>Com ❤️ Equipe ProFit</p>
             <div class="divider"></div>
             <p>© ${new Date().getFullYear()} ProFit AI. Beira, Moçambique.</p>
         </div>
@@ -88,18 +103,23 @@ exports.sendWelcomeEmail = async (user) => {
     const title = "Seja bem-vindo ao ProFit! 🎉";
     const content = `
         <p>Olá, <strong>${user.name || 'Atleta'}</strong>!</p>
-        <p>Sua conta está ativa e pronta para uso.</p>
-        <p>A partir de agora, você tem acesso às ferramentas premium para transformar seu corpo e sua saúde.</p>
-        <p>Comece tirando sua primeira foto de refeição ou explorando seu novo plano de treino.</p>
+        <p>Estamos muito empolgados em ter você conosco na sua jornada fitness.</p>
+        <p>A partir de agora, você tem acesso às melhores ferramentas para transformar seu corpo:</p>
+        <ul style="color: #94a3b8; padding-left: 20px;">
+            <li>🍎 <span class="highlight">Scanner Inteligente:</span> Tire fotos dos seus pratos e receba os macros na hora.</li>
+            <li>🏋️ <span class="highlight">Treinos Personalizados:</span> Planos gerados por IA baseados no seu nível.</li>
+            <li>📊 <span class="highlight">Estatísticas Reais:</span> Acompanhe seu progresso de peso e calorias.</li>
+        </ul>
+        <p>Pronto para começar? Complete seu perfil agora para que possamos ajustar suas metas.</p>
     `;
-    const ctaText = "Ir para o meu Painel";
-    const ctaLink = `${APP_URL}/dashboard`;
+    const ctaText = "Começar Agora";
+    const ctaLink = `${APP_URL}/quiz`; // Redirect to quiz first
 
     try {
         await resend.emails.send({
             from: FROM_EMAIL,
             to: user.email,
-            subject: title,
+            subject: 'Bem-vindo ao ProFit! Sua jornada começa aqui. 🚀',
             html: baseTemplate(title, content, ctaText, ctaLink)
         });
         await logEmail(user.id, 'welcome', 'sent');

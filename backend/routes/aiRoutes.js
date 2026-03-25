@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const aiController = require('../controllers/aiController');
 const authenticateToken = require('../middleware/auth');
+const { isAdmin } = require('../middleware/auth');
 const paywallMiddleware = require('../middleware/paywallMiddleware');
 
 // User Routes
