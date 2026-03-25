@@ -4,9 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { socketService } from '../services/socket';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import { Paywall } from '../components/Paywall';
 
 export const AIChat = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  if (user?.subscription_status !== 'active') {
+    return <Paywall feature="Consultoria IA" />;
+  }
   const [conversations, setConversations] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
   const [inputValue, setInputValue] = useState('');

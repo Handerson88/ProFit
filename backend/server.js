@@ -96,7 +96,7 @@ const initDB = async () => {
       ADD COLUMN IF NOT EXISTS invite_token TEXT,
       ADD COLUMN IF NOT EXISTS invite_expires TIMESTAMP,
       ADD COLUMN IF NOT EXISTS plan_type TEXT DEFAULT 'free',
-      ADD COLUMN IF NOT EXISTS scan_limit_per_day INTEGER DEFAULT 3,
+      ADD COLUMN IF NOT EXISTS scan_limit_per_day INTEGER DEFAULT 0,
       ADD COLUMN IF NOT EXISTS scans_used_today INTEGER DEFAULT 0,
       ADD COLUMN IF NOT EXISTS last_scan_date TIMESTAMP,
       ADD COLUMN IF NOT EXISTS has_paid BOOLEAN DEFAULT FALSE,
@@ -110,7 +110,9 @@ const initDB = async () => {
       ADD COLUMN IF NOT EXISTS last_payment_date TIMESTAMP,
       ADD COLUMN IF NOT EXISTS next_billing_date TIMESTAMP,
       ADD COLUMN IF NOT EXISTS subscription_active BOOLEAN DEFAULT FALSE,
-      ADD COLUMN IF NOT EXISTS ai_language TEXT DEFAULT 'auto';
+      ADD COLUMN IF NOT EXISTS ai_language TEXT DEFAULT 'auto',
+      ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'free',
+      ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'inactive';
     `);
 
     await db.query(`

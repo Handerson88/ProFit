@@ -105,27 +105,22 @@ exports.scanMeal = async (req, res) => {
     
     // 1. Fetch user scan limits and current usage
     const userRes = await db.query(
-      'SELECT daily_calorie_target, scan_limit_per_day, scans_used_today, last_scan_date, plan_type FROM users WHERE id = $1', 
+      'SELECT daily_calorie_target, scan_limit_per_day, scans_used_today, last_scan_date, plan, subscription_status FROM users WHERE id = $1', 
       [user_id]
     );
     const user = userRes.rows[0];
     const goal = user?.daily_calorie_target || 2000;
-    const planType = user?.plan_type || 'free';
-    let scanLimit = user?.scan_limit_per_day || 3;
+    const plan = user?.plan || 'free';
+    const subscription_status = user?.subscription_status || 'inactive';
+    let scanLimit = user?.scan_limit_per_day || 1; // Default to 1 for free users
     let scansUsedToday = user?.scans_used_today || 0;
     const lastScanDate = user?.last_scan_date;
-    
-    // Check if monetization is enabled (app-wide)
-    const appStatusRes = await db.query('SELECT COUNT(*) FROM users');
-    const totalUsers = parseInt(appStatusRes.rows[0].count);
-    const monetizationEnabled = totalUsers >= 20;
     
     // Automatic Reset Logic
     const todayStr = new Date().toISOString().split('T')[0];
     const lastScanDateStr = lastScanDate ? new Date(lastScanDate).toISOString().split('T')[0] : null;
 
     if (lastScanDateStr !== todayStr) {
-      console.log('--- DAILY RESET: Starting new day for user ---');
       scansUsedToday = 0;
       await db.query(
         'UPDATE users SET scans_used_today = 0, last_scan_date = CURRENT_TIMESTAMP WHERE id = $1',
@@ -135,15 +130,14 @@ exports.scanMeal = async (req, res) => {
 
     // Check if limit reached
     // Rules:
-    // 1. Only check if monetization is enabled app-wide (>= 20 users)
-    // 2. Only check if user is not on a 'pro' or 'elite' plan
-    const isPremiumUser = planType === 'pro' || planType === 'elite';
+    // 1. Only allow unlimited if subscription_status is 'active' AND plan is 'pro' or 'premium'
+    const isPremiumUser = subscription_status === 'active' && (plan === 'pro' || plan === 'premium');
 
-    if (monetizationEnabled && !isPremiumUser && scansUsedToday >= scanLimit) {
+    if (!isPremiumUser && scansUsedToday >= scanLimit) {
       console.log('BLOCK: Daily scan limit reached for user');
       return res.status(403).json({ 
         status: 'LIMIT_REACHED',
-        message: 'Você atingiu o limite diário de scans do plano atual. Volte amanhã ou atualize seu plano.',
+        message: 'Você atingiu o limite diário de scans do plano gratuito. Ative o Plano Pro para scans ilimitados!',
         limit: scanLimit,
         used: scansUsedToday
       });

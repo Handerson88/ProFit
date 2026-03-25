@@ -204,23 +204,31 @@ export const Account = () => {
               <h2 className="text-2xl font-black text-[var(--text-main)] mb-1">{profile?.name || 'Seu Nome'}</h2>
               <div className="flex items-center space-x-2">
                 <p className="text-sm font-bold text-[var(--text-muted)] bg-[var(--bg-surface)] px-4 py-1.5 rounded-full">{profile?.email || 'seuemail@exemplo.com'}</p>
-                {profile?.plan_status === 'active' ? (
+                {profile?.subscription_status === 'active' ? (
                   <div className="flex flex-col items-start bg-[var(--bg-surface)] px-4 py-1.5 rounded-2xl">
                     <span className="text-[#56AB2F] text-[9px] font-black uppercase tracking-widest flex items-center">
                       PRO ATIVO ✅
                     </span>
                     {profile?.plan_expiration && (
-                      <span className="text-[8px] font-bold text-[var(--text-muted)] mt-0.5 uppercase tracking-tighter">
-                        Expira em: {new Date(profile.plan_expiration).toLocaleDateString('pt-BR')}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-[8px] font-bold text-[var(--text-muted)] mt-0.5 uppercase tracking-tighter">
+                          Válido até: {new Date(profile.plan_expiration).toLocaleDateString('pt-BR')}
+                        </span>
+                        <button 
+                          onClick={() => navigate('/plans')}
+                          className="mt-2 text-[#56AB2F] text-[9px] font-black uppercase tracking-widest hover:underline text-left"
+                        >
+                          Renovar Plano Pro
+                        </button>
+                      </div>
                     )}
                   </div>
                 ) : (
                    <button 
-                     onClick={() => navigate('/plans')}
+                     onClick={() => navigate('/checkout')}
                      className="bg-emerald-50 text-[#56AB2F] text-[9px] font-black px-4 py-2 rounded-full uppercase tracking-widest active:scale-95 transition-all border border-emerald-100 shadow-sm"
                    >
-                     {profile?.plan_type === 'pro' ? 'Renovar Plano' : '🚀 Upgrade Pro'}
+                     Ativar Plano Pro 🚀
                    </button>
                 )}
               </div>

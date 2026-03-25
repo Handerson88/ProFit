@@ -28,6 +28,8 @@ interface User {
   ai_language?: 'auto' | 'pt' | 'en';
   plan_status?: 'active' | 'inactive';
   plan_expiration?: string;
+  plan?: 'free' | 'pro' | 'premium';
+  subscription_status?: 'active' | 'inactive';
 }
 
 interface AuthContextType {

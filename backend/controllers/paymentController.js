@@ -47,6 +47,8 @@ exports.createPayment = async (req, res) => {
                     UPDATE users 
                     SET plan_type = 'pro', 
                         plan_status = 'active', 
+                        plan = 'pro',
+                        subscription_status = 'active',
                         plan_expiration = GREATEST(COALESCE(plan_expiration, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP) + INTERVAL '30 days',
                         has_paid = true
                     WHERE id = $1`, 

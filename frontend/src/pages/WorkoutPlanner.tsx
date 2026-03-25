@@ -5,6 +5,8 @@ import { BottomNav } from '../components/BottomNav';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { Paywall } from '../components/Paywall';
 
 const formatDate = (dateString: string) => {
   if (!dateString) return '--/--/----';
@@ -16,7 +18,12 @@ const formatDate = (dateString: string) => {
 };
 
 export const WorkoutPlanner = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  if (user?.subscription_status !== 'active') {
+    return <Paywall feature="Treinos IA" />;
+  }
   const [activePlan, setActivePlan] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showWarning, setShowWarning] = useState(false);

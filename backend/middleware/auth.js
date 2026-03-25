@@ -37,21 +37,26 @@ module.exports = (req, res, next) => {
     const userId = decoded.id || decoded.sub;
     req.user = decoded; // Initialize req.user so we can set properties on it
     
-    // Ensure we have the latest data from DB (including role)
+    // Ensure we have the latest data from DB (including role, plan, subscription_status)
     try {
-      const userResult = await db.query('SELECT role FROM users WHERE id = $1', [userId]);
+      const userResult = await db.query('SELECT role, plan, subscription_status FROM users WHERE id = $1', [userId]);
       if (userResult.rows.length > 0) {
         req.user.role = userResult.rows[0].role;
+        req.user.plan = userResult.rows[0].plan;
+        req.user.subscription_status = userResult.rows[0].subscription_status;
       } else {
         // Auto-create user for Google Login (Neon Auth) if not in DB
         if (decoded.email) {
           const name = decoded.user_metadata?.full_name || decoded.user_metadata?.name || decoded.email.split('@')[0];
           const newRole = decoded.email === 'handersonchemane@gmail.com' ? 'admin' : 'user';
+          // DEFAULT plan to free and status to inactive
           await db.query(
-            'INSERT INTO users (id, name, email, role) VALUES ($1, $2, $3, $4)',
-            [userId, name, decoded.email, newRole]
+            'INSERT INTO users (id, name, email, role, plan, subscription_status) VALUES ($1, $2, $3, $4, $5, $6)',
+            [userId, name, decoded.email, newRole, 'free', 'inactive']
           );
           req.user.role = newRole;
+          req.user.plan = 'free';
+          req.user.subscription_status = 'inactive';
         }
       }
     } catch (dbErr) {

@@ -15,12 +15,14 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
-// All meal routes require authentication and are subject to paywall
+// Authentication is required for all
 router.use(authMiddleware);
-router.use(paywallMiddleware);
 
+// Public/Free routes (No paywall)
 router.post('/add', mealController.addMeal);
+router.get('/summary', mealController.getDailySummary);
 
+// Specialized / Hybrid Routes
 router.post('/scan', (req, res, next) => {
   upload.single('image')(req, res, (err) => {
     if (err instanceof multer.MulterError) {
@@ -34,12 +36,12 @@ router.post('/scan', (req, res, next) => {
   });
 }, mealController.scanMeal);
 
-router.get('/summary', mealController.getDailySummary);
-router.get('/stats/weekly', mealController.getWeeklyStats);
-router.get('/recent', mealController.getRecentMeals);
-router.get('/history/calories', mealController.getCalorieHistory);
-router.get('/history', mealController.getHistory);
-router.put('/:id', mealController.updateMeal);
-router.delete('/:id', mealController.deleteMeal);
+// Premium Routes (Paywall required)
+router.get('/stats/weekly', paywallMiddleware, mealController.getWeeklyStats);
+router.get('/recent', paywallMiddleware, mealController.getRecentMeals);
+router.get('/history/calories', paywallMiddleware, mealController.getCalorieHistory);
+router.get('/history', paywallMiddleware, mealController.getHistory);
+router.put('/:id', paywallMiddleware, mealController.updateMeal);
+router.delete('/:id', paywallMiddleware, mealController.deleteMeal);
 
 module.exports = router;

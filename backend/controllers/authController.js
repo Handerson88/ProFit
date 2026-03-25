@@ -21,14 +21,9 @@ exports.register = async (req, res) => {
         }
     }
 
-    // Rule: First 20 users get PRO plan
-    const userCountResult = await db.query("SELECT COUNT(*) FROM users WHERE role = 'user'");
-    const userCount = parseInt(userCountResult.rows[0].count);
-    const planType = userCount < 20 ? 'pro' : 'free';
-
     const result = await db.query(
-      'INSERT INTO users (id, name, email, password_hash, referral_code, referred_by, plan_type, role) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, name, email, role, plan_type',
-      [userId, name, email, hashedPassword, myReferralCode, referredBy, planType, 'user']
+      'INSERT INTO users (id, name, email, password_hash, referral_code, referred_by, plan, subscription_status, role, scan_limit_per_day) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, name, email, role, plan, subscription_status',
+      [userId, name, email, hashedPassword, myReferralCode, referredBy, 'free', 'inactive', 'user', 0]
     );
 
     // Increment total_referrals for the referrer
@@ -94,7 +89,9 @@ exports.login = async (req, res) => {
             name: user.name, 
             email: user.email, 
             role: user.role,
-            onboarding_completed: user.onboarding_completed 
+            onboarding_completed: user.onboarding_completed,
+            plan: user.plan,
+            subscription_status: user.subscription_status
         } 
     });
   } catch (err) {
@@ -230,7 +227,7 @@ exports.activateInvite = async (req, res) => {
         const authToken = jwt.sign({ id: userId }, process.env.JWT_SECRET);
         
         // 5. Fetch updated user info
-        const userResult = await db.query('SELECT id, name, email, onboarding_completed FROM users WHERE id = $1', [userId]);
+        const userResult = await db.query('SELECT id, name, email, onboarding_completed, plan, subscription_status FROM users WHERE id = $1', [userId]);
 
         // 6. Send Welcome Email
         emailService.sendWelcomeEmail(userResult.rows[0])
@@ -292,7 +289,9 @@ exports.verifyToken = async (req, res) => {
       id: req.user.id, 
       name: req.user.name, 
       email: req.user.email,
-      role: req.user.role
+      role: req.user.role,
+      plan: req.user.plan,
+      subscription_status: req.user.subscription_status
     } 
   });
 };

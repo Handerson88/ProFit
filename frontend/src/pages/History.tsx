@@ -114,8 +114,13 @@ const HistoryItem = ({ id, title, time, calories, imageUrl, ingredients, observa
 };
 
 export const History = () => {
+  const { user } = useAuth();
   const [history, setHistory] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  if (user?.subscription_status !== 'active') {
+    return <Paywall feature="Histórico Completo" />;
+  }
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 

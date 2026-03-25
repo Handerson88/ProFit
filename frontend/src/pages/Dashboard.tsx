@@ -784,7 +784,7 @@ export const Dashboard = () => {
             </p>
             <div className="flex items-center space-x-2">
               <h1 className="text-[28px] font-bold text-[var(--text-main)] leading-tight">{userName}</h1>
-              {profile?.plan_type === 'pro' && profile?.plan_status === 'active' && (
+              {profile?.subscription_status === 'active' && (profile?.plan === 'pro' || profile?.plan === 'premium') && (
                 <div className="flex flex-col items-start mt-1">
                   <span className="bg-[#10b981] text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center">
                     PRO ATIVO ✅
@@ -805,10 +805,10 @@ export const Dashboard = () => {
 
         {/* Banner de Plano/Pagamento */}
         {(() => {
-          const isPro = profile?.plan_type === 'pro' && profile?.plan_status === 'active';
+          const isPro = profile?.subscription_status === 'active' && (profile?.plan === 'pro' || profile?.plan === 'premium');
           
           // Se não for Pro ou estiver inativo, mostra banner para assinar/renovar
-          if (!isPro && appStatus.monetizationEnabled) {
+          if (!isPro) {
             return (
               <div className="mb-8">
                 <PremiumBanner onUpgrade={() => navigate('/plans')} />
