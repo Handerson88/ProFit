@@ -4,6 +4,8 @@ import { BottomNav } from '../components/BottomNav';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
 import { CalendarModal } from '../components/CalendarModal';
+import { useAuth } from '../context/AuthContext';
+import { Paywall } from '../components/Paywall';
 
 const HistoryItem = ({ id, title, time, calories, imageUrl, ingredients, observation, onDelete }: any) => {
   const [isDeleting, setIsDeleting] = useState(false);

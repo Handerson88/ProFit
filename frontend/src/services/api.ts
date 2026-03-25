@@ -185,7 +185,7 @@ export const api = {
   },
 
   payments: {
-    create: (data: { amount: number, method: string, phone: string }) => fetch(`${API_URL}/payment/create`, {
+    create: (data: { amount: number, method: string, phone: string, name?: string }) => fetch(`${API_URL}/payment/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

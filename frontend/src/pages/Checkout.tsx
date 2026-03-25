@@ -53,8 +53,8 @@ const Checkout = () => {
     setError(null);
     
     try {
-      await api.payments.create({
-        amount: 29.90, // Fixed price for consistency with paywall message
+      await (api.payments.create as any)({
+        amount: 29.90,
         method: selectedMethod,
         phone: phoneNumber,
         name: fullName
