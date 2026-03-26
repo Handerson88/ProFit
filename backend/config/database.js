@@ -8,12 +8,13 @@ if (!connectionString) {
   console.error('CRITICAL: DATABASE_URL is not defined in environment variables.');
 }
 
+// Optimization for Vercel: Use a pool but keep connections alive
 const pool = new Pool({
   connectionString,
-  ssl: {
-    rejectUnauthorized: false
-  },
-  connectionTimeoutMillis: 10000, // 10s timeout to connect
+  ssl: connectionString?.includes('supabase.co') || connectionString?.includes('pooler.supabase.com') 
+    ? { rejectUnauthorized: false } 
+    : false,
+  connectionTimeoutMillis: 10000,
   query_timeout: 30000,          // 30s timeout for queries
   idleTimeoutMillis: 30000,      // 30s before closing idle connections
 });
