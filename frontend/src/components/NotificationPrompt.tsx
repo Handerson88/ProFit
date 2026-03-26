@@ -8,6 +8,7 @@ export const NotificationPrompt = () => {
   const { user, isAuthenticated } = useAuth();
   const [show, setShow] = useState(false);
   const [status, setStatus] = useState<'prompt' | 'loading' | 'success' | 'denied'>('prompt');
+  const [isManualAction, setIsManualAction] = useState(false);
 
   const handleEnable = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -18,7 +19,18 @@ export const NotificationPrompt = () => {
     setStatus('loading');
     try {
       const success = await notificationService.subscribe();
-      setStatus(success ? 'success' : 'denied');
+      
+      if (success) {
+        setStatus('success');
+      } else {
+        // If it's a manual click, we can show it's denied/failed
+        // If it was auto-trigger, we just keep quiet
+        if (isManualAction) {
+          setStatus('denied');
+        } else {
+          setShow(false);
+        }
+      }
       
       if (success) {
         // CASE: Just granted permission -> Send test notification immediately
@@ -49,6 +61,12 @@ export const NotificationPrompt = () => {
 
   useEffect(() => {
     if (!('Notification' in window) || !('serviceWorker' in navigator) || !isAuthenticated) return;
+
+    // SUPPRESS on Quiz page - Don't annoy user during onboarding
+    if (window.location.pathname.startsWith('/quiz')) {
+      setShow(false);
+      return;
+    }
 
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
     const permission = Notification.permission;
@@ -176,7 +194,10 @@ export const NotificationPrompt = () => {
 
                     {/* CTA Button */}
                     <button
-                      onClick={handleEnable}
+                      onClick={() => {
+                        setIsManualAction(true);
+                        handleEnable();
+                      }}
                       disabled={status === 'loading'}
                       className="w-full py-4 bg-gradient-to-r from-[#56AB2F] to-[#A8E063] text-white rounded-[18px] font-black text-[14px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_8px_24px_rgba(86,171,47,0.35)] disabled:opacity-70"
                     >
