@@ -14,9 +14,9 @@ const pool = new Pool({
   ssl: connectionString?.includes('supabase.co') || connectionString?.includes('pooler.supabase.com') 
     ? { rejectUnauthorized: false } 
     : false,
-  connectionTimeoutMillis: 10000,
-  query_timeout: 30000,          // 30s timeout for queries
-  idleTimeoutMillis: 30000,      // 30s before closing idle connections
+  connectionTimeoutMillis: 15000, 
+  query_timeout: 45000,          
+  idleTimeoutMillis: 60000,      
 });
 
 pool.on('connect', () => {

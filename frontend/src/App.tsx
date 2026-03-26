@@ -67,7 +67,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   // Admin sempre tem acesso
   const allowedWhenBlocked = ['/upgrade', '/plans', '/checkout', '/profile', '/account', '/notifications', '/convites', '/quiz', '/onboarding'];
   const currentPath = window.location.pathname;
-  const isPlanInactive = user?.plan_status !== 'active' && user?.role !== 'admin';
+  const isPlanInactive = user?.subscription_status !== 'active' && user?.role !== 'admin';
 
   if (isPlanInactive && !allowedWhenBlocked.some(path => currentPath.startsWith(path))) {
     return <Navigate to="/plans" replace />;

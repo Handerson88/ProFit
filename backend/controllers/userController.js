@@ -109,9 +109,27 @@ exports.submitQuiz = async (req, res) => {
       [parsedAge, gender, parsedHeight, parsedWeight, goal, activity_level, parsedTargetWeight, final_calorie_target, user_id]
     );
 
-    res.json({ message: 'Quiz completed', daily_calorie_target: final_calorie_target });
+    // Business Logic: First 20 users are FREE
+    const userCountRes = await db.query("SELECT COUNT(*) FROM users WHERE role = 'user'");
+    const userCount = parseInt(userCountRes.rows[0].count);
+    
+    let isFreeTier = userCount <= 20;
+    
+    if (isFreeTier) {
+        // Auto-activate for the first 20 users
+        await db.query(
+            "UPDATE users SET has_paid = true, subscription_status = 'active', plan = 'pro' WHERE id = $1",
+            [user_id]
+        );
+    }
+
+    res.json({ 
+        message: 'Quiz completed', 
+        daily_calorie_target: final_calorie_target,
+        is_free_tier: isFreeTier 
+    });
   } catch (err) {
-    console.error(err);
+    console.error('[Quiz] Error saving data:', err);
     res.status(500).json({ message: 'Failed to save quiz data: ' + err.message });
   }
 };
