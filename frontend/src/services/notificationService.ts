@@ -3,7 +3,7 @@ import { api } from './api';
 export type NotificationStatus = 'granted' | 'denied' | 'default' | 'unsupported';
 
 class NotificationService {
-  private PUBLIC_VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
+  private PUBLIC_VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || (import.meta.env as any).VITE_VAPID_CHAVE_PUBLICA || (import.meta.env as any)['VITE_VAPID_CHAVE_PÚBLICA'] || '';
 
   /**
    * Check real browser permission status

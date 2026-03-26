@@ -4,8 +4,8 @@ const webpush = require('web-push');
  * Configure web-push with VAPID keys
  */
 function setupWebPush() {
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  const publicKey = process.env.VAPID_PUBLIC_KEY || process.env.VAPID_CHAVE_PUBLICA;
+  const privateKey = process.env.VAPID_PRIVATE_KEY || process.env.VAPID_CHAVE_PRIVADA;
   const subject = process.env.VAPID_SUBJECT || 'mailto:support@myprofittness.com';
 
   if (!publicKey || !privateKey) {
