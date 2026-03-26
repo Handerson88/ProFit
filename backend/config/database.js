@@ -2,21 +2,35 @@ const { Pool } = require('pg');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-const connectionString = process.env.URL_DO_BANCO_DE_DADOS || process.env.DATABASE_URL || process.env.URL_BANCO_DE_DADOS;
+// Robust connection string resolver
+const getConnectionString = () => {
+  let str = process.env.URL_DO_BANCO_DE_DADOS || process.env.DATABASE_URL || process.env.URL_BANCO_DE_DADOS;
+  if (!str) return null;
+  
+  // Ensure sslmode=require if it's a Supabase/Cloud host
+  if ((str.includes('supabase.co') || str.includes('pooler.supabase.com')) && !str.includes('sslmode=')) {
+    str += (str.includes('?') ? '&' : '?') + 'sslmode=require';
+  }
+  
+  return str;
+};
 
-if (!connectionString) {
-  console.error('CRITICAL: No database connection string found in environment variables (checked URL_DO_BANCO_DE_DADOS, DATABASE_URL, URL_BANCO_DE_DADOS).');
+const connStr = getConnectionString();
+
+if (!connStr) {
+  console.error('CRITICAL: No database connection string found in environment variables.');
 }
 
-// Optimization for Vercel: Use a pool but keep connections alive
+// Optimization for Vercel: Small pool, robust connection
 const pool = new Pool({
-  connectionString,
-  ssl: connectionString?.includes('supabase.co') || connectionString?.includes('pooler.supabase.com') 
+  connectionString: connStr,
+  ssl: connStr?.includes('supabase.co') || connStr?.includes('pooler.supabase.com') || connStr?.includes('localhost') === false
     ? { rejectUnauthorized: false } 
     : false,
+  max: 10,                         // Limit connections for serverless
   connectionTimeoutMillis: 15000, 
   query_timeout: 45000,          
-  idleTimeoutMillis: 60000,      
+  idleTimeoutMillis: 30000,      
 });
 
 pool.on('connect', () => {
