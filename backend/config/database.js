@@ -2,10 +2,10 @@ const { Pool } = require('pg');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-const connectionString = process.env.DATABASE_URL || process.env.URL_BANCO_DE_DADOS;
+const connectionString = process.env.URL_DO_BANCO_DE_DADOS || process.env.DATABASE_URL || process.env.URL_BANCO_DE_DADOS;
 
 if (!connectionString) {
-  console.error('CRITICAL: DATABASE_URL is not defined in environment variables.');
+  console.error('CRITICAL: No database connection string found in environment variables (checked URL_DO_BANCO_DE_DADOS, DATABASE_URL, URL_BANCO_DE_DADOS).');
 }
 
 // Optimization for Vercel: Use a pool but keep connections alive
