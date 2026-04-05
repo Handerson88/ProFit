@@ -36,8 +36,8 @@ export const Onboarding = () => {
   };
 
   return (
-    <div className="main-wrapper bg-white">
-      <div className="app-container h-screen flex flex-col p-8 overflow-hidden bg-white shadow-none border-none">
+    <div className="main-wrapper bg-[var(--bg-card)]">
+      <div className="app-container h-screen flex flex-col p-8 overflow-hidden bg-[var(--bg-card)] shadow-none border-none">
       <div className="flex-1 flex flex-col items-center justify-center text-center">
         <AnimatePresence mode="wait">
           <motion.div

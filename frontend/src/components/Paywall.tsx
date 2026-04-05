@@ -39,7 +39,7 @@ export const Paywall: React.FC<PaywallProps> = ({ onClose, feature }) => {
                 {onClose && (
                     <button 
                         onClick={onClose}
-                        className="absolute top-12 left-6 w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-95 transition-all"
+                        className="absolute top-12 left-6 w-10 h-10 bg-[var(--bg-card)]/10 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-95 transition-all"
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </button>

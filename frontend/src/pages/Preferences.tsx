@@ -46,17 +46,17 @@ export const Preferences = () => {
   ];
 
   return (
-    <div className="main-wrapper bg-[#F6F7F9] dark:bg-[#0F172A] min-h-screen transition-colors duration-300">
+    <div className="main-wrapper bg-[var(--bg-app)] min-h-screen transition-colors duration-300">
       <div className="app-container pb-32 bg-transparent shadow-none border-none">
         {/* Header */}
-        <div className="px-6 pt-12 pb-6 flex items-center justify-between sticky top-0 z-40 bg-[#F6F7F9]/90 dark:bg-[#0F172A]/90 backdrop-blur-sm">
+        <div className="px-6 pt-12 pb-6 flex items-center justify-between sticky top-0 z-40 bg-[var(--bg-app)]/90 backdrop-blur-sm">
           <button 
             onClick={() => navigate(-1)}
-            className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-95 transition-all text-gray-700 dark:text-gray-300"
+            className="w-10 h-10 bg-[var(--bg-card)] dark:bg-slate-800 rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-95 transition-all text-[var(--text-main)] dark:text-gray-300"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-[20px] font-black text-gray-900 dark:text-white tracking-tight">Preferências</h1>
+          <h1 className="text-[20px] font-black text-[var(--text-main)] dark:text-white tracking-tight">Preferências</h1>
           <div className="w-10" /> {/* Spacer */}
         </div>
 
@@ -67,12 +67,12 @@ export const Preferences = () => {
             className="space-y-6"
           >
             <div>
-              <h2 className="text-[24px] font-black text-gray-900 dark:text-white leading-tight">Aparência</h2>
-              <p className="text-[14px] text-gray-500 dark:text-gray-400 mt-1 font-medium">Personalize como o ProFit aparece para você</p>
+              <h2 className="text-[24px] font-black text-[var(--text-main)] dark:text-white leading-tight">Aparência</h2>
+              <p className="text-[14px] text-[var(--text-muted)] dark:text-[var(--text-muted)] mt-1 font-medium">Personalize como o ProFit aparece para você</p>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-gray-50/50 dark:border-slate-700/50">
-              <h3 className="text-[16px] font-bold text-gray-900 dark:text-white mb-6">Tema do Aplicativo</h3>
+            <div className="bg-[var(--bg-card)] dark:bg-slate-800 rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-[var(--border-main)]/50 dark:border-slate-700/50">
+              <h3 className="text-[16px] font-bold text-[var(--text-main)] dark:text-white mb-6">Tema do Aplicativo</h3>
               
               <div className="space-y-3">
                 {themes.map((theme) => (
@@ -82,20 +82,20 @@ export const Preferences = () => {
                     className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all border-2 ${
                       preference === theme.id 
                         ? 'border-primary bg-primary/5 shadow-sm' 
-                        : 'bg-gray-50 dark:bg-slate-900/50 border-transparent hover:border-gray-200 dark:hover:border-slate-700'
+                        : 'bg-gray-50 dark:bg-slate-900/50 border-transparent hover:border-[var(--border-main)] dark:hover:border-slate-700'
                     }`}
                   >
                     <div className="flex items-center space-x-4">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        preference === theme.id ? 'bg-primary text-white' : 'bg-white dark:bg-slate-800 text-gray-400 dark:text-gray-500'
+                        preference === theme.id ? 'bg-primary text-white' : 'bg-[var(--bg-card)] dark:bg-slate-800 text-[var(--text-muted)] dark:text-[var(--text-muted)]'
                       }`}>
                         <theme.icon className="w-5 h-5" />
                       </div>
                       <div className="text-left">
-                        <p className={`font-bold text-[15px] ${preference === theme.id ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>
+                        <p className={`font-bold text-[15px] ${preference === theme.id ? 'text-primary' : 'text-[var(--text-main)] dark:text-white'}`}>
                           {theme.name}
                         </p>
-                        <p className="text-[12px] text-gray-400 dark:text-gray-500 font-medium">
+                        <p className="text-[12px] text-[var(--text-muted)] dark:text-[var(--text-muted)] font-medium">
                           {theme.description}
                         </p>
                       </div>
@@ -115,8 +115,8 @@ export const Preferences = () => {
             </div>
 
             {/* AI Language Section */}
-            <div className="bg-white dark:bg-slate-800 rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-gray-50/50 dark:border-slate-700/50">
-              <h3 className="text-[16px] font-bold text-gray-900 dark:text-white mb-6">Idioma da IA</h3>
+            <div className="bg-[var(--bg-card)] dark:bg-slate-800 rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-[var(--border-main)]/50 dark:border-slate-700/50">
+              <h3 className="text-[16px] font-bold text-[var(--text-main)] dark:text-white mb-6">Idioma da IA</h3>
               
               <div className="space-y-3">
                 {languages.map((lang) => (
@@ -126,20 +126,20 @@ export const Preferences = () => {
                     className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all border-2 ${
                       (user?.ai_language || 'auto') === lang.id 
                         ? 'border-[#56AB2F] bg-[#56AB2F]/5 shadow-sm' 
-                        : 'bg-gray-50 dark:bg-slate-900/50 border-transparent hover:border-gray-200 dark:hover:border-slate-700'
+                        : 'bg-gray-50 dark:bg-slate-900/50 border-transparent hover:border-[var(--border-main)] dark:hover:border-slate-700'
                     }`}
                   >
                     <div className="flex items-center space-x-4">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        (user?.ai_language || 'auto') === lang.id ? 'bg-[#56AB2F] text-white' : 'bg-white dark:bg-slate-800 text-gray-400 dark:text-gray-500'
+                        (user?.ai_language || 'auto') === lang.id ? 'bg-[#56AB2F] text-white' : 'bg-[var(--bg-card)] dark:bg-slate-800 text-[var(--text-muted)] dark:text-[var(--text-muted)]'
                       }`}>
                         <lang.icon className="w-5 h-5" />
                       </div>
                       <div className="text-left">
-                        <p className={`font-bold text-[15px] ${ (user?.ai_language || 'auto') === lang.id ? 'text-[#56AB2F]' : 'text-gray-900 dark:text-white'}`}>
+                        <p className={`font-bold text-[15px] ${ (user?.ai_language || 'auto') === lang.id ? 'text-[#56AB2F]' : 'text-[var(--text-main)] dark:text-white'}`}>
                           {lang.name}
                         </p>
-                        <p className="text-[12px] text-gray-400 dark:text-gray-500 font-medium">
+                        <p className="text-[12px] text-[var(--text-muted)] dark:text-[var(--text-muted)] font-medium">
                           {lang.description}
                         </p>
                       </div>

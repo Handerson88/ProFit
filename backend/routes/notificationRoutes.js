@@ -7,6 +7,7 @@ router.get('/', authMiddleware, notificationController.getNotifications);
 router.put('/read-all', authMiddleware, notificationController.markAllAsRead);
 router.put('/:id/read', authMiddleware, notificationController.markAsRead);
 router.post('/register-device', authMiddleware, notificationController.registerDevice);
+router.post('/send', authMiddleware, require('../controllers/adminCommunicationController').sendManualCommunication);
 
 module.exports = router;
 

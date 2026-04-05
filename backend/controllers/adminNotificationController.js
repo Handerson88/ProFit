@@ -7,90 +7,15 @@ exports.sendNotification = async (req, res) => {
     const io = req.app.get('socketio');
 
     try {
-        let notifications = [];
+        const count = await notificationController.sendToRecipientType(io, {
+            title,
+            message,
+            type,
+            recipientType,
+            userId
+        });
 
-        if (recipientType === 'all') {
-            const newNotif = {
-                id: uuidv4(),
-                title,
-                message,
-                type,
-                sent_to_all: true,
-                user_id: null
-            };
-            await db.query(
-                'INSERT INTO notifications (id, title, message, type, sent_to_all) VALUES ($1, $2, $3, $4, $5)',
-                [newNotif.id, newNotif.title, newNotif.message, newNotif.type, true]
-            );
-            // Broadcast to all connected users
-            io.emit('new_notification', newNotif);
-            
-            // Push notification to all devices
-            console.log(`[Admin] Sending broadcast push: "${newNotif.title}"`);
-            await notificationController.sendPushToAll({
-                title: newNotif.title,
-                body: newNotif.message,
-                data: { type: newNotif.type }
-            });
-
-            notifications.push(newNotif);
-
-        } else if (recipientType === 'active_subscribers') {
-            // Fix: Use user_devices instead of non-existent subscriptions table
-            // We join with users to ensure we only send to active users if needed, 
-            // but for now, just sending to all who have a device registered.
-            const subscribers = await db.query("SELECT DISTINCT user_id FROM user_devices");
-            for (const sub of subscribers.rows) {
-                const newNotif = {
-                    id: uuidv4(),
-                    title,
-                    message,
-                    type,
-                    user_id: sub.user_id
-                };
-                await db.query(
-                    'INSERT INTO notifications (id, title, message, type, user_id) VALUES ($1, $2, $3, $4, $5)',
-                    [newNotif.id, newNotif.title, newNotif.message, newNotif.type, newNotif.user_id]
-                );
-                // Send to specific user room
-                io.to(sub.user_id).emit('new_notification', newNotif);
-
-                // Push notification to this specific user
-                await notificationController.sendPushToUser(sub.user_id, {
-                    title: newNotif.title,
-                    body: newNotif.message,
-                    data: { type: newNotif.type }
-                });
-
-                notifications.push(newNotif);
-            }
-        } else if (recipientType === 'specific' && userId) {
-            const newNotif = {
-                id: uuidv4(),
-                title,
-                message,
-                type,
-                user_id: userId
-            };
-            await db.query(
-                'INSERT INTO notifications (id, title, message, type, user_id) VALUES ($1, $2, $3, $4, $5)',
-                [newNotif.id, newNotif.title, newNotif.message, newNotif.type, newNotif.user_id]
-            );
-            // Send to specific user room
-            io.to(userId).emit('new_notification', newNotif);
-
-            // Push notification to this specific user
-            console.log(`[Admin] Sending targeted push to user ${userId}: "${newNotif.title}"`);
-            await notificationController.sendPushToUser(userId, {
-                title: newNotif.title,
-                body: newNotif.message,
-                data: { type: newNotif.type }
-            });
-
-            notifications.push(newNotif);
-        }
-
-        res.status(201).json({ message: 'Notificação enviada com sucesso', count: notifications.length });
+        res.status(201).json({ message: 'Notificação enviada com sucesso', count });
     } catch (err) {
         console.error('Error sending notification:', err);
         res.status(500).json({ message: 'Erro ao enviar notificação' });
@@ -124,6 +49,62 @@ exports.getNotifications = async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar histórico de notificações' });
     }
 };
+
+// Schedule a notification for later
+exports.scheduleNotification = async (req, res) => {
+    const { title, message, type, recipientType, userId, scheduledAt } = req.body;
+
+    if (!scheduledAt) {
+        return res.status(400).json({ message: 'Data e hora de agendamento são obrigatórias' });
+    }
+
+    try {
+        const id = uuidv4();
+        await db.query(
+            `INSERT INTO scheduled_notifications (id, title, message, type, recipient_type, user_id, scheduled_at, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [id, title, message, type, recipientType, recipientType === 'specific' ? userId : null, scheduledAt, 'pending']
+        );
+
+        res.status(201).json({ message: 'Notificação agendada com sucesso', id });
+    } catch (err) {
+        console.error('Error scheduling notification:', err);
+        res.status(500).json({ message: 'Erro ao agendar notificação' });
+    }
+};
+
+// Get pending scheduled notifications
+exports.getScheduledNotifications = async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT s.*, u.name as user_name 
+            FROM scheduled_notifications s 
+            LEFT JOIN users u ON s.user_id = u.id 
+            WHERE s.status = 'pending'
+            ORDER BY s.scheduled_at ASC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching scheduled notifications:', err);
+        res.status(500).json({ message: 'Erro ao buscar notificações agendadas' });
+    }
+};
+
+// Delete/Cancel a scheduled notification
+exports.deleteScheduledNotification = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await db.query('DELETE FROM scheduled_notifications WHERE id = $1 AND status = $2 RETURNING *', [id, 'pending']);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Agendamento não encontrado ou já processado' });
+        }
+        res.json({ message: 'Agendamento cancelado com sucesso' });
+    } catch (err) {
+        console.error('Error deleting scheduled notification:', err);
+        res.status(500).json({ message: 'Erro ao cancelar agendamento' });
+    }
+};
+
 // Test automated notification trigger
 exports.testAutomatedPush = async (req, res) => {
     const { title, message } = req.body;

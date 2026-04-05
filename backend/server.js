@@ -1,5 +1,7 @@
 const path = require('path');
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+process.env.TZ = 'Africa/Maputo';
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -9,25 +11,24 @@ const { v4: uuidv4 } = require('uuid');
 
 console.log('Loading dependencies...');
 const authRoutes = require('./routes/authRoutes');
-console.log('authRoutes loaded');
 const foodRoutes = require('./routes/foodRoutes');
-console.log('foodRoutes loaded');
 const mealRoutes = require('./routes/mealRoutes');
-console.log('mealRoutes loaded');
 const userRoutes = require('./routes/userRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const workoutRoutes = require('./routes/workoutRoutes');
 const { setupWebPush } = require('./services/webPushService');
 const aiRoutes = require('./routes/aiRoutes');
 const achievementRoutes = require('./routes/achievementRoutes');
-console.log('notificationRoutes loaded');
 const appRoutes = require('./routes/appRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 const quizRoutes = require('./routes/quizRoutes');
 const activityRoutes = require('./routes/activityRoutes');
+const couponRoutes = require('./routes/couponRoutes');
 const activityMiddleware = require('./middleware/activityMiddleware');
 const authMiddleware = require('./middleware/auth');
+const subscriptionMiddleware = require('./middleware/subscriptionMiddleware');
+console.log('Dependencies loaded.');
 
 const app = express();
 console.log('Express app created');
@@ -115,6 +116,7 @@ const initDB = async () => {
       ADD COLUMN IF NOT EXISTS ai_language TEXT DEFAULT 'auto',
       ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'free',
       ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'inactive',
+      ADD COLUMN IF NOT EXISTS end_date TIMESTAMP,
       ADD COLUMN IF NOT EXISTS discount_earned BOOLEAN DEFAULT FALSE,
       ADD COLUMN IF NOT EXISTS total_referrals INTEGER DEFAULT 0;
     `);
@@ -215,6 +217,10 @@ const initDB = async () => {
         level TEXT,
         duration TEXT,
         exercises JSONB,
+        type TEXT DEFAULT 'IA',
+        calories INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'active',
+        structured_plan JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -312,6 +318,31 @@ const initDB = async () => {
       )
     `);
 
+    // AI Food Memory for caching analysis
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS food_memory (
+        id SERIAL PRIMARY KEY,
+        image_hash TEXT UNIQUE NOT NULL,
+        food_name TEXT,
+        calories INTEGER,
+        protein NUMERIC,
+        carbs NUMERIC,
+        fat NUMERIC,
+        ingredients JSONB DEFAULT '[]',
+        nutrition_observation TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // AI Detected Foods for frequency tracking
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS ai_detected_foods (
+        name TEXT PRIMARY KEY,
+        count INTEGER DEFAULT 1,
+        last_detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Ensure columns exist on pre-existing databases
     await db.query(`
       ALTER TABLE scanned_dishes 
@@ -333,10 +364,10 @@ const initDB = async () => {
       CREATE TABLE IF NOT EXISTS subscriptions (
         id UUID PRIMARY KEY,
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        plan_type TEXT NOT NULL,
-        plan_price NUMERIC DEFAULT 599,
+        start_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        end_date TIMESTAMP,
         status TEXT DEFAULT 'active',
-        current_period_end TIMESTAMP,
+        is_first_payment BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -401,14 +432,38 @@ const initDB = async () => {
       )
     `);
 
-    // Seed Templates
+    // Seed Templates (13 New Templates requested by USER)
     const templateCheck = await db.query('SELECT COUNT(*) FROM notification_templates');
-    if (parseInt(templateCheck.rows[0].count) === 0) {
+    if (parseInt(templateCheck.rows[0].count) <= 4) { // Only seed if empty or just initial test ones exist
+      // Using a temporary DELETE to ensure we have exactly the ones requested if it's a fresh-ish env
+      await db.query('DELETE FROM notification_templates'); 
       const templates = [
-        ['Novo Treino Disponível', 'Um novo plano de treino personalizado foi gerado para você. Aproveite!', 'success'],
-        ['Dica de Nutrição', 'Lembre-se de beber bastante água hoje para manter o metabolismo acelerado!', 'info'],
-        ['Lembrete de Água', 'Você já registrou sua ingestão de água hoje?', 'warning'],
-        ['Nova funcionalidade disponível 🚀', 'Acabamos de adicionar novos recursos no ProFit. Atualize o app e aproveite!', 'success']
+        // 🍞 Mata-bicho (3 templates)
+        ['Mata-bicho: Manhã ☀️', 'Comece bem o seu dia ☀️ Registre seu mata-bicho agora!', 'info'],
+        ['Mata-bicho: Escolhas 💪', 'Pequenas escolhas de manhã fazem grandes resultados 💪 Registre sua refeição.', 'info'],
+        ['Mata-bicho: IA 🤖', 'Registre o seu mata-bicho e deixe nossa IA analisar sua refeição 💪', 'success'],
+        
+        // 🍛 Almoço (3 templates)
+        ['Almoço: Energia ⚡', 'Seu almoço define sua energia ⚡ Registre agora!', 'info'],
+        ['Almoço: Dieta 🍽️', 'Já almoçou? 🍽️ Não esqueça de registrar e melhorar sua dieta.', 'info'],
+        ['Almoço: Equilíbrio 🥗', 'Hora do almoço! 🍽️ Vamos analisar sua refeição e ajudar no seu equilíbrio.', 'success'],
+        
+        // 💧 Água (2 templates)
+        ['Água: Energia 💧', 'Água = energia 💧 Beba agora!', 'warning'],
+        ['Água: Hidratação 🌊', 'Seu corpo agradece 💙 Hora de hidratar.', 'warning'],
+        
+        // 🌙 Jantar (2 templates)
+        ['Jantar: Disciplina 🌙', 'Feche o dia com disciplina 🌙 Registre seu jantar', 'info'],
+        ['Jantar: Foco 🍽️', 'Última refeição do dia 🍽️ Vamos manter o foco!', 'info'],
+        
+        // 🔥 Engajamento (Admin)
+        ['🔥 Engajamento', '🚨 Você está quase lá! Continue registrando suas refeições e veja resultados reais.', 'success'],
+        
+        // 💎 PRO / Upsell (Admin)
+        ['💎 PRO Upgrade', 'Desbloqueie análises avançadas com o PRO 🔓 Leve sua dieta para outro nível!', 'promotion'],
+        
+        // 🎯 Reativação (Admin)
+        ['🎯 Reativação', 'Sentimos sua falta 😢 Volte a registrar suas refeições e continue sua jornada!', 'alert']
       ];
       for (const t of templates) {
         await db.query(
@@ -416,6 +471,7 @@ const initDB = async () => {
           [uuidv4(), t[0], t[1], t[2]]
         );
       }
+      console.log('13 User-requested notification templates seeded.');
     }
 
     // Seed Initial Admin in USERS table for unified auth
@@ -546,9 +602,17 @@ const initDB = async () => {
 };
 
 console.log('Initializing database...');
-initDB();
-setupWebPush();
-console.log('Database init and Web Push setup called');
+initDB().then(() => {
+  console.log('Database initialization complete.');
+  setupWebPush();
+  console.log('Web Push setup called');
+  
+  const cronService = require('./services/cronService');
+  cronService.initCronJobs(io);
+  console.log('Cron jobs initialized');
+}).catch(err => {
+  console.error('CRITICAL: Database initialization failed:', err);
+});
 
 // Health Check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
@@ -566,6 +630,7 @@ app.get('/api/db-check', async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('Database connection check error:', err);
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
@@ -576,9 +641,9 @@ setInterval(() => {}, 1000 * 60 * 60);
 // Apply Activity Tracking and Auth Middleware to high-traffic groups
 // We apply it BEFORE the specific route groups to ensure it runs for all endpoints in that group
 app.use('/api/user', authMiddleware, activityMiddleware, userRoutes);
-app.use('/api/meals', authMiddleware, activityMiddleware, mealRoutes);
-app.use('/api/workouts', authMiddleware, activityMiddleware, workoutRoutes);
-app.use('/api/ai', authMiddleware, activityMiddleware, aiRoutes);
+app.use('/api/meals', authMiddleware, subscriptionMiddleware, activityMiddleware, mealRoutes);
+app.use('/api/workouts', authMiddleware, subscriptionMiddleware, activityMiddleware, workoutRoutes);
+app.use('/api/ai', authMiddleware, subscriptionMiddleware, activityMiddleware, aiRoutes);
 
 // Other Routes
 app.use('/api/auth', authRoutes);
@@ -590,6 +655,7 @@ app.use('/api/quiz', quizRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/app', appRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/coupons', couponRoutes);
 
 console.log('Routes registered with activity tracking');
 
@@ -641,14 +707,11 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'production') {
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} with Socket.io enabled`);
-  });
-}
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT} with Socket.io enabled`);
+});
 
-const cronService = require('./services/cronService');
-cronService.initCronJobs(io);
+// Cron jobs are now initialized in the initDB loop above
 
 module.exports = app;
 

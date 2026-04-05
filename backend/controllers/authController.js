@@ -5,7 +5,12 @@ const { v4: uuidv4 } = require('uuid');
 const emailService = require('../services/emailService');
 
 exports.register = async (req, res) => {
-  const { name, password, referralCode } = req.body;
+  const { 
+    name, password, referralCode, 
+    age, gender, weight, height, goal, activity_level, 
+    target_weight, daily_calorie_target, primary_objective, 
+    blockers, understands_calories, phone, country, plan_type
+  } = req.body;
   const email = req.body.email ? req.body.email.trim().toLowerCase() : '';
   
   if (!email || !password || !name) {
@@ -27,11 +32,41 @@ exports.register = async (req, res) => {
     }
 
     const result = await db.query(
-      'INSERT INTO users (id, name, email, password_hash, referral_code, referred_by, plan, subscription_status, role, scan_limit_per_day, onboarding_completed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id, name, email, role, plan, subscription_status',
-      [userId, name, email, hashedPassword, myReferralCode, referredBy, 'free', 'inactive', 'user', 5, false]
+      `INSERT INTO users (
+        id, name, email, password_hash, referral_code, referred_by, 
+        plan, subscription_status, role, scan_limit_per_day, onboarding_completed,
+        age, gender, weight, height, goal, activity_level, 
+        target_weight, daily_calorie_target, primary_objective, 
+        blockers, understands_calories, phone, country
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) 
+      RETURNING id, name, email, role, plan, subscription_status, is_influencer, created_at`,
+      [
+        userId, name, email, hashedPassword, myReferralCode, referredBy, 
+        plan_type || 'free', 'sem assinatura', 'user', 5, true,
+        age || null, gender || null, weight || null, height || null, goal || null, activity_level || null,
+        target_weight || null, daily_calorie_target || null, primary_objective || null,
+        JSON.stringify(blockers || []), understands_calories !== undefined ? understands_calories : true,
+        phone || null, country || null
+      ]
     );
 
     const user = result.rows[0];
+
+    // --- PROMOÇÃO: PRIMEIROS 20 USUÁRIOS GRÁTIS (Excluindo Admin/Influencer) ---
+    const userCountRes = await db.query("SELECT COUNT(*) FROM users WHERE role NOT IN ('admin', 'influencer')");
+    const totalRealUsers = parseInt(userCountRes.rows[0].count);
+    
+    if (totalRealUsers <= 20) {
+        console.log(`[AuthPromo] User ${email} is among the first 20. Activating PRO free.`);
+        await db.query(
+            "UPDATE users SET has_paid = true, subscription_status = 'ativo', plan = $1, payment_status = 'PAID_PROMO' WHERE id = $2",
+            [plan_type || 'pro', userId]
+        );
+    }
+    // ----------------------------------------------
+
+    // Mark quiz lead as converted if it exists
+    await db.query('UPDATE quiz_leads SET status = \'converted\' WHERE email = $1 OR id = $2', [email, req.body.leadId || null]);
 
     // Increment total_referrals for the referrer
     if (referredBy) {
@@ -45,7 +80,14 @@ exports.register = async (req, res) => {
         }
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET);
+    const token = jwt.sign({ 
+      id: user.id, 
+      role: user.role, 
+      status: user.subscription_status, 
+      plano_status: user.plano_status,
+      end_date: user.end_date,
+      data_expiracao: user.data_expiracao
+    }, process.env.JWT_SECRET);
     
     // Dispara email de boas vindas
     console.log(`[Auth] Registrando usuário ${email}, enviando e-mail de boas-vindas...`);
@@ -74,11 +116,15 @@ exports.login = async (req, res) => {
     }
 
     const user = result.rows[0];
+    console.log(`[AuthDebug] Tentativa de login: email=${email}, status=${user.status}, role=${user.role}`);
+
     if (user.status === 'blocked') {
       return res.status(403).json({ message: 'Sua conta foi bloqueada. Entre em contato com o suporte.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
+    console.log(`[AuthDebug] Resultado bcrypt.compare: ${isMatch}`);
+    
     if (!isMatch) {
       return res.status(401).json({ 
         message: 'Senha incorreta. Tente novamente.',
@@ -89,7 +135,35 @@ exports.login = async (req, res) => {
     // Update last_login_at
     await db.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET);
+    // --- REGRA DE ACESSO INTELIGENTE (20 USUÁRIOS / 30 DIAS) ---
+    const userCountRes = await db.query("SELECT COUNT(*) FROM users WHERE role NOT IN ('admin', 'influencer')");
+    const totalUsersCount = parseInt(userCountRes.rows[0].count);
+    
+    // Regra: Se count <= 20, verificar se está nos primeiros 30 dias
+    // (Usando created_at como base para garantir que usuários antigos não sejam bloqueados imediatamente se acabaram de entrar nos 20)
+    const accountCreatedAt = new Date(user.created_at || new Date());
+    const daysSinceCreation = (new Date() - accountCreatedAt) / (1000 * 60 * 60 * 24);
+    
+    let effectiveStatus = user.subscription_status;
+    let isPromoActive = false;
+
+    if (totalUsersCount <= 20) {
+        if (daysSinceCreation <= 30) {
+            effectiveStatus = 'ativo';
+            isPromoActive = true;
+        }
+    }
+    // ---------------------------------------------------------
+
+    const token = jwt.sign({ 
+      id: user.id, 
+      role: user.role, 
+      status: effectiveStatus, 
+      plano_status: user.plano_status,
+      end_date: isPromoActive ? null : user.end_date,
+      data_expiracao: isPromoActive ? null : user.data_expiracao
+    }, process.env.JWT_SECRET);
+
     res.json({ 
         token, 
         user: { 
@@ -97,9 +171,15 @@ exports.login = async (req, res) => {
             name: user.name, 
             email: user.email, 
             role: user.role,
+            is_influencer: user.is_influencer,
             onboarding_completed: user.onboarding_completed,
             plan: user.plan,
-            subscription_status: user.subscription_status
+            subscription_status: effectiveStatus,
+            plano_status: user.plano_status,
+            end_date: isPromoActive ? null : user.end_date,
+            data_expiracao: isPromoActive ? null : user.data_expiracao,
+            is_blocked: user.is_blocked,
+            created_at: user.created_at
         } 
     });
   } catch (err) {
@@ -129,7 +209,7 @@ exports.forgotPassword = async (req, res) => {
     const resetToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     // Link para o frontend
-    const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+    const frontUrl = process.env.FRONTEND_URL || 'https://myprofittness.com';
     const resetLink = `${frontUrl}/reset-password?token=${resetToken}`;
     
     // Dispara email
@@ -276,7 +356,7 @@ exports.createInvite = async (req, res) => {
         [inviteToken, userId, 'activation', expiresAt]
     );
 
-    const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+    const frontUrl = process.env.FRONTEND_URL || 'https://myprofittness.com';
     const inviteLink = `${frontUrl}/activate?token=${inviteToken}`;
     const inviterName = req.user ? req.user.name : 'Um membro do ProFit';
     
@@ -290,7 +370,23 @@ exports.createInvite = async (req, res) => {
 };
 
 exports.verifyToken = async (req, res) => {
-  // If we reached here, the middleware already verified the token
+  // --- REGRA DE ACESSO INTELIGENTE (VERIFICAÇÃO DE TOKEN) ---
+  const userCountRes = await db.query("SELECT COUNT(*) FROM users WHERE role NOT IN ('admin', 'influencer')");
+  const totalUsersCount = parseInt(userCountRes.rows[0].count);
+  
+  const accountCreatedAt = new Date(req.user.created_at || new Date());
+  const daysSinceCreation = (new Date() - accountCreatedAt) / (1000 * 60 * 60 * 24);
+  
+  let effectiveStatus = req.user.subscription_status;
+  let isPromoActive = false;
+
+  if (totalUsersCount <= 20) {
+      if (daysSinceCreation <= 30) {
+          effectiveStatus = 'ativo';
+          isPromoActive = true;
+      }
+  }
+
   res.json({ 
     valid: true, 
     user: { 
@@ -299,7 +395,28 @@ exports.verifyToken = async (req, res) => {
       email: req.user.email,
       role: req.user.role,
       plan: req.user.plan,
-      subscription_status: req.user.subscription_status
+      subscription_status: effectiveStatus,
+      plano_status: req.user.plano_status,
+      end_date: isPromoActive ? null : req.user.end_date,
+      data_expiracao: isPromoActive ? null : req.user.data_expiracao,
+      is_blocked: req.user.is_blocked,
+      created_at: req.user.created_at
     } 
   });
+};
+
+// Nova: Status da Promoção (Pública)
+exports.getPromotionStatus = async (req, res) => {
+  try {
+    const result = await db.query("SELECT COUNT(*) FROM users WHERE role NOT IN ('admin', 'influencer')");
+    const count = parseInt(result.rows[0].count);
+    res.json({ 
+      isFreePromoActive: count < 20,
+      total_users: count,
+      limit: 20
+    });
+  } catch (err) {
+    console.error('[AuthPromo] Error fetching status:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 };

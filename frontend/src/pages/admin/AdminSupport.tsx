@@ -3,6 +3,8 @@ import { api } from '../../services/api';
 import { socketService } from '../../services/socket';
 import { MessageSquare, User, Send, ChevronRight, Clock, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getMaputoNow } from '../../utils/dateUtils';
+import dayjs from 'dayjs';
 
 export const AdminSupport = () => {
     const [conversations, setConversations] = useState<any[]>([]);
@@ -27,7 +29,7 @@ export const AdminSupport = () => {
                     id: data.conversationId,
                     user_name: data.user_name,
                     user_email: data.user_email,
-                    updated_at: new Date().toISOString()
+                    updated_at: getMaputoNow().toISOString()
                 }, ...filtered];
             });
         });
@@ -136,7 +138,7 @@ export const AdminSupport = () => {
 
             <div className="grid grid-cols-12 gap-6 h-[75vh]">
                 {/* Conversations List */}
-                <div className="col-span-4 bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-[#334155] overflow-hidden flex flex-col">
+                <div className="col-span-4 bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-[#334155] overflow-hidden flex flex-col">
                     <div className="p-4 border-b border-slate-200 dark:border-[#334155] bg-slate-50 dark:bg-slate-800/50 space-y-4">
                         <h3 className="font-bold text-sm text-slate-700 dark:text-slate-300 uppercase tracking-wider">Conversas Recentes</h3>
                         <div className="relative">
@@ -145,7 +147,7 @@ export const AdminSupport = () => {
                                 placeholder="Buscar usuário..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-[#334155] rounded-lg px-4 py-2 text-xs outline-none focus:ring-2 focus:ring-indigo-500/20 dark:text-white"
+                                className="w-full bg-[var(--bg-card)] dark:bg-slate-800 border border-slate-200 dark:border-[#334155] rounded-lg px-4 py-2 text-xs outline-none focus:ring-2 focus:ring-indigo-500/20 dark:text-white"
                             />
                         </div>
                     </div>
@@ -166,7 +168,7 @@ export const AdminSupport = () => {
                                 <div className="flex items-center gap-2 mt-3">
                                     <Clock size={12} className="text-slate-300" />
                                     <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest leading-none">
-                                        Atualizado em {new Date(conv.updated_at).toLocaleString('pt-BR')}
+                                        Atualizado em {dayjs(conv.updated_at).tz('Africa/Maputo').format('DD/MM/YYYY HH:mm')}
                                     </span>
                                 </div>
                             </button>
@@ -175,10 +177,10 @@ export const AdminSupport = () => {
                 </div>
 
                 {/* Chat Details */}
-                <div className="col-span-8 bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-[#334155] overflow-hidden flex flex-col">
+                <div className="col-span-8 bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-[#334155] overflow-hidden flex flex-col">
                     {selectedConv ? (
                         <>
-                            <div className="p-5 border-b border-slate-200 dark:border-[#334155] flex justify-between items-center bg-white dark:bg-[#1E293B] z-10">
+                            <div className="p-5 border-b border-slate-200 dark:border-[#334155] flex justify-between items-center bg-[var(--bg-card)] dark:bg-[#1E293B] z-10">
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-bold">
                                         {selectedConv.user_name[0]}
@@ -199,7 +201,7 @@ export const AdminSupport = () => {
                                     <div key={msg.id || i} className={`flex ${msg.sender === 'user' ? 'justify-start' : 'justify-end'}`}>
                                         <div className={`max-w-[70%] p-4 rounded-2xl shadow-sm ${
                                             msg.sender === 'user' 
-                                                ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white rounded-tl-none' 
+                                                ? 'bg-[var(--bg-card)] dark:bg-slate-800 text-slate-800 dark:text-white rounded-tl-none' 
                                                 : msg.sender === 'admin'
                                                     ? 'bg-indigo-600 text-white rounded-tr-none'
                                                     : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-tr-none italic'
@@ -209,7 +211,7 @@ export const AdminSupport = () => {
                                             </p>
                                             <p className="text-sm font-medium leading-relaxed">{msg.message}</p>
                                             <p className="text-[9px] mt-2 font-bold opacity-40 text-right">
-                                                {new Date(msg.created_at).toLocaleTimeString()}
+                                                {dayjs(msg.created_at).tz('Africa/Maputo').format('HH:mm')}
                                             </p>
                                         </div>
                                     </div>
@@ -217,7 +219,7 @@ export const AdminSupport = () => {
 
                                 {isUserTyping && (
                                     <div className="flex justify-start">
-                                        <div className="bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm">
+                                        <div className="bg-[var(--bg-card)] dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm">
                                             <div className="flex flex-col">
                                                 <p className="text-[8px] font-black uppercase tracking-widest mb-1 text-slate-400">Usuário está digitando...</p>
                                                 <div className="flex space-x-1">
@@ -232,7 +234,7 @@ export const AdminSupport = () => {
                                 <div ref={messagesEndRef} />
                             </div>
 
-                            <div className="p-6 bg-white dark:bg-[#1E293B] border-t border-slate-200 dark:border-[#334155]">
+                            <div className="p-6 bg-[var(--bg-card)] dark:bg-[#1E293B] border-t border-slate-200 dark:border-[#334155]">
                                 <div className="flex gap-4">
                                     <input
                                         value={reply}

@@ -20,41 +20,46 @@ exports.registerDevice = async (req, res) => {
       [userId, JSON.stringify(subscription)]
     );
 
-    if (checkResult.rows.length > 0) {
-      return res.status(200).json({ message: 'Device already registered.' });
+    let isNewDevice = false;
+    if (checkResult.rows.length === 0) {
+      // Save subscription
+      await db.query(
+        `INSERT INTO user_devices (id, user_id, subscription, device_type) VALUES ($1, $2, $3, $4)`,
+        [uuidv4(), userId, JSON.stringify(subscription), device_type || 'web']
+      );
+      isNewDevice = true;
     }
 
-    // Save subscription
-    await db.query(
-      `INSERT INTO user_devices (id, user_id, subscription, device_type) VALUES ($1, $2, $3, $4)`,
-      [uuidv4(), userId, JSON.stringify(subscription), device_type || 'web']
-    );
-
-    // Update users table to mark notifications as enabled
+    // Always update users table to ensure notifications are marked as active
     await db.query('UPDATE users SET notifications_enabled = true WHERE id = $1', [userId]);
 
-    // Send welcome notification
-    try {
-      const welcomeTitle = 'Notificações Ativadas 🔔';
-      const welcomeBody = 'Agora você receberá alertas inteligentes do aplicativo ProFit!';
-      
-      // 1. Persist to DB for in-app history
-      await db.query(
-        `INSERT INTO notifications (id, user_id, title, message, type) VALUES ($1, $2, $3, $4, $5)`,
-        [uuidv4(), userId, welcomeTitle, welcomeBody, 'success']
-      );
+    // Send welcome notification ONLY for genuinely NEW devices to avoid duplication
+    if (isNewDevice) {
+      try {
+        const welcomeTitle = 'Notificações Ativadas 🔔';
+        const welcomeBody = 'Agora você receberá alertas inteligentes do aplicativo ProFit!';
+        
+        // 1. Persist to DB for in-app history
+        await db.query(
+          `INSERT INTO notifications (id, user_id, title, message, type) VALUES ($1, $2, $3, $4, $5)`,
+          [uuidv4(), userId, welcomeTitle, welcomeBody, 'success']
+        );
 
-      // 2. Send Push
-      await sendWebPushNotification(subscription, {
-        title: welcomeTitle,
-        body: welcomeBody,
-        data: { type: 'welcome' }
-      });
-    } catch (e) {
-      console.warn('[WebPush] Welcome notification flow failed:', e.message);
+        // 2. Send Push
+        await sendWebPushNotification(subscription, {
+          title: welcomeTitle,
+          body: welcomeBody,
+          data: { type: 'welcome' }
+        });
+      } catch (e) {
+        console.warn('[WebPush] Welcome notification flow failed:', e.message);
+      }
     }
 
-    res.status(201).json({ success: true, message: 'Dispositivo registrado e notificações ativadas.' });
+    res.status(isNewDevice ? 201 : 200).json({ 
+      success: true, 
+      message: isNewDevice ? 'Dispositivo registrado e notificações ativadas.' : 'Notificações reativadas.' 
+    });
   } catch (error) {
     console.error('registerDevice error:', error);
     res.status(500).json({ error: 'Erro ao registrar dispositivo.' });
@@ -179,4 +184,63 @@ exports.markAllAsRead = async (req, res) => {
     console.error('markAllAsRead error:', error);
     res.status(500).json({ error: 'Erro ao atualizar notificações.' });
   }
+};
+// ============================================================
+// Send to specific recipient type (Logic moved from Admin)
+// ============================================================
+exports.sendToRecipientType = async (io, { title, message, type, recipientType, userId }) => {
+    let notificationsCount = 0;
+
+    if (recipientType === 'all') {
+        const newNotifId = uuidv4();
+        await db.query(
+            'INSERT INTO notifications (id, title, message, type, sent_to_all) VALUES ($1, $2, $3, $4, $5)',
+            [newNotifId, title, message, type, true]
+        );
+        io.emit('new_notification', { id: newNotifId, title, message, type, sent_to_all: true });
+        await exports.sendPushToAll({ title, body: message, data: { type } });
+        notificationsCount = 1;
+
+    } else if (recipientType === 'active_subscribers') {
+        const subscribers = await db.query("SELECT DISTINCT user_id FROM user_devices");
+        for (const sub of subscribers.rows) {
+            const newNotifId = uuidv4();
+            await db.query(
+                'INSERT INTO notifications (id, title, message, type, user_id) VALUES ($1, $2, $3, $4, $5)',
+                [newNotifId, title, message, type, sub.user_id]
+            );
+            io.to(sub.user_id).emit('new_notification', { id: newNotifId, title, message, type, user_id: sub.user_id });
+            await exports.sendPushToUser(sub.user_id, { title, body: message, data: { type } });
+            notificationsCount++;
+        }
+    } else if (recipientType === 'pro_users') {
+        const pros = await db.query("SELECT id FROM users WHERE role = 'user' AND plan_type = 'pro'");
+        for (const user of pros.rows) {
+            const newNotifId = uuidv4();
+            await db.query('INSERT INTO notifications (id, title, message, type, user_id) VALUES ($1, $2, $3, $4, $5)', [newNotifId, title, message, type, user.id]);
+            io.to(user.id).emit('new_notification', { id: newNotifId, title, message, type, user_id: user.id });
+            await exports.sendPushToUser(user.id, { title, body: message, data: { type } }, io);
+            notificationsCount++;
+        }
+    } else if (recipientType === 'inactive_users') {
+        const inactives = await db.query("SELECT id FROM users WHERE role = 'user' AND (last_active_at < NOW() - INTERVAL '7 days' OR last_active_at IS NULL)");
+        for (const user of inactives.rows) {
+            const newNotifId = uuidv4();
+            await db.query('INSERT INTO notifications (id, title, message, type, user_id) VALUES ($1, $2, $3, $4, $5)', [newNotifId, title, message, type, user.id]);
+            io.to(user.id).emit('new_notification', { id: newNotifId, title, message, type, user_id: user.id });
+            await exports.sendPushToUser(user.id, { title, body: message, data: { type } }, io);
+            notificationsCount++;
+        }
+    } else if (recipientType === 'specific' && userId) {
+        const newNotifId = uuidv4();
+        await db.query(
+            'INSERT INTO notifications (id, title, message, type, user_id) VALUES ($1, $2, $3, $4, $5)',
+            [newNotifId, title, message, type, userId]
+        );
+        io.to(userId).emit('new_notification', { id: newNotifId, title, message, type, user_id: userId });
+        await exports.sendPushToUser(userId, { title, body: message, data: { type } });
+        notificationsCount = 1;
+    }
+
+    return notificationsCount;
 };

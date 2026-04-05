@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Circle, Clock, Loader2, Trophy, Flame, ChevronRight, AlertCircle, PlayCircle, Info, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 export const WorkoutSession = () => {
   const { day } = useParams();
@@ -14,6 +15,7 @@ export const WorkoutSession = () => {
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [startTime] = useState(Date.now());
+  const { langData } = useLanguage();
 
   useEffect(() => {
     fetchWorkoutData();
@@ -22,11 +24,22 @@ export const WorkoutSession = () => {
   const fetchWorkoutData = async () => {
     try {
       setIsLoading(true);
-      const plan = await api.workouts.getActive();
-      if (!plan) {
+      const rawPlan = await api.workouts.getActive();
+      if (!rawPlan) {
         navigate('/workout');
         return;
       }
+
+      // Parse structured_plan if it's a string (Postgres JSONB sometimes returns as string in some drivers/configs)
+      let plan = rawPlan;
+      if (typeof plan.structured_plan === 'string') {
+        try {
+          plan.structured_plan = JSON.parse(plan.structured_plan);
+        } catch (e) {
+          console.error("Failed to parse structured_plan", e);
+        }
+      }
+      
       setActivePlan(plan);
 
       const dayWorkout = plan.structured_plan.daily_workouts.find((dw: any) => dw.day === day);
@@ -108,27 +121,27 @@ export const WorkoutSession = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#F6F7F9]">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--bg-app)]">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
         >
           <Loader2 className="w-12 h-12 text-[#56AB2F]" />
         </motion.div>
-        <p className="text-gray-400 font-bold italic mt-4">Preparando seu treino pro...</p>
+        <p className="text-[var(--text-muted)] font-bold italic mt-4">{langData.wk_preparing}</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F7F9] pb-32">
+    <div className="min-h-screen bg-[var(--bg-app)] pb-32">
       {/* Header */}
-      <div className="px-6 pt-12 pb-6 flex justify-between items-center sticky top-0 z-40 bg-[#F6F7F9]/90 backdrop-blur-sm">
-        <button onClick={() => navigate('/workout')} className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-all">
-          <ArrowLeft className="w-5 h-5 text-gray-700" />
+      <div className="px-6 pt-12 pb-6 flex justify-between items-center sticky top-0 z-40 bg-[var(--bg-app)]/90 backdrop-blur-sm">
+        <button onClick={() => navigate('/workout')} className="w-12 h-12 bg-[var(--bg-card)] rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-all">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-main)]" />
         </button>
         <div className="text-center">
-          <h1 className="text-xl font-black text-gray-900 leading-tight">Treino de {day}</h1>
+          <h1 className="text-xl font-black text-[var(--text-main)] leading-tight">{langData.wk_workout_of} {day}</h1>
           <p className="text-[10px] font-black text-[#56AB2F] uppercase tracking-widest flex items-center justify-center">
             <Flame className="w-3 h-3 mr-1 fill-current" />
             {activePlan?.structured_plan?.daily_workouts?.find((dw: any) => dw.day === day)?.muscles}
@@ -150,7 +163,7 @@ export const WorkoutSession = () => {
                 <Sparkles className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-[10px] font-black text-[#A8E063] uppercase tracking-[0.2em] mb-1 block">Dica do Master Coach</span>
+                <span className="text-[10px] font-black text-[#A8E063] uppercase tracking-[0.2em] mb-1 block">{langData.wk_coach_tip}</span>
                 <p className="text-sm font-bold leading-relaxed text-white/90">
                   "{activePlan.structured_plan.daily_workouts.find((dw: any) => dw.day === day).coach_tip}"
                 </p>
@@ -164,19 +177,19 @@ export const WorkoutSession = () => {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-[32px] p-6 shadow-xl shadow-gray-200/50 border border-gray-50 overflow-hidden relative"
+          className="bg-[var(--bg-card)] rounded-[32px] p-6 shadow-xl shadow-gray-200/50 border border-[var(--border-main)] overflow-hidden relative"
         >
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <Trophy className="w-12 h-12 text-[#56AB2F]" />
           </div>
           <div className="flex justify-between items-end mb-4">
             <div>
-              <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">Progresso Total</p>
-              <h3 className="text-2xl font-black text-gray-900">{completedExercisesCount} de {totalExercises} <span className="text-sm text-gray-400 font-bold">exercícios</span></h3>
+              <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{langData.wk_total_progress}</p>
+              <h3 className="text-2xl font-black text-[var(--text-main)]">{completedExercisesCount} {langData.PT ? 'de' : 'of'} {totalExercises} <span className="text-sm text-[var(--text-muted)] font-bold">{langData.wk_exercises}</span></h3>
             </div>
             <span className="text-lg font-black text-[#56AB2F]">{Math.round(progressPercentage)}%</span>
           </div>
-          <div className="w-full h-4 bg-gray-50 rounded-full overflow-hidden border border-gray-100/50">
+          <div className="w-full h-4 bg-gray-50 rounded-full overflow-hidden border border-[var(--border-main)]/50">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${progressPercentage}%` }}
@@ -197,7 +210,7 @@ export const WorkoutSession = () => {
             }, {})
           ).map(([muscleGroup, groupExercises]: [any, any], groupIdx: number) => (
             <div key={muscleGroup} className="space-y-4">
-              <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center">
+              <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 flex items-center">
                 <span className="w-2 h-2 bg-[#56AB2F] rounded-full mr-2"></span>
                 {muscleGroup}
               </h4>
@@ -214,7 +227,7 @@ export const WorkoutSession = () => {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: (groupIdx * 0.2) + (idx * 0.1) }}
-                      className={`bg-white rounded-[32px] shadow-sm border-2 transition-all p-6 relative overflow-hidden ${isDone ? 'border-[#56AB2F]/30 bg-[#F0F9EB]/20 shadow-none' : 'border-transparent shadow-gray-200/40'}`}
+                      className={`bg-[var(--bg-card)] rounded-[32px] shadow-sm border-2 transition-all p-6 relative overflow-hidden ${isDone ? 'border-[#56AB2F]/30 bg-[#F0F9EB]/20 shadow-none' : 'border-transparent shadow-gray-200/40'}`}
                     >
                       {isDone && (
                         <div className="absolute top-4 right-4">
@@ -226,37 +239,39 @@ export const WorkoutSession = () => {
 
                       <div className="flex justify-between items-start mb-4 pr-8">
                         <div>
-                          <h3 className={`text-lg font-black leading-tight ${isDone ? 'text-gray-900/40' : 'text-gray-900'}`}>{ex.name}</h3>
+                          <h3 className={`text-lg font-black leading-tight ${isDone ? 'text-[var(--text-main)]/40' : 'text-[var(--text-main)]'}`}>{ex.name}</h3>
                           <div className="flex gap-3 mt-2">
-                             <div className="flex items-center text-[11px] font-bold text-gray-400">
+                             <div className="flex items-center text-[11px] font-bold text-[var(--text-muted)]">
                                <Clock className="w-3 h-3 mr-1" />
-                               {ex.rest} descanso
+                               {ex.rest} {langData.wk_rest}
                              </div>
                           </div>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 mb-6">
-                        <div className="bg-gray-50 rounded-2xl p-3 border border-gray-100/50">
-                          <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Carga sugerida</p>
-                          <p className="text-sm font-black text-gray-900">{ex.reps} <span className="text-[10px] text-gray-400">reps</span></p>
+                        <div className="bg-gray-50 rounded-2xl p-3 border border-[var(--border-main)]/50">
+                          <p className="text-[9px] font-black text-[var(--text-muted)] uppercase mb-1">{langData.wk_suggested_load}</p>
+                          <p className="text-sm font-black text-[var(--text-main)]">{ex.reps} <span className="text-[10px] text-[var(--text-muted)]">reps</span></p>
                         </div>
-                        <div className="bg-gray-50 rounded-2xl p-3 border border-gray-100/50">
-                          <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Volume</p>
-                          <p className="text-sm font-black text-gray-900">{ex.sets} <span className="text-[10px] text-gray-400">séries</span></p>
+                        <div className="bg-gray-50 rounded-2xl p-3 border border-[var(--border-main)]/50">
+                          <p className="text-[9px] font-black text-[var(--text-muted)] uppercase mb-1">{langData.wk_volume}</p>
+                          <p className="text-sm font-black text-[var(--text-main)]">{ex.sets} <span className="text-[10px] text-[var(--text-muted)]">{langData.wk_sets_series}</span></p>
                         </div>
                       </div>
 
-                      {/* Technical Tip */}
-                      <div className="flex gap-3 p-4 bg-amber-50/50 rounded-2xl border border-amber-100/30 mb-6">
-                        <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                        <p className="text-[11px] font-medium text-amber-900/70 italic leading-relaxed">"{ex.instructions}"</p>
-                      </div>
+                      {/* Technical Tip - Only show if available */}
+                      {ex.instructions && (
+                        <div className="flex gap-3 p-4 bg-amber-50/50 rounded-2xl border border-amber-100/30 mb-6">
+                          <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                          <p className="text-[11px] font-medium text-amber-900/70 italic leading-relaxed">"{ex.instructions}"</p>
+                        </div>
+                      )}
 
                       {/* Sets Progression */}
                       <div>
                         <div className="flex justify-between items-center mb-3">
-                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Séries concluídas</span>
+                          <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">{langData.wk_completed_sets}</span>
                           <span className="text-[10px] font-black text-[#56AB2F]">{prog.sets.length} / {setsCount}</span>
                         </div>
                         <div className="flex gap-2.5 flex-wrap">
@@ -269,7 +284,7 @@ export const WorkoutSession = () => {
                                 className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all border-2 active:scale-90 ${
                                   setCompleted 
                                     ? 'bg-[#56AB2F] border-[#56AB2F] text-white shadow-lg shadow-[#56AB2F]/20' 
-                                    : 'bg-white border-gray-100 text-gray-300 hover:border-[#56AB2F]/30 hover:text-[#56AB2F]'
+                                    : 'bg-[var(--bg-card)] border-[var(--border-main)] text-gray-300 hover:border-[#56AB2F]/30 hover:text-[#56AB2F]'
                                 }`}
                               >
                                 {setCompleted ? (
@@ -283,8 +298,33 @@ export const WorkoutSession = () => {
                         </div>
                       </div>
 
+                      {/* Quick Exercise Done Button */}
+                      {!isDone && (
+                        <button 
+                          onClick={async () => {
+                            // Mark all sets as completed
+                            const allSets = Array.from({ length: setsCount }, (_, i) => i);
+                            const exerciseName = ex.name;
+                            const newProg = { ...exerciseProgress, [exerciseName]: { completed: true, sets: allSets } };
+                            setExerciseProgress(newProg);
+                            try {
+                              setIsUpdating(exerciseName);
+                              await api.workouts.markExerciseComplete(activePlan.id, exerciseName, day!, true, allSets);
+                              const completedCount = Object.values(newProg).filter((p: any) => p.completed).length;
+                              if (completedCount === exercises.length) {
+                                handleFullWorkoutComplete();
+                              }
+                            } catch (e) { console.error(e); } finally { setIsUpdating(null); }
+                          }}
+                          className="w-full mt-6 py-3 bg-[var(--bg-card)] border-2 border-[#56AB2F]/20 text-[#56AB2F] font-black text-xs rounded-xl flex items-center justify-center gap-2 hover:bg-[#56AB2F] hover:text-white transition-all active:scale-95"
+                        >
+                           <CheckCircle2 className="w-4 h-4" />
+                           {langData.wk_mark_done}
+                        </button>
+                      )}
+
                       {isUpdating === ex.name && (
-                        <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] flex items-center justify-center z-10 transition-opacity">
+                        <div className="absolute inset-0 bg-[var(--bg-card)]/40 backdrop-blur-[1px] flex items-center justify-center z-10 transition-opacity">
                           <Loader2 className="w-6 h-6 animate-spin text-[#56AB2F]" />
                         </div>
                       )}
@@ -308,7 +348,7 @@ export const WorkoutSession = () => {
             <motion.div 
               initial={{ scale: 0.8, y: 50 }}
               animate={{ scale: 1, y: 0 }}
-              className="bg-white rounded-[48px] p-10 text-center shadow-2xl relative z-10 max-w-sm w-full border border-gray-100"
+              className="bg-[var(--bg-card)] rounded-[48px] p-10 text-center shadow-2xl relative z-10 max-w-sm w-full border border-[var(--border-main)]"
             >
               <div className="w-24 h-24 bg-[#EAF5D5] rounded-full flex items-center justify-center mx-auto mb-8 relative">
                  <motion.div 
@@ -319,17 +359,17 @@ export const WorkoutSession = () => {
                  <Trophy className="w-12 h-12 text-[#56AB2F] relative z-10" />
               </div>
               
-              <h3 className="text-3xl font-black text-gray-900 mb-2">Treino Pago! 🔥</h3>
-              <p className="text-gray-500 font-bold mb-8 italic">"Excelente trabalho hoje. O corpo responde ao esforço consistente!"</p>
+              <h3 className="text-3xl font-black text-[var(--text-main)] mb-2">{langData.wk_workout_done}</h3>
+              <p className="text-[var(--text-muted)] font-bold mb-8 italic">"{langData.wk_excellent_work}"</p>
 
               <div className="grid grid-cols-2 gap-4 mb-10">
                 <div className="bg-[#FFF8F1] rounded-3xl p-4">
-                  <p className="text-[10px] font-black text-orange-400 uppercase mb-1">Kcal Est.</p>
-                  <p className="text-xl font-black text-gray-900">~{caloriesBurned}</p>
+                  <p className="text-[10px] font-black text-orange-400 uppercase mb-1">{langData.wk_est_kcal}</p>
+                  <p className="text-xl font-black text-[var(--text-main)]">~{caloriesBurned}</p>
                 </div>
                 <div className="bg-[#F1F7FF] rounded-3xl p-4">
-                  <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Tempo</p>
-                  <p className="text-xl font-black text-gray-900">{durationMinutes}m</p>
+                  <p className="text-[10px] font-black text-blue-400 uppercase mb-1">{langData.wk_time}</p>
+                  <p className="text-xl font-black text-[var(--text-main)]">{durationMinutes}m</p>
                 </div>
               </div>
               
@@ -337,7 +377,7 @@ export const WorkoutSession = () => {
                 onClick={() => navigate('/workout')}
                 className="w-full py-5 bg-gradient-to-r from-[#A8E063] to-[#56AB2F] text-white rounded-[24px] font-black text-lg shadow-xl shadow-[#56AB2F]/30 active:scale-95 transition-all"
               >
-                Até amanhã! 💪
+                {langData.wk_see_tomorrow}
               </button>
             </motion.div>
           </motion.div>

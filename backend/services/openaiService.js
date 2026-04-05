@@ -63,13 +63,15 @@ Retorne APENAS o objeto JSON abaixo:
             ]
           }
         ],
+        max_tokens: 4096,
         response_format: { type: "json_object" }
       },
       {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
-        }
+        },
+        timeout: 60000
       }
     );
 
@@ -96,7 +98,7 @@ async function analyzeBodyImage(imageBufferOrPath, { gender, goal, weight, heigh
 Analise a imagem corporal do usuário para orientar a criação de um treino personalizado.
 
 DADOS FORNECIDOS:
-Gênero: ${gender === 'female' ? 'Feminino' : 'Masculino'}
+Gênero: ${gender === 'female' ? 'Feminino' : gender === 'male' ? 'Masculino' : 'Outro'}
 Objetivo: ${goal}
 Peso: ${weight}kg, Altura: ${height}cm
 
@@ -125,9 +127,10 @@ Retorne APENAS um objeto JSON:
             { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
           ]
         }],
+        max_tokens: 4096,
         response_format: { type: "json_object" }
       },
-      { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' } }
+      { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, timeout: 60000 }
     );
 
     return JSON.parse(response.data.choices[0].message.content);
@@ -137,71 +140,60 @@ Retorne APENAS um objeto JSON:
   }
 }
 
-async function generateWorkoutStructuredPlan({ gender, goal, level, days_per_week: days, location, duration, history, age, weight, height, experience, injuries, diseases, body_focus, intensity, observations, bodyAnalysis }) {
+async function generateWorkoutStructuredPlan({ gender, goal, level, days_per_week, location, duration, history, age, weight, height, experience, injuries, diseases, body_focus, intensity, observations, bodyAnalysis }) {
   try {
     const historyContext = history && history.length > 0 
-        ? `Considere que ele já completou o treino de: ${history.join(', ')}. Evite repetir exatamente o mesmo treino recente.`
+        ? `Histórico Recente: O usuário já completou sessões de: ${history.slice(0, 5).join(', ')}. Foque em progressão e variação técnica.`
         : '';
 
     const genderContext = gender === 'female'
-        ? 'Dê uma atenção especial (mais volume) para membros inferiores e glúteos, pois o usuário é do gênero feminino.'
-        : 'Dê uma atenção especial (mais volume) para membros superiores (peito, costas, ombros), pois o usuário é do gênero masculino.';
+        ? 'FOCO FEMININO: Este usuário é uma MULHER. Priorize hipertrofia de glúteos e membros inferiores. Volume moderado para membros superiores.'
+        : gender === 'male' 
+        ? 'FOCO MASCULINO: Este usuário é um HOMEM. Priorize ombros (V-taper), peitoral e braços, além de pernas potentes.'
+        : 'Crie um treino balanceado e inclusivo.';
 
-    const prompt = `Gere um plano de TREINO MENSAL (30 DIAS) estruturado para este usuário.
+    const prompt = `Gere uma DIVISÃO SEMANAL DE TREINO (SPLIT) de elite para este usuário.
 Você é um MASTER COACH PERSONAL com 20 anos de experiência. Tone: Motivador, técnico e autoritário.
 
 DADOS DO USUÁRIO:
-Idade: ${age || 'N/A'} anos
-Peso: ${weight || 'N/A'} kg
-Altura: ${height || 'N/A'} cm
+Idade: ${age || 'N/A'} anos | Peso: ${weight || 'N/A'} kg | Altura: ${height || 'N/A'} cm
 Gênero: ${gender === 'female' ? 'Feminino' : 'Masculino'}
 Objetivo: ${goal}
-Nível Atual: ${level}
-Experiência: ${experience || 'N/A'}
-Frequência: ${days} dias por semana
-Local de Treino: ${location}
-Tempo Disponível: ${duration}
-Intensidade Preferida: ${intensity || 'Moderada'}
-Foco Corporal: ${body_focus || 'Equilibrado'}
+Nível: ${level}
+Frequência: ${days_per_week} dias por semana
+Local: ${location} | Tempo: ${duration}
+Foco: ${body_focus || 'Equilibrado'} | Intensidade: ${intensity || 'Alta'}
 
-SAÚDE E LIMITAÇÕES (MUITO IMPORTANTE):
-Lesões: ${injuries || 'Nenhuma'}
-Doenças/Condições: ${diseases || 'Nenhuma'}
-Observações: ${observations || 'Nenhuma'}
+SAÚDE/RESTRIÇÕES:
+Lesões: ${injuries || 'Nenhuma'} | Doenças: ${diseases || 'Nenhuma'}
+Obs: ${observations || 'Nenhuma'}
 
-ANÁLISE CORPORAL POR IA (VISÃO):
+ANÁLISE DE IMAGEM DA IA:
 ${bodyAnalysis || 'Nenhuma imagem enviada.'}
 
-${historyContext}
-${genderContext}
+REGRAS MASTER COACH:
+1. GERE UMA DIVISÃO SEMANAL COMPLETA (EX: Se 3 dias, gere Treino A, B, C. Se 5 dias, A, B, C, D, E).
+2. ADAPTE PARA LESÕES: Se houver restrições (${injuries}), mude os exercícios e explique nas "instructions".
+3. VOLUME ELITE: Mínimo 4 a 5 exercícios por grupo muscular. Total de 8 a 12 exercícios por dia.
+4. JSON PURO: Retorne APENAS o JSON, sem conversas.
 
-REGRAS DE GERAÇÃO (MASTER COACH):
-1. SEGURANÇA: Se houver lesões ou doenças, substitua exercícios perigosos por alternativas seguras e inclua avisos nas instruções.
-2. ADAPTAÇÃO: Se o nível for "iniciante", foque em técnica. Se "avançado", use técnicas como drop-sets ou bi-sets.
-3. LOCAL: Se o local for "Casa", use APENAS exercícios com peso do corpo ou itens domésticos. NUNCA sugira máquinas de academia para treinos em casa.
-4. FOCO: Priorize o grupo muscular "${body_focus}" se especificado, mas mantenha o equilíbrio.
-5. VOLUME: 6 a 8 exercícios por dia. É um plano de alta performance.
-6. ANALISE VISUAL: Se houver uma "ANÁLISE CORPORAL POR IA", priorize os ajustes sugeridos nela (ex: se indicar gordura abdominal, adicione cardio; se indicar pernas fracas, aumente volume de pernas).
-7. COACH TIPS: Use as dicas para motivar e corrigir a postura.
-8. MENSAGEM DO DIA: A "message" inicial deve ser personalizada (ex: "Mesmo com ${injuries}, vamos superar limites com segurança!").
-
-JSON de Saída (OBRIGATÓRIO):
+ESTRUTURA JSON OBRIGATÓRIA:
 {
-  "title": "${goal} - Plano Pro ${level}",
-  "message": "Mensagem motivadora e personalizada do Master Coach",
+  "title": "${goal} - Split Semanal Master",
+  "message": "Mensagem motivadora focada no objetivo e nas restrições.",
   "daily_workouts": [
     {
-      "day": "Segunda-feira",
-      "muscles": "Grupo Muscular Alvo",
-      "coach_tip": "Dica de ouro do treinador para hoje",
+      "day": "Treino A (Ex: Peito e Tríceps)",
+      "muscles": "Músculos alvo",
+      "coach_tip": "Dica técnica matadora",
       "exercises": [
         {
-          "name": "Nome",
+          "name": "Nome do Exercício",
           "sets": 4,
           "reps": "10-12",
           "rest": "60s",
-          "muscle_group": "peito",
-          "instructions": "Dica técnica"
+          "muscle_group": "Peito",
+          "instructions": "Guia de execução perfeito."
         }
       ]
     }
@@ -216,6 +208,7 @@ JSON de Saída (OBRIGATÓRIO):
           { role: "system", content: "Personal Trainer Expert. Response format: JSON." },
           { role: "user", content: prompt }
         ],
+        max_tokens: 16384,
         response_format: { type: "json_object" },
         temperature: 0.8
       },
@@ -223,7 +216,8 @@ JSON de Saída (OBRIGATÓRIO):
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 120000
       }
     );
 
@@ -254,7 +248,7 @@ async function getSupportAIResponse(userMessage, history = [], userProfile = {})
   const profileContext = userProfile 
     ? `DADOS DO USUÁRIO: 
        - Nome: ${userProfile.name}
-       - Sexo: ${userProfile.gender === 'female' ? 'Feminino' : 'Masculino'}
+       - Sexo: ${userProfile.gender === 'female' ? 'Feminino' : userProfile.gender === 'male' ? 'Masculino' : 'Outro'}
        - Peso: ${userProfile.weight}kg
        - Altura: ${userProfile.height}cm
        - Idade: ${userProfile.age} anos
@@ -263,26 +257,25 @@ async function getSupportAIResponse(userMessage, history = [], userProfile = {})
        - Plano: ${userProfile.plan_status === 'active' ? 'Pro' : 'Gratuito'}` 
     : '';
 
-  const systemPrompt = `Você é o ProFit AI, um Coach Pro que combina o conhecimento de um Personal Trainer Master, um Nutricionista Esportivo e um Mentor Motivacional.
+  const systemPrompt = `Você é o ProFit AI, um Coach Pro de Nível Mundial. Você combina o conhecimento científico de um Fisiologista do Exercício Master, um Nutricionista Esportivo de Elite (especialista em hipertrofia e performance) e um Estrategista de Biohacking.
 
   PERSONALIDADE:
-  - Profissional, técnico, direto e altamente motivador.
-  - Use emojis de forma moderada para incentivar (💪, 🥗, 🔥).
-  - Linguagem natural e fluida (evite termos robóticos).
+  - Extremamente competente, analítico, motivador e focado em resultados reais.
+  - Sua inteligência deve transparecer na profundidade técnica: cite macros, fale sobre síntese proteica, tempo sob tensão, densidade calórica e periodização se relevante.
+  - Linguagem natural, impecável e inspiradora.
 
-  SUA MISSÃO:
-  Ajudar o usuário com:
-  1. Treinos: Execução, divisões (ABC, Full Body, etc), volume e intensidade.
-  2. Nutrição: Macros, suplementação (Creatina, Whey), listas de compras saudáveis e refeições pré/pós treino.
-  3. Motivação: Superação de platôs e consistência.
-  4. Suporte: Uso das funcionalidades do App ProFit.
+  SUA MISSÃO MASTER:
+  1. Treinos: Planeje progressão de carga, fale sobre falha concêntrica, bi-sets, e ajuste o treino ao objetivo (ex: foco em pernas para mulheres, ombros largos para homens).
+  2. Nutrição de Precisão: Calcule a ingestão ideal de proteína (ex: 2g/kg), explique o papel dos carboidratos na insulina e glicogênio, e recomende suplementação baseada em evidências (Creatina, Beta-Alanina, etc).
+  3. Estratégia Mental: Use psicologia esportiva para manter o usuário no trilho.
+  4. Suporte App: Guie o usuário no ProFit (Scanner de refeições, Diário, etc).
 
   REGRAS CRÍTICAS:
   - IDIOMA: ${languageInstruction}
-  - CONTEXTO: Use os DADOS DO USUÁRIO fornecidos para dar respostas personalizadas (ex: se ele quer "ganhar massa", não sugira apenas deficit calórico).
-  - ESCOPO: Responda apenas sobre Fitness, Saúde e Bem-estar. Saudações iniciais podem ser retribuídas cordialmente antes de focar no tema.
-  - SEGURANÇA: NÃO dê diagnósticos médicos. Se o assunto for grave ou clínico, oriente a busca por um profissional de saúde.
-  - CONCISÃO: Seja direto. O usuário quer resultados, não textos gigantes.
+  - CONTEXTO: Use os DADOS DO USUÁRIO fornecidos para ser cirúrgico. Se ele quer "ganhar massa", dê números, macros sugeridos e estratégias de superávit.
+  - ESCOPO: Responda apenas sobre Fitness, Saúde e Bem-estar.
+  - SEGURANÇA: NÃO dê diagnósticos médicos. Se o assunto for grave ou clínico, oriente a busca por um profissional.
+  - CONCISÃO INTELIGENTE: Seja direto. O usuário quer resultados técnicos e rápidos.
 
   CONTEXTO DO PERFIL:
   ${profileContext}
@@ -300,13 +293,15 @@ async function getSupportAIResponse(userMessage, history = [], userProfile = {})
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage }
         ],
+        max_tokens: 4096,
         temperature: 0.7
       },
       {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 60000
       }
     );
 

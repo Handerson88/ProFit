@@ -39,7 +39,14 @@ const getBillingEmailTemplate = (userName, paymentLink) => `
             <p style="margin-top: 24px; margin-bottom: 0;">Atenciosamente,<br><strong>Equipe ProFit 🚀</strong></p>
         </div>
         <div class="footer">
-            &copy; 2026 ProFit - Seu parceiro de evolução.
+            <p>Este e-mail foi enviado para você porque você se cadastrou no ProFit.</p>
+            <p>Beira, Moçambique — Bairro Central, Rua da Correia, 123.</p>
+            <div class="divider" style="height: 1px; background-color: #e2e8f0; margin: 16px 0;"></div>
+            <p>© ${new Date().getFullYear()} ProFit AI. Todos os direitos reservados.</p>
+            <p style="margin-top: 12px;">
+                <a href="${process.env.FRONTEND_URL || 'https://myprofittness.com'}/profile/settings" style="color: #56AB2F;">Configurações da Conta</a> | 
+                <a href="${process.env.FRONTEND_URL || 'https://myprofittness.com'}/unsubscribe" style="color: #56AB2F;">Não receber mais e-mails</a>
+            </p>
         </div>
     </div>
 </body>

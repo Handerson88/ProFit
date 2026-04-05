@@ -63,17 +63,17 @@ export const EditMealModal = ({ isOpen, onClose, onSave, meal }: EditMealModalPr
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed left-6 right-6 top-1/2 -translate-y-1/2 bg-white rounded-[40px] shadow-2xl z-[101] overflow-hidden"
+            className="fixed left-6 right-6 top-1/2 -translate-y-1/2 bg-[var(--bg-card)] rounded-[40px] shadow-2xl z-[101] overflow-hidden"
           >
             <div className="p-8">
               <div className="flex justify-between items-start mb-8">
                 <div>
-                  <h3 className="text-2xl font-black text-gray-900 tracking-tight">Editar Refeição</h3>
-                  <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Ajuste os valores nutricionais</p>
+                  <h3 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Editar Refeição</h3>
+                  <p className="text-sm font-bold text-[var(--text-muted)] mt-1 uppercase tracking-widest">Ajuste os valores nutricionais</p>
                 </div>
                 <button 
                   onClick={onClose}
-                  className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 active:scale-90 transition-all"
+                  className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-[var(--text-muted)] active:scale-90 transition-all"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -81,13 +81,13 @@ export const EditMealModal = ({ isOpen, onClose, onSave, meal }: EditMealModalPr
 
               <div className="space-y-6">
                 {/* Meal Name */}
-                <div className="bg-gray-50 rounded-3xl p-4 border border-gray-100 focus-within:border-[#56AB2F]/30 transition-all">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Nome da Refeição</p>
+                <div className="bg-gray-50 rounded-3xl p-4 border border-[var(--border-main)] focus-within:border-[#56AB2F]/30 transition-all">
+                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1 ml-1">Nome da Refeição</p>
                   <input 
                     type="text"
                     value={formData.meal_name}
                     onChange={(e) => setFormData({ ...formData, meal_name: e.target.value })}
-                    className="w-full bg-transparent text-lg font-bold text-gray-900 outline-none px-1"
+                    className="w-full bg-transparent text-lg font-bold text-[var(--text-main)] outline-none px-1"
                   />
                 </div>
 
@@ -101,7 +101,7 @@ export const EditMealModal = ({ isOpen, onClose, onSave, meal }: EditMealModalPr
                     type="number"
                     value={formData.calories}
                     onChange={(e) => setFormData({ ...formData, calories: Number(e.target.value) })}
-                    className="w-full bg-transparent text-3xl font-black text-gray-900 outline-none"
+                    className="w-full bg-transparent text-3xl font-black text-[var(--text-main)] outline-none"
                   />
                 </div>
 
@@ -113,7 +113,7 @@ export const EditMealModal = ({ isOpen, onClose, onSave, meal }: EditMealModalPr
                       type="number"
                       value={formData.protein}
                       onChange={(e) => setFormData({ ...formData, protein: Number(e.target.value) })}
-                      className="w-full bg-transparent text-lg font-black text-gray-900 outline-none"
+                      className="w-full bg-transparent text-lg font-black text-[var(--text-main)] outline-none"
                     />
                   </div>
                   <div className="bg-orange-50 rounded-3xl p-4 border border-orange-100">
@@ -122,7 +122,7 @@ export const EditMealModal = ({ isOpen, onClose, onSave, meal }: EditMealModalPr
                       type="number"
                       value={formData.carbs}
                       onChange={(e) => setFormData({ ...formData, carbs: Number(e.target.value) })}
-                      className="w-full bg-transparent text-lg font-black text-gray-900 outline-none"
+                      className="w-full bg-transparent text-lg font-black text-[var(--text-main)] outline-none"
                     />
                   </div>
                   <div className="bg-blue-50 rounded-3xl p-4 border border-blue-100">
@@ -131,7 +131,7 @@ export const EditMealModal = ({ isOpen, onClose, onSave, meal }: EditMealModalPr
                       type="number"
                       value={formData.fat}
                       onChange={(e) => setFormData({ ...formData, fat: Number(e.target.value) })}
-                      className="w-full bg-transparent text-lg font-black text-gray-900 outline-none"
+                      className="w-full bg-transparent text-lg font-black text-[var(--text-main)] outline-none"
                     />
                   </div>
                 </div>
@@ -145,7 +145,7 @@ export const EditMealModal = ({ isOpen, onClose, onSave, meal }: EditMealModalPr
                       className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
                         formData.meal_type === type 
                           ? 'bg-[#1A1A1A] text-white border-transparent' 
-                          : 'bg-white text-gray-400 border-gray-100'
+                          : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-main)]'
                       }`}
                     >
                       {type}
@@ -158,7 +158,7 @@ export const EditMealModal = ({ isOpen, onClose, onSave, meal }: EditMealModalPr
               <div className="mt-10 flex space-x-4">
                 <button 
                   onClick={onClose}
-                  className="flex-1 py-5 rounded-3xl font-black text-sm text-gray-400 uppercase tracking-widest active:scale-95 transition-all"
+                  className="flex-1 py-5 rounded-3xl font-black text-sm text-[var(--text-muted)] uppercase tracking-widest active:scale-95 transition-all"
                 >
                   Cancelar
                 </button>

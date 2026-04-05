@@ -40,7 +40,7 @@ export const ResetPassword = () => {
     if (pwd.length === 0) return { level: 0, label: '', color: '' };
     if (pwd.length < 6) return { level: 1, label: 'Fraca', color: 'bg-red-400' };
     if (pwd.length < 8) return { level: 2, label: 'Média', color: 'bg-yellow-400' };
-    if (/[A-Z]/.test(pwd) && /[0-9]/.test(pwd)) return { level: 4, label: 'Forte', color: 'bg-[#56AB2F]' };
+    if (/[A-Z]/.test(pwd) && /[0-9]/.test(pwd)) return { level: 4, label: 'Forte', color: 'bg-[#22C55E]' };
     return { level: 3, label: 'Boa', color: 'bg-blue-400' };
   };
 
@@ -71,13 +71,13 @@ export const ResetPassword = () => {
   };
 
   return (
-    <div className="main-wrapper bg-[#F6F7F9]">
+    <div className="main-wrapper bg-[var(--bg-app)]">
       <div className="app-container flex flex-col items-center justify-center p-6 bg-transparent shadow-none border-none">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="w-full max-w-sm bg-white rounded-[40px] p-10 shadow-[0_20px_60px_rgba(0,0,0,0.06)] border border-white/80 mx-auto relative"
+          className="w-full max-w-sm bg-[var(--bg-card)] rounded-[40px] p-10 shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/5 mx-auto relative shadow-2xl backdrop-blur-md"
         >
           <AnimatePresence mode="wait">
             {success ? (
@@ -91,11 +91,11 @@ export const ResetPassword = () => {
                 <div className="w-20 h-20 bg-gradient-to-br from-[#A8E063] to-[#56AB2F] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-200">
                   <CheckCircle2 className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 mb-2">Senha atualizada! 🎉</h2>
-                <p className="text-gray-500 text-sm mb-2 leading-relaxed">
+                <h2 className="text-2xl font-black text-[var(--text-main)] mb-2">Senha atualizada! 🎉</h2>
+                <p className="text-[var(--text-muted)] text-sm mb-2 leading-relaxed">
                   Sua senha foi redefinida com sucesso. Agora você pode fazer login normalmente.
                 </p>
-                <p className="text-gray-400 text-xs mb-8">
+                <p className="text-[var(--text-muted)] text-xs mb-8">
                   Redirecionando em <strong className="text-[#56AB2F]">{countdown}s</strong>...
                 </p>
                 <button
@@ -108,11 +108,11 @@ export const ResetPassword = () => {
             ) : (
               <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <div className="text-center mt-2 mb-10">
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#A8E063] to-[#56AB2F] rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-md">
+                  <div className="w-14 h-14 bg-gradient-to-br from-[#22C55E] to-[#22C55E] rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-md">
                     <ShieldCheck className="w-7 h-7 text-white" />
                   </div>
-                  <h1 className="text-3xl font-black text-gray-900 mb-2">Nova Senha</h1>
-                  <p className="text-gray-400 font-medium text-sm leading-relaxed">
+                  <h1 className="text-3xl font-black text-[var(--text-main)] mb-2">Nova Senha</h1>
+                  <p className="text-[var(--text-muted)] font-medium text-sm leading-relaxed">
                     Defina uma nova senha segura para sua conta ProFit.
                   </p>
                 </div>
@@ -131,7 +131,7 @@ export const ResetPassword = () => {
                         {!token && (
                           <button
                             onClick={() => navigate('/forgot-password')}
-                            className="mt-2 text-[10px] font-black text-[#56AB2F] uppercase tracking-wider hover:underline"
+                            className="mt-2 text-[10px] font-black text-[#22C55E] uppercase tracking-wider hover:underline"
                           >
                             Solicitar novo link
                           </button>
@@ -145,13 +145,13 @@ export const ResetPassword = () => {
                   {/* Password field */}
                   <div>
                     <div className="relative group">
-                      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#56AB2F] transition-colors">
+                      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[#22C55E] transition-colors">
                         <Lock className="w-5 h-5" />
                       </div>
                       <input
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Nova senha (mín. 6 caracteres)"
-                        className="w-full bg-[#F6F7F9] border-[1.5px] border-transparent rounded-2xl py-5 pl-14 pr-14 text-gray-900 font-medium placeholder:text-gray-300 focus:ring-2 focus:ring-[#A8E063]/20 focus:border-[#A8E063]/40 transition-all outline-none"
+                        className="w-full bg-[var(--bg-app)] border-[1.5px] border-transparent rounded-2xl py-5 pl-14 pr-14 text-[var(--text-main)] font-medium placeholder:text-gray-600 focus:ring-2 focus:ring-[#22C55E]/20 focus:border-[#22C55E]/40 transition-all outline-none"
                         value={password}
                         onChange={(e) => { setPassword(e.target.value); setError(''); }}
                         disabled={!token}
@@ -159,7 +159,7 @@ export const ResetPassword = () => {
                       <button
                         type="button"
                         onClick={() => setShowPassword(v => !v)}
-                        className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                        className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-muted)] transition-colors"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -175,7 +175,7 @@ export const ResetPassword = () => {
                             />
                           ))}
                         </div>
-                        <p className={`text-[10px] font-bold mt-1 ${strength.level <= 1 ? 'text-red-400' : strength.level === 2 ? 'text-yellow-500' : 'text-[#56AB2F]'}`}>
+                        <p className={`text-[10px] font-bold mt-1 ${strength.level <= 1 ? 'text-red-400' : strength.level === 2 ? 'text-yellow-500' : 'text-[#22C55E]'}`}>
                           Força: {strength.label}
                         </p>
                       </div>
@@ -184,13 +184,13 @@ export const ResetPassword = () => {
 
                   {/* Confirm password */}
                   <div className="relative group">
-                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#56AB2F] transition-colors">
+                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[#56AB2F] transition-colors">
                       <Lock className="w-5 h-5" />
                     </div>
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="Confirmar nova senha"
-                      className={`w-full bg-[#F6F7F9] border-[1.5px] rounded-2xl py-5 pl-14 pr-14 text-gray-900 font-medium placeholder:text-gray-300 focus:ring-2 transition-all outline-none ${confirmPassword && confirmPassword !== password ? 'border-red-300 focus:ring-red-200/40' : 'border-transparent focus:ring-[#A8E063]/20 focus:border-[#A8E063]/40'}`}
+                      className={`w-full bg-[var(--bg-app)] border-[1.5px] rounded-2xl py-5 pl-14 pr-14 text-[var(--text-main)] font-medium placeholder:text-gray-300 focus:ring-2 transition-all outline-none ${confirmPassword && confirmPassword !== password ? 'border-red-300 focus:ring-red-200/40' : 'border-transparent focus:ring-[#A8E063]/20 focus:border-[#A8E063]/40'}`}
                       value={confirmPassword}
                       onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
                       disabled={!token}
@@ -198,7 +198,7 @@ export const ResetPassword = () => {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(v => !v)}
-                      className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-muted)] transition-colors"
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -213,11 +213,11 @@ export const ResetPassword = () => {
                   )}
                 </div>
 
-                <button
-                  onClick={handleSubmit}
-                  disabled={isLoading || !password || !confirmPassword || !token}
-                  className="w-full bg-gradient-to-r from-[#A8E063] to-[#56AB2F] text-white font-black py-5 rounded-2xl mt-8 shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
-                >
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isLoading || !password || !confirmPassword || !token}
+                    className="w-full bg-gradient-to-r from-[#22C55E] to-[#22C55E] text-white font-black py-5 rounded-2xl mt-8 shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 disabled:opacity-50 uppercase tracking-widest"
+                  >
                   {isLoading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (

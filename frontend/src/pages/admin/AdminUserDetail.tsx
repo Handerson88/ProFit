@@ -59,7 +59,7 @@ const AdminUserDetail: React.FC = () => {
             <div className="flex items-center gap-4">
                 <button 
                     onClick={() => navigate('/admin/users')}
-                    className="p-2.5 bg-white dark:bg-[#1E293B] border border-[#E6EAF0] dark:border-[#334155] rounded-xl text-[#718096] dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#2D3748] dark:hover:text-white transition-all shadow-sm"
+                    className="p-2.5 bg-[var(--bg-card)] dark:bg-[#1E293B] border border-[#E6EAF0] dark:border-[#334155] rounded-xl text-[#718096] dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#2D3748] dark:hover:text-white transition-all shadow-sm"
                 >
                     <ArrowLeft size={20} />
                 </button>
@@ -74,7 +74,7 @@ const AdminUserDetail: React.FC = () => {
                 
                 {/* Profile Card */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-white dark:bg-[#1E293B] rounded-[24px] border border-[#E6EAF0] dark:border-[#334155] p-8 shadow-sm transition-colors duration-300">
+                    <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[24px] border border-[#E6EAF0] dark:border-[#334155] p-8 shadow-sm transition-colors duration-300">
                         <div className="flex flex-col items-center text-center">
                             <div className="w-24 h-24 rounded-full bg-slate-50 dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-md flex items-center justify-center text-3xl font-black text-[#2D3748] dark:text-white mb-4 overflow-hidden ring-4 ring-[#F7FAFC] dark:ring-slate-800/10">
                                 {user.name?.[0]?.toUpperCase() || 'U'}
@@ -107,6 +107,18 @@ const AdminUserDetail: React.FC = () => {
                                 <span className="text-[#A0AEC0] dark:text-slate-500 flex items-center gap-2 font-medium"><Target size={16} /> Objetivo</span>
                                 <span className="text-[#2D3748] dark:text-slate-200 font-bold capitalize">{user.goal || 'Fibrado'}</span>
                             </div>
+                            <div className="pt-4 mt-4 border-t border-[#F7FAFC] dark:border-slate-800 space-y-3">
+                                <div className="flex items-center justify-between text-[13px]">
+                                    <span className="text-[#A0AEC0] dark:text-slate-500 font-medium tracking-tight">IP Origem</span>
+                                    <code className="text-[#2D3748] dark:text-slate-400 font-mono text-[11px] bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded">{user.ip_address || '---.---.---.---'}</code>
+                                </div>
+                                <div className="flex items-center justify-between text-[13px]">
+                                    <span className="text-[#A0AEC0] dark:text-slate-500 font-medium tracking-tight">Localização</span>
+                                    <span className="text-[#2D3748] dark:text-slate-200 font-bold text-right text-[12px]">
+                                        {user.city ? `${user.city}, ` : ''}{user.country || 'Desconhecida'}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -128,7 +140,7 @@ const AdminUserDetail: React.FC = () => {
                     
                     {/* Metrics Row */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white dark:bg-[#1E293B] rounded-[24px] border border-[#E6EAF0] dark:border-[#334155] p-6 shadow-sm flex items-center gap-5 transition-colors duration-300">
+                        <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[24px] border border-[#E6EAF0] dark:border-[#334155] p-6 shadow-sm flex items-center gap-5 transition-colors duration-300">
                             <div className="w-14 h-14 bg-orange-50 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center text-orange-500 dark:text-orange-400">
                                 <Flame size={28} />
                             </div>
@@ -137,7 +149,7 @@ const AdminUserDetail: React.FC = () => {
                                 <p className="text-[24px] font-black text-[#2D3748] dark:text-white transition-colors">{plans.length}</p>
                             </div>
                         </div>
-                        <div className="bg-white dark:bg-[#1E293B] rounded-[24px] border border-[#E6EAF0] dark:border-[#334155] p-6 shadow-sm flex items-center gap-5 transition-colors duration-300">
+                        <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[24px] border border-[#E6EAF0] dark:border-[#334155] p-6 shadow-sm flex items-center gap-5 transition-colors duration-300">
                             <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center text-emerald-500 dark:text-emerald-400">
                                 <TrendingUp size={28} />
                             </div>
@@ -149,7 +161,7 @@ const AdminUserDetail: React.FC = () => {
                     </div>
 
                     {/* Activity History */}
-                    <div className="bg-white dark:bg-[#1E293B] rounded-[24px] border border-[#E6EAF0] dark:border-[#334155] shadow-sm overflow-hidden flex flex-col h-full min-h-[500px] transition-colors duration-300">
+                    <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[24px] border border-[#E6EAF0] dark:border-[#334155] shadow-sm overflow-hidden flex flex-col h-full min-h-[500px] transition-colors duration-300">
                         <div className="p-6 border-b border-[#F7FAFC] dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/30 transition-colors">
                             <h3 className="text-[16px] font-bold text-[#2D3748] dark:text-white transition-colors">Histórico de Atividade Recente</h3>
                             <Award className="text-[#A0AEC0] dark:text-slate-500" size={20} />

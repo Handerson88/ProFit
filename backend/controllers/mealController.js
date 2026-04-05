@@ -2,7 +2,9 @@ const { analyzeFoodImage } = require('../services/openaiService');
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
+const { getTodayString, formatDate, getMaputoNow } = require('../utils/dateUtils');
 
 /**
  * Normalizes and upserts food names into AI detected memory
@@ -51,7 +53,7 @@ async function syncDailyLog(user_id, date) {
         SUM(carbs) as total_carbs,
         SUM(fat) as total_fat
        FROM meals 
-       WHERE user_id = $1 AND date::date = $2::date`,
+       WHERE user_id = $1 AND (date AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::date = $2::date`,
       [user_id, date]
     );
 
@@ -88,20 +90,21 @@ exports.scanMeal = async (req, res) => {
   }
 
   try {
-    // For Vercel/MemoryStorage, req.file.path is undefined. Use buffer.
     const imageBuffer = req.file.buffer;
-    // placeholder or base64 if needed, but for scan logic imageUrl is minimal
-    const imageUrl = req.body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'; 
-    console.log('--- START MEAL SCAN ---');
-    console.log('User ID:', user_id);
-    console.log('File details:', {
-      fieldname: req.file.fieldname,
-      originalname: req.file.originalname,
-      encoding: req.file.encoding,
-      mimetype: req.file.mimetype,
-      path: req.file.path,
-      size: req.file.size
-    });
+    
+    // Generate unique filename and save to uploads
+    const filename = `meal_${Date.now()}_${uuidv4().substring(0, 8)}.jpg`;
+    const uploadPath = path.join(__dirname, '..', 'uploads', filename);
+    
+    // Ensure directory exists (redundant if already checked, but safe)
+    if (!fs.existsSync(path.join(__dirname, '..', 'uploads'))) {
+      fs.mkdirSync(path.join(__dirname, '..', 'uploads'), { recursive: true });
+    }
+    
+    await fs.promises.writeFile(uploadPath, imageBuffer);
+    const imageUrl = `/uploads/${filename}`;
+    
+    console.log('--- START MEAL SCAN ---', { user_id, size: req.file.size, savedAs: imageUrl });
     
     // 1. Fetch user scan limits and current usage
     const userRes = await db.query(
@@ -112,57 +115,45 @@ exports.scanMeal = async (req, res) => {
     const goal = user?.daily_calorie_target || 2000;
     const plan = user?.plan || 'free';
     const subscription_status = user?.subscription_status || 'inactive';
-    let scanLimit = user?.scan_limit_per_day || 1; // Default to 1 for free users
+    let scanLimit = user?.scan_limit_per_day || 1; 
     let scansUsedToday = user?.scans_used_today || 0;
     const lastScanDate = user?.last_scan_date;
     
     // Automatic Reset Logic
-    const todayStr = new Date().toISOString().split('T')[0];
-    const lastScanDateStr = lastScanDate ? new Date(lastScanDate).toISOString().split('T')[0] : null;
+    const todayStr = getTodayString();
+    const lastScanDateStr = lastScanDate ? formatDate(lastScanDate) : null;
 
     if (lastScanDateStr !== todayStr) {
       scansUsedToday = 0;
       await db.query(
-        'UPDATE users SET scans_used_today = 0, last_scan_date = CURRENT_TIMESTAMP WHERE id = $1',
-        [user_id]
+        'UPDATE users SET scans_used_today = 0, last_scan_date = $2 WHERE id = $1',
+        [user_id, getMaputoNow().toDate()]
       );
     }
 
     // Check if limit reached
-    // Rules:
-    // 1. Only allow unlimited if subscription_status is 'active' AND plan is 'pro' or 'premium'
     const isPremiumUser = subscription_status === 'active' && (plan === 'pro' || plan === 'premium');
-
     if (!isPremiumUser && scansUsedToday >= scanLimit) {
-      console.log('BLOCK: Daily scan limit reached for user');
       return res.status(403).json({ 
         status: 'LIMIT_REACHED',
-        message: 'Você atingiu o limite diário de scans do plano gratuito. Ative o Plano Pro para scans ilimitados!',
+        message: 'Você atingiu o limite diário de scans do plano gratuito.',
         limit: scanLimit,
         used: scansUsedToday
       });
     }
 
-    console.log(`User goal: ${goal}, Scans used: ${scansUsedToday}/${scanLimit}`);
-
-    // 2. Fetch today's total calories consumed (for UI)
-    const today = new Date().toISOString().split('T')[0];
+    // 2. Fetch today's total calories consumed
+    const today = getTodayString();
     const dailyRes = await db.query(
       'SELECT calories FROM daily_calories WHERE user_id = $1 AND date = $2',
       [user_id, today]
     );
     const currentTotal = Number(dailyRes.rows[0]?.calories || 0);
-    console.log('Current total calories today:', currentTotal);
 
-    // 3. Generate Image Hash for Memory (MD5)
-    console.log('Generating image hash...');
+    // 3. Analyze with OpenAI
     const imageHash = crypto.createHash('md5').update(imageBuffer).digest('hex');
-    console.log('Image Hash:', imageHash);
-
-    // 4. Check Food Memory Cache
-    console.log('Checking food memory...');
     const memoryRes = await db.query(
-      'SELECT id, food_name, calories, protein, carbs, fat, ingredients, nutrition_observation FROM food_memory WHERE image_hash = $1 LIMIT 1',
+      'SELECT * FROM food_memory WHERE image_hash = $1 LIMIT 1',
       [imageHash]
     );
 
@@ -170,40 +161,23 @@ exports.scanMeal = async (req, res) => {
     let isFromCache = false;
 
     if (memoryRes.rows.length > 0) {
-      console.log('CACHE HIT! Reusing data from memory.');
       analysis = memoryRes.rows[0];
       isFromCache = true;
     } else {
-      console.log('CACHE MISS. Calling OpenAI Vision...');
-      // 5. Analyze with OpenAI Vision
       analysis = await analyzeFoodImage(imageBuffer);
-      console.log('AI Analysis result received:', !!analysis);
-
-      // 5.1 Check for image quality
       if (analysis.is_quality_good === false) {
         return res.status(422).json({
           status: 'QUALITY_ERROR',
-          message: analysis.quality_message || 'Qualidade da imagem insuficiente para análise.',
-          tips: [
-            'Use boa iluminação',
-            'Evite sombras fortes',
-            'Centralize o prato na imagem',
-            'Aproxime a câmera da comida'
-          ]
+          message: analysis.quality_message || 'Qualidade da imagem insuficiente.'
         });
       }
 
-      // 6. Save to Food Memory
-      console.log('Saving to food memory for future use...');
       const saveMemoryRes = await db.query(
         'INSERT INTO food_memory (image_hash, food_name, calories, protein, carbs, fat, ingredients, nutrition_observation) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
         [
           imageHash, 
           analysis.dish_name || analysis.meal_name || analysis.food_name, 
-          analysis.calories, 
-          analysis.protein, 
-          analysis.carbs, 
-          analysis.fat,
+          analysis.calories, analysis.protein, analysis.carbs, analysis.fat,
           JSON.stringify(analysis.ingredients || []),
           analysis.nutrition_observation || analysis.recommendation
         ]
@@ -214,35 +188,25 @@ exports.scanMeal = async (req, res) => {
     const mealCalories = Number(analysis.calories || 0);
     const expectedTotal = currentTotal + mealCalories;
     
-    // 4. Determine Status
+    // Status Logic
     let status = 'GREEN';
-    let message = 'Você ainda está dentro da sua meta diária.';
-    
-    if (expectedTotal > goal) {
-      status = 'RED';
-      message = 'Você ultrapassou sua meta diária de calorias.';
-    } else if (expectedTotal > (goal * 0.8)) {
-      status = 'YELLOW';
-      message = 'Atenção! Você está próximo da sua meta diária de calorias.';
-    }
+    let message = 'Dentro da meta.';
+    if (expectedTotal > goal) { status = 'RED'; message = 'Meta ultrapassada.'; }
+    else if (expectedTotal > (goal * 0.8)) { status = 'YELLOW'; message = 'Perto da meta.'; }
 
-    // 7. Save to Scanned Dishes for Admin Panel & AUTOMATICALLY to User Meals
+    // 7. Save Scan Usage and Technical Log
     try {
-      // Use a transaction for these related updates
       await db.query('BEGIN');
 
-      // 7.1 Increment user scan count
       await db.query(
-        'UPDATE users SET scans_used_today = scans_used_today + 1, last_scan_date = CURRENT_TIMESTAMP WHERE id = $1',
-        [user_id]
+        'UPDATE users SET scans_used_today = scans_used_today + 1, last_scan_date = $2 WHERE id = $1',
+        [user_id, getMaputoNow().toDate()]
       );
 
-      // 7.1.5 Update AI detected foods memory
       if (analysis.ingredients) {
         upsertAIDetectedFoods(analysis.ingredients).catch(e => console.error('AI Memory Background Error:', e));
       }
 
-      // 7.2 Save for Admin View / History of Scans (Not active meal)
       const dishId = uuidv4();
       const dishName = analysis.dish_name || analysis.meal_name || analysis.food_name;
       const ingredientsJson = JSON.stringify(analysis.ingredients || []);
@@ -250,89 +214,37 @@ exports.scanMeal = async (req, res) => {
       await db.query(
         `INSERT INTO scanned_dishes (id, user_id, dish_name, image_url, calories, protein, carbs, fat, ingredients, scan_source)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        [
-          dishId, 
-          user_id, 
-          dishName, 
-          imageUrl, 
-          mealCalories, 
-          Number(analysis.protein || 0), 
-          Number(analysis.carbs || 0), 
-          Number(analysis.fat || 0),
-          ingredientsJson,
-          'camera' 
-        ]
+        [dishId, user_id, dishName, imageUrl, mealCalories, Number(analysis.protein || 0), Number(analysis.carbs || 0), Number(analysis.fat || 0), ingredientsJson, 'camera']
       );
 
       await db.query('COMMIT');
-      console.log('SCAN: Analysis recorded in scanned_dishes.');
 
-      // 7.3 Notify Admins in real-time
-      try {
-        const io = req.app.get('socketio');
-        if (io) {
-          // Get user info for the admin notification
-          const userMeta = await db.query('SELECT name, email FROM users WHERE id = $1', [user_id]);
-          const user = userMeta.rows[0];
-          
-          io.to('admin_room').emit('new_scanned_dish', {
-            id: dishId,
-            user_id,
-            user_name: user?.name || 'Usuário',
-            user_email: user?.email || '',
-            dish_name: dishName,
-            image_url: imageUrl,
-            calories: mealCalories,
-            protein: Number(analysis.protein || 0),
-            carbs: Number(analysis.carbs || 0),
-            fat: Number(analysis.fat || 0),
-            ingredients: analysis.ingredients || [],
-            scan_source: 'camera',
-            created_at: new Date()
-          });
-        }
-      } catch (socketErr) {
-        console.error('Admin socket emission failed:', socketErr);
+      // 8. Socket Notification for scan completion (not meal added)
+      const io = req.app.get('socketio');
+      if (io) {
+        // We only notify that a scan was performed, not that a meal was added yet
+        // Since addMeal will trigger the meal_added event later
+        io.to('admin_room').emit('new_scanned_dish', { id: dishId, user_id, dish_name: dishName, image_url: imageUrl, calories: mealCalories, created_at: getMaputoNow().toDate() });
       }
 
     } catch (saveErr) {
       await db.query('ROLLBACK');
-      console.error('CRITICAL: Scan recording failed:', saveErr);
+      console.error('Scan recording failed:', saveErr);
     }
 
-    // Return enriched analysis
-    const finalResponse = {
+    res.json({
       ...analysis,
       dish_name: analysis.dish_name || analysis.food_name || analysis.meal_name, 
-      meal_name: analysis.dish_name || analysis.food_name || analysis.meal_name,
-      ingredients: analysis.ingredients || [],
-      nutrition_observation: analysis.nutrition_observation || analysis.recommendation || '',
       image_url: imageUrl,
-      calorie_status: {
-        status,
-        message,
-        goal,
-        current_total: currentTotal,
-        expected_total: expectedTotal,
-        remaining: Math.max(0, goal - expectedTotal),
-        excess: Math.max(0, expectedTotal - goal)
-      },
+      calorie_status: { status, message, goal, current_total: currentTotal, expected_total: expectedTotal },
       is_from_cache: isFromCache
-    };
+    });
 
-    console.log('DEBUG: Final Backend Response:', JSON.stringify(finalResponse, null, 2));
-    res.json(finalResponse);
-
-    // Check achievements
-    const achievementController = require('./achievementController');
-    achievementController.checkAchievements(user_id, 'scan_count');
-    achievementController.checkAchievements(user_id, 'streak_days');
   } catch (err) {
     console.error('CRITICAL MEAL SCAN ERROR:', err);
     res.status(500).json({ 
-      message: 'Falha ao analisar refeição',
-      detail: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      message: 'O Coach está analisando muitos pratos agora. Tente novamente em alguns segundos para uma análise de elite.', 
+      detail: err.message 
     });
   }
 };
@@ -348,12 +260,12 @@ exports.addMeal = async (req, res) => {
   const parsedFat = Number(fat) || 0;
   const parsedQuantity = Number(quantity) || 1;
 
-  const dateStr = new Date().toISOString().split('T')[0];
+  const dateStr = getTodayString();
 
   try {
     // 1. Log the individual meal with full details
     await db.query(
-      'INSERT INTO meals (id, user_id, food_name, meal_name, calories, protein, carbs, fat, quantity, meal_type, image_url, ingredients, nutrition_observation, date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)',
+      'INSERT INTO meals (id, user_id, food_name, meal_name, calories, protein, carbs, fat, quantity, meal_type, image_url, ingredients, nutrition_observation, date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)',
       [
         uuidv4(), 
         user_id, 
@@ -367,7 +279,8 @@ exports.addMeal = async (req, res) => {
         meal_type || 'Manual', 
         image_url, 
         JSON.stringify(ingredients || []), 
-        req.body.nutrition_observation || req.body.recommendation || ''
+        req.body.nutrition_observation || req.body.recommendation || '',
+        getMaputoNow().toDate()
       ]
     );
 
@@ -472,7 +385,7 @@ exports.getCalorieHistory = async (req, res) => {
 
 exports.getDailySummary = async (req, res) => {
   const user_id = req.user.id;
-  const dateStr = req.query.date || new Date().toISOString().split('T')[0];
+  const dateStr = req.query.date || getTodayString();
   
   try {
     console.log(`--- FETCHING SUMMARY for user ${user_id} on date ${dateStr} ---`);
@@ -484,7 +397,7 @@ exports.getDailySummary = async (req, res) => {
         SUM(COALESCE(carbs, 0)) as carbs,
         SUM(COALESCE(fat, 0)) as fat
        FROM meals 
-       WHERE user_id = $1 AND (DATE(date) = $2 OR date::date = $2)
+       WHERE user_id = $1 AND (date AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::date = $2::date
        GROUP BY meal_type`,
       [user_id, dateStr]
     );
@@ -501,7 +414,7 @@ exports.getDailySummary = async (req, res) => {
         SUM(COALESCE(carbs, 0)) as carbs,
         SUM(COALESCE(fat, 0)) as fat
        FROM meals 
-       WHERE user_id = $1 AND (DATE(date) = $2 OR date::date = $2)`,
+       WHERE user_id = $1 AND (date AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::date = $2::date`,
       [user_id, dateStr]
     );
 
@@ -513,7 +426,7 @@ exports.getDailySummary = async (req, res) => {
     };
 
     const mealsResult = await db.query(
-      `SELECT * FROM meals WHERE user_id = $1 AND (DATE(date) = $2 OR date::date = $2) ORDER BY created_at DESC`,
+      `SELECT * FROM meals WHERE user_id = $1 AND (date AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::date = $2::date ORDER BY created_at DESC`,
       [user_id, dateStr]
     );
 
@@ -535,13 +448,14 @@ exports.getWeeklyStats = async (req, res) => {
   try {
     const result = await db.query(
       `SELECT 
-        TO_CHAR(date, 'Dy') as day,
-        SUM(calories) as calories
+        TO_CHAR(date AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo', 'Dy') as day,
+        SUM(calories) as calories,
+        (date AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::date as full_date
        FROM meals 
        WHERE user_id = $1 
-       AND date >= CURRENT_DATE - INTERVAL '6 days'
-       GROUP BY day, DATE(date)
-       ORDER BY DATE(date) ASC`,
+       AND (date AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::date >= ((now() AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::date - INTERVAL '6 days')
+       GROUP BY day, full_date
+       ORDER BY full_date ASC`,
       [user_id]
     );
     res.json(result.rows);
@@ -560,7 +474,7 @@ exports.getHistory = async (req, res) => {
     let params = [user_id];
 
     if (date) {
-      query += ' AND DATE(date) = $2';
+      query += " AND (date AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::date = $2::date";
       params.push(date);
     }
 
@@ -631,7 +545,7 @@ exports.deleteMeal = async (req, res) => {
 async function syncDailyCalories(userId, dateStr) {
   try {
     const result = await db.query(
-      "SELECT SUM(calories) as total FROM meals WHERE user_id = $1 AND DATE(date) = $2",
+      "SELECT SUM(calories) as total FROM meals WHERE user_id = $1 AND (date AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::date = $2::date",
       [userId, dateStr]
     );
     const total = result.rows[0].total || 0;

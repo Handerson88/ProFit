@@ -80,7 +80,7 @@ const AdminFoods: React.FC = () => {
             {/* Confirm Modal */}
             {showConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-6 shadow-2xl border border-slate-200 dark:border-slate-700 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+                    <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[20px] p-6 shadow-2xl border border-slate-200 dark:border-slate-700 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600">
                                 <RefreshCw className="w-5 h-5" />
@@ -140,14 +140,14 @@ const AdminFoods: React.FC = () => {
                             placeholder="Buscar alimento..." 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-[#1E293B] border border-[#E6EAF0] dark:border-[#334155] rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#38A169]/10 focus:border-[#38A169] transition-all text-[14px] dark:text-white"
+                            className="w-full pl-10 pr-4 py-2 bg-[var(--bg-card)] dark:bg-[#1E293B] border border-[#E6EAF0] dark:border-[#334155] rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#38A169]/10 focus:border-[#38A169] transition-all text-[14px] dark:text-white"
                         />
                     </div>
 
                     <select 
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="px-4 py-2 bg-white dark:bg-[#1E293B] border border-[#E6EAF0] dark:border-[#334155] rounded-[10px] text-sm focus:outline-none dark:text-white"
+                        className="px-4 py-2 bg-[var(--bg-card)] dark:bg-[#1E293B] border border-[#E6EAF0] dark:border-[#334155] rounded-[10px] text-sm focus:outline-none dark:text-white"
                     >
                         <option value="count">Mais Detectados</option>
                         <option value="recent">Mais Recentes</option>
@@ -158,7 +158,7 @@ const AdminFoods: React.FC = () => {
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                 <div className="p-5 bg-white dark:bg-[#1E293B] rounded-[16px] border border-[#E6EAF0] dark:border-[#334155] shadow-sm">
+                 <div className="p-5 bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[16px] border border-[#E6EAF0] dark:border-[#334155] shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                             <TrendingUp className="w-5 h-5" />
@@ -167,7 +167,7 @@ const AdminFoods: React.FC = () => {
                     </div>
                     <div className="text-2xl font-bold dark:text-white">{foods.length}</div>
                  </div>
-                 <div className="p-5 bg-white dark:bg-[#1E293B] rounded-[16px] border border-[#E6EAF0] dark:border-[#334155] shadow-sm">
+                 <div className="p-5 bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[16px] border border-[#E6EAF0] dark:border-[#334155] shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
                             <History className="w-5 h-5" />
@@ -178,7 +178,7 @@ const AdminFoods: React.FC = () => {
                         {foods.reduce((acc, curr) => acc + curr.count, 0)}
                     </div>
                  </div>
-                 <div className="p-5 bg-white dark:bg-[#1E293B] rounded-[16px] border border-[#E6EAF0] dark:border-[#334155] shadow-sm flex items-center gap-3">
+                 <div className="p-5 bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[16px] border border-[#E6EAF0] dark:border-[#334155] shadow-sm flex items-center gap-3">
                     <Info className="w-5 h-5 text-slate-400 shrink-0" />
                     <p className="text-xs text-slate-500 italic">
                         Este banco cresce automaticamente conforme a IA identifica novos ingredientes nos pratos dos usuários.
@@ -187,7 +187,7 @@ const AdminFoods: React.FC = () => {
             </div>
 
             {/* Main Table */}
-            <div className="bg-white dark:bg-[#1E293B] rounded-[16px] border border-[#E6EAF0] dark:border-[#334155] overflow-hidden shadow-sm transition-colors duration-300">
+            <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[16px] border border-[#E6EAF0] dark:border-[#334155] overflow-hidden shadow-sm transition-colors duration-300">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { socketService } from '../services/socket';
+import { formatMaputoTime, formatMaputoDate } from '../utils/dateUtils';
 
 export const NotificationCenter: React.FC = () => {
     const { user } = useAuth();
@@ -98,7 +99,7 @@ export const NotificationCenter: React.FC = () => {
             {/* Bell Icon */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-800"
+                className="relative p-2 text-[var(--text-muted)] hover:text-[var(--text-muted)] dark:text-slate-400 dark:hover:text-slate-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-800"
             >
                 <Bell size={24} />
                 {unreadCount > 0 && (
@@ -115,11 +116,11 @@ export const NotificationCenter: React.FC = () => {
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute right-0 mt-3 w-80 sm:w-96 bg-white dark:bg-[#1E293B] rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden z-50 origin-top-right"
+                        className="absolute right-0 mt-3 w-80 sm:w-96 bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-2xl shadow-2xl border border-[var(--border-main)] dark:border-slate-700 overflow-hidden z-50 origin-top-right"
                     >
                         {/* Header */}
-                        <div className="px-5 py-4 border-b border-gray-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-                            <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <div className="px-5 py-4 border-b border-[var(--border-main)] dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                            <h3 className="font-bold text-[var(--text-main)] dark:text-white flex items-center gap-2">
                                 Notificações
                                 {unreadCount > 0 && <span className="text-[11px] font-medium bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded-full">{unreadCount} novas</span>}
                             </h3>
@@ -138,14 +139,14 @@ export const NotificationCenter: React.FC = () => {
                             {loading && notifications.length === 0 ? (
                                 <div className="p-10 text-center space-y-3">
                                     <div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                                    <p className="text-sm text-gray-400">Carregando...</p>
+                                    <p className="text-sm text-[var(--text-muted)]">Carregando...</p>
                                 </div>
                             ) : notifications.length === 0 ? (
                                 <div className="p-10 text-center space-y-3 opacity-50">
-                                    <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-gray-400">
+                                    <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-[var(--text-muted)]">
                                         <Inbox size={32} />
                                     </div>
-                                    <p className="text-sm font-medium text-gray-500">Nenhuma notificação por aqui.</p>
+                                    <p className="text-sm font-medium text-[var(--text-muted)]">Nenhuma notificação por aqui.</p>
                                 </div>
                             ) : (
                                 <div className="divide-y divide-gray-50 dark:divide-slate-800">
@@ -166,7 +167,7 @@ export const NotificationCenter: React.FC = () => {
 
                                                 <div className="flex-1 space-y-1">
                                                     <div className="flex justify-between items-start gap-2">
-                                                        <h4 className={`text-sm font-bold ${!notif.is_read ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-slate-400'}`}>
+                                                        <h4 className={`text-sm font-bold ${!notif.is_read ? 'text-[var(--text-main)] dark:text-white' : 'text-[var(--text-muted)] dark:text-slate-400'}`}>
                                                             {notif.title}
                                                         </h4>
                                                         {!notif.is_read && (
@@ -179,11 +180,11 @@ export const NotificationCenter: React.FC = () => {
                                                             </button>
                                                         )}
                                                     </div>
-                                                    <p className="text-sm text-gray-600 dark:text-slate-400 leading-relaxed">
+                                                    <p className="text-sm text-[var(--text-muted)] dark:text-slate-400 leading-relaxed">
                                                         {notif.message}
                                                     </p>
-                                                    <span className="text-[10px] text-gray-400 font-medium">
-                                                        {new Date(notif.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} • {new Date(notif.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                                                    <span className="text-[10px] text-[var(--text-muted)] font-medium">
+                                                        {formatMaputoTime(notif.created_at)} • {formatMaputoDate(notif.created_at)}
                                                     </span>
                                                 </div>
                                             </div>
@@ -195,8 +196,8 @@ export const NotificationCenter: React.FC = () => {
 
                         {/* Footer */}
                         {notifications.length > 0 && (
-                            <div className="px-5 py-3 border-t border-gray-50 dark:border-slate-800 text-center">
-                                <button className="text-[11px] font-bold text-gray-400 dark:text-slate-500 hover:text-emerald-500 transition-colors uppercase tracking-wider">
+                            <div className="px-5 py-3 border-t border-[var(--border-main)] dark:border-slate-800 text-center">
+                                <button className="text-[11px] font-bold text-[var(--text-muted)] dark:text-slate-500 hover:text-emerald-500 transition-colors uppercase tracking-wider">
                                     Ver todas as atividades
                                 </button>
                             </div>

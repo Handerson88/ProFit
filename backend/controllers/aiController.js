@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 const { getSupportAIResponse } = require('../services/openaiService');
+const { getMaputoNow } = require('../utils/dateUtils');
 
 exports.getConversations = async (req, res) => {
   const user_id = req.user.id;
@@ -73,6 +74,18 @@ exports.sendMessage = async (req, res) => {
       [userMsgId, currentConvId, 'user', message]
     );
 
+    // 2.5 Real-time Notification for User Message (for other tabs/admin)
+    const io = req.app.get('socketio');
+    const userMsgData = {
+      id: userMsgId,
+      conversationId: currentConvId,
+      conversation_id: currentConvId,
+      message: message,
+      sender: 'user',
+      created_at: userMsgResult.rows[0].created_at
+    };
+    io.to(currentConvId).emit('new_message', userMsgData);
+
     // 3. Get History for context
     const history = await db.query(
       'SELECT sender, message FROM ai_messages WHERE conversation_id = $1 ORDER BY created_at DESC LIMIT 10',
@@ -120,33 +133,26 @@ exports.sendMessage = async (req, res) => {
     // 7. Update conversation timestamp
     await db.query('UPDATE ai_conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [currentConvId]);
 
-    // 8. Real-time Notification
-    const io = req.app.get('socketio');
-    const messageData = {
+    // 8. Real-time Notification for AI Response
+    const aiMessageData = {
       id: aiMsgId,
       conversationId: currentConvId,
       conversation_id: currentConvId,
       message: aiResponse,
       sender: 'ai',
-      created_at: aiMsgResult.rows[0].created_at,
-      user_message: {
-        id: userMsgId,
-        message: message,
-        sender: 'user',
-        created_at: userMsgResult.rows[0].created_at
-      }
+      created_at: aiMsgResult.rows[0].created_at
     };
 
     // Emit to conversation room
-    io.to(currentConvId).emit('new_message', messageData);
+    io.to(currentConvId).emit('new_message', aiMessageData);
     // Emit to admin room
     io.to('admin_room').emit('admin_new_user_message', {
-        ...messageData,
+        ...aiMessageData,
         user_name: userProfile?.name || 'Usuário',
         user_email: userProfile?.email || ''
     });
 
-    res.json(messageData);
+    res.json(aiMessageData);
   } catch (err) {
     console.error('AI Chat Fatal Error:', err);
     res.status(500).json({ error: 'Desculpe, estou tendo dificuldade para responder agora. Tente novamente em alguns segundos.' });
@@ -196,7 +202,7 @@ exports.adminReply = async (req, res) => {
         conversation_id: conversationId,
         message, 
         sender: 'admin',
-        created_at: new Date()
+        created_at: getMaputoNow().toDate()
     };
     io.to(conversationId).emit('new_message', replyData);
 

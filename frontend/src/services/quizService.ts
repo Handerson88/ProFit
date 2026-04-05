@@ -35,6 +35,15 @@ class QuizService {
       return { responses: [], progress: { current_step: null, is_complete: false } };
     }
   }
+
+  async submitQuiz(data: any) {
+    try {
+      await api.user.submitQuiz(data);
+    } catch (err: any) {
+      console.error('Failed to submit quiz:', err);
+      throw err;
+    }
+  }
 }
 
 export const quizService = new QuizService();

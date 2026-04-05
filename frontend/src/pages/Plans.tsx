@@ -3,11 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check, ArrowLeft, Crown, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
 
 export const Plans = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isPro = user?.plan_type === 'pro';
+
+  React.useEffect(() => {
+    if (user?.id && (user as any)?.funnel_step !== 'PAID') {
+       api.user.updateFunnelStep('PLAN_VIEWED').catch(() => {});
+    }
+  }, [user?.id, (user as any)?.funnel_step]);
 
   return (
     <div className="main-wrapper bg-[var(--bg-app)]">
@@ -39,7 +46,7 @@ export const Plans = () => {
 
             <h2 className="text-3xl font-black text-[var(--text-main)] mb-2">Plano Pro</h2>
             <div className="flex items-baseline gap-2 mb-8">
-               <span className="text-5xl font-black text-[var(--text-main)] tracking-tighter">349</span>
+               <span className="text-5xl font-black text-[var(--text-main)] tracking-tighter">299</span>
                <span className="text-xl font-bold text-[var(--text-muted)]">MZN / mês</span>
             </div>
 

@@ -4,15 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { BottomNav } from '../components/BottomNav';
 import { motion } from 'framer-motion';
 import { api } from '../services/api';
+import { getMaputoNow } from '../utils/dateUtils';
+import dayjs from 'dayjs';
 
-const formatDateLabel = (date: Date) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
+const formatDateLabel = (date: string | Date) => {
+  const now = getMaputoNow().startOf('day');
+  const d = dayjs(date).tz('Africa/Maputo').startOf('day');
   
-  const diffTime = Math.abs(today.getTime() - d.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = now.diff(d, 'day');
   
   if (diffDays === 0) return 'Hoje';
   if (diffDays === 1) return 'Ontem';
@@ -21,12 +20,12 @@ const formatDateLabel = (date: Date) => {
 
 const WeeklyChart = ({ data, target }: { data: any[], target: number }) => {
   const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const todayIndex = new Date().getDay(); // 0 for Sunday, 1 for Monday, etc.
+  const todayIndex = getMaputoNow().day(); // 0 for Sunday, 1 for Monday, etc.
 
   return (
     <div className="flex justify-between items-end h-56 mt-16 mb-6 relative px-2">
       {/* Target dashed line */}
-      <div className="absolute top-[30%] left-0 w-full border-t-[1.5px] border-dashed border-gray-200 z-0"></div>
+      <div className="absolute top-[30%] left-0 w-full border-t-[1.5px] border-dashed border-[var(--border-main)] z-0"></div>
 
       {days.map((dayName, i) => {
         // Find the data for the current day, or default to 0 calories if not found
@@ -87,7 +86,7 @@ const WeeklyChart = ({ data, target }: { data: any[], target: number }) => {
             </div>
             
             {/* Day Label */}
-            <span translate="no" className={`text-[11px] font-bold uppercase tracking-wide ${isActive ? 'text-gray-800' : 'text-gray-400'}`}>
+            <span translate="no" className={`text-[11px] font-bold uppercase tracking-wide ${isActive ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
               {dayName}
             </span>
           </div>
@@ -133,19 +132,19 @@ export const Statistics = () => {
   }, []);
 
   return (
-    <div className="main-wrapper bg-[#F6F7F9]">
+    <div className="main-wrapper bg-[var(--bg-app)]">
       <div className="app-container pb-32 bg-transparent shadow-none border-none">
       
       {/* Top Header */}
-      <div className="px-6 pt-12 pb-6 flex justify-between items-center sticky top-0 z-40 bg-[#F6F7F9]/90 backdrop-blur-sm">
+      <div className="px-6 pt-12 pb-6 flex justify-between items-center sticky top-0 z-40 bg-[var(--bg-app)]/90 backdrop-blur-sm">
         <button 
           onClick={() => navigate(-1)}
-          className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-all text-gray-700 hover:text-gray-900"
+          className="w-12 h-12 bg-[var(--bg-card)] rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-all text-[var(--text-main)] hover:text-[var(--text-main)]"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-[22px] font-bold text-gray-900">Statistic</h1>
-        <button className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-all text-gray-700 hover:text-gray-900">
+        <h1 className="text-[22px] font-bold text-[var(--text-main)]">Statistic</h1>
+        <button className="w-12 h-12 bg-[var(--bg-card)] rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-all text-[var(--text-main)] hover:text-[var(--text-main)]">
           <MoreVertical className="w-5 h-5" />
         </button>
       </div>
@@ -157,21 +156,21 @@ export const Statistics = () => {
            transition={{ duration: 0.5 }}
         >
           {/* Calorie Statistics Card */}
-          <div className="bg-white rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-4">
+          <div className="bg-[var(--bg-card)] rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-4">
             <div className="flex justify-between items-start">
                <div className="flex items-center space-x-2">
-                 <div className="text-gray-800">
+                 <div className="text-[var(--text-main)]">
                    <Flame className="w-6 h-6 fill-gray-800" />
                  </div>
                  <div className="flex items-baseline space-x-1 mt-1">
-                    <span className="text-[28px] font-black text-gray-900 leading-none tracking-tight">
+                    <span className="text-[28px] font-black text-[var(--text-main)] leading-none tracking-tight">
                       {isLoading ? '...' : totalToday}
                     </span>
-                    <span className="text-sm font-bold text-gray-400">kcal</span>
+                    <span className="text-sm font-bold text-[var(--text-muted)]">kcal</span>
                  </div>
                </div>
                <div className="text-right mt-1.5">
-                 <p className="text-[13px] font-medium text-gray-400">Target: <span className="font-bold text-gray-800">{targetCalories}</span> kcal</p>
+                 <p className="text-[13px] font-medium text-[var(--text-muted)]">Target: <span className="font-bold text-[var(--text-main)]">{targetCalories}</span> kcal</p>
                </div>
             </div>
 
@@ -185,11 +184,11 @@ export const Statistics = () => {
           </div>
 
           {/* Today's Calories Card (Replaces Heart Rate) */}
-          <div className="bg-white rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-4 relative overflow-hidden group hover:shadow-lg transition-shadow">
+          <div className="bg-[var(--bg-card)] rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-4 relative overflow-hidden group hover:shadow-lg transition-shadow">
              <div className="flex justify-between items-start mb-8">
                <div>
-                 <h3 className="text-lg font-bold text-gray-900">Calorias de Hoje</h3>
-                 <p className="text-sm font-medium text-gray-400">Total consumido hoje</p>
+                 <h3 className="text-lg font-bold text-[var(--text-main)]">Calorias de Hoje</h3>
+                 <p className="text-sm font-medium text-[var(--text-muted)]">Total consumido hoje</p>
                </div>
                <div className="w-10 h-10 rounded-full bg-[#F0F9EB] flex items-center justify-center text-[#56AB2F] group-hover:bg-[#E5E9CA] transition-colors">
                  <Flame className="w-5 h-5 fill-current" />
@@ -198,8 +197,8 @@ export const Statistics = () => {
              
              <div className="flex justify-between items-end relative z-10">
                <div className="flex items-baseline space-x-1">
-                 <span className="text-4xl font-black text-gray-900">{totalToday}</span>
-                 <span className="text-sm font-bold text-gray-400">kcal</span>
+                 <span className="text-4xl font-black text-[var(--text-main)]">{totalToday}</span>
+                 <span className="text-sm font-bold text-[var(--text-muted)]">kcal</span>
                </div>
                
                <div className="w-1/2 h-14 translate-y-2 opacity-90">
@@ -223,7 +222,7 @@ export const Statistics = () => {
           {/* Calorie History - Horizontal Scroll */}
           <div className="mt-8">
             <div className="flex justify-between items-center mb-6 pl-1">
-              <h3 className="text-xl font-bold text-gray-900">Histórico de Calorias</h3>
+              <h3 className="text-xl font-bold text-[var(--text-main)]">Histórico de Calorias</h3>
               <button className="text-[13px] font-black text-[#56AB2F] bg-[#F0F9EB] px-4 py-1.5 rounded-full shadow-sm active:scale-95 transition-all">
                 Ver tudo
               </button>
@@ -238,22 +237,22 @@ export const Statistics = () => {
                   key={idx}
                   whileHover={{ y: -4 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0 w-[170px] h-[120px] bg-white rounded-[28px] p-5 shadow-[0_8px_25px_rgba(0,0,0,0.03)] border border-gray-50/50 flex flex-col justify-between snap-start"
+                  className="flex-shrink-0 w-[170px] h-[120px] bg-[var(--bg-card)] rounded-[28px] p-5 shadow-[0_8px_25px_rgba(0,0,0,0.03)] border border-[var(--border-main)]/50 flex flex-col justify-between snap-start"
                 >
                   <div className="flex justify-between items-start">
-                    <span className="text-[14px] font-black text-gray-900 leading-tight">
+                    <span className="text-[14px] font-black text-[var(--text-main)] leading-tight">
                       {formatDateLabel(record.date)}
                     </span>
                     <div className="w-7 h-7 bg-[#F8F9FA] rounded-full flex items-center justify-center">
-                      <ArrowUpRight className="w-3.5 h-3.5 text-gray-400" />
+                      <ArrowUpRight className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                     </div>
                   </div>
                   
                   <div className="flex items-baseline space-x-1">
-                    <span className="text-[26px] font-black text-gray-900 tracking-tight">
+                    <span className="text-[26px] font-black text-[var(--text-main)] tracking-tight">
                       {record.calories}
                     </span>
-                    <span className="text-[11px] font-bold text-gray-400">kcal</span>
+                    <span className="text-[11px] font-bold text-[var(--text-muted)]">kcal</span>
                   </div>
                 </motion.div>
               ))}

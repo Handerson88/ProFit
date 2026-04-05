@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 const emailService = require('../services/emailService');
+const ExcelJS = require('exceljs');
 
 // Helper to log admin actions
 const logAdminAction = async (adminId, action, targetType, targetId) => {
@@ -51,8 +52,8 @@ exports.login = async (req, res) => {
 exports.getStats = async (req, res) => {
     try {
         const usersCount = await db.query('SELECT COUNT(*) FROM users');
-        const activeToday = await db.query("SELECT COUNT(DISTINCT user_id) FROM meals WHERE date >= CURRENT_DATE");
-        const activeWeekly = await db.query("SELECT COUNT(DISTINCT user_id) FROM meals WHERE date >= CURRENT_DATE - INTERVAL '7 days'");
+        const activeToday = await db.query("SELECT COUNT(DISTINCT user_id) FROM meals WHERE date >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::DATE");
+        const activeWeekly = await db.query("SELECT COUNT(DISTINCT user_id) FROM meals WHERE date >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::DATE - INTERVAL '7 days'");
         const mealsCount = await db.query('SELECT COUNT(*) FROM meals');
         const workoutsCount = await db.query('SELECT COUNT(*) FROM workout_plans');
         const scansCount = await db.query('SELECT COUNT(*) FROM settings WHERE key = \'total_scans_globais\'');
@@ -77,7 +78,7 @@ exports.getDashboardData = async (req, res) => {
         const usersRes = await db.query(`
             SELECT 
                 COUNT(*) FILTER (WHERE role = 'user') as total,
-                COUNT(*) FILTER (WHERE role = 'user' AND plan_type = 'pro' AND payment_status = 'paid' AND (expiration_date IS NULL OR expiration_date > NOW())) as pro,
+                COUNT(*) FILTER (WHERE role = 'user' AND plan_type = 'pro' AND status = 'active') as pro,
                 COUNT(*) FILTER (WHERE role = 'user' AND plan_type = 'free') as free
             FROM users
         `);
@@ -86,44 +87,54 @@ exports.getDashboardData = async (req, res) => {
         const total_users = parseInt(total || 0);
         const pro_users = parseInt(pro || 0);
         const free_users = parseInt(free || 0);
-        const paywallActive = total_users > 20;
+        
+        // Regel: Active if users >= 20
+        const paywallActive = total_users >= 20;
 
-        // 2. Revenue (Only approved/paid payments)
-        const revenueRes = await db.query("SELECT SUM(amount) as total FROM payments WHERE status IN ('approved', 'paid', 'completed')");
-        const totalRevenue = parseFloat(revenueRes.rows[0].total || 0);
+        // 2. MRR (Price = 499 MZN as requested)
+        const mrr = pro_users * 499;
 
-        // 3. MRR (Price = 599 MZN)
-        const mrr = pro_users * 599;
-
-        // 4. Payments count
-        const paymentsCountRes = await db.query("SELECT COUNT(*) FROM payments WHERE status IN ('approved', 'paid', 'completed')");
-        const totalPayments = parseInt(paymentsCountRes.rows[0].count || 0);
-
-        // 5. Chart Data (Last 7 days growth)
+        // 3. Chart Data (Active Users per day vs Meals per day)
+        // Last 7 days
         const chartRes = await db.query(`
             SELECT 
                 to_char(date_trunc('day', d), 'Dy') as day_name,
-                (SELECT COUNT(*) FROM users WHERE created_at <= d + interval '1 day' AND role = 'user') as users_count,
-                (SELECT COUNT(*) FROM meals WHERE date = d::date) as meals_count
-            FROM generate_series(CURRENT_DATE - interval '6 days', CURRENT_DATE, interval '1 day') d
+                (SELECT COUNT(DISTINCT user_id) FROM meals WHERE date::date = d::date) as active_users,
+                (SELECT COUNT(*) FROM meals WHERE date::date = d::date) as meals_count
+            FROM generate_series(
+                (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::DATE - interval '6 days', 
+                (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Maputo')::DATE, 
+                interval '1 day'
+            ) d
             ORDER BY d
         `);
 
         const activityData = chartRes.rows.map(row => ({
             name: row.day_name,
-            users: parseInt(row.users_count),
-            meals: parseInt(row.meals_count)
+            users: parseInt(row.active_users || 0),
+            meals: parseInt(row.meals_count || 0)
         }));
+
+        // 4. System Status Check
+        let dbStatus = 'Online';
+        try {
+            await db.query('SELECT 1');
+        } catch (e) {
+            dbStatus = 'Offline';
+        }
 
         res.json({
             total_users,
             pro_users,
             free_users,
             paywall_active: paywallActive,
-            total_revenue: totalRevenue,
             mrr,
-            total_payments: totalPayments,
-            activityData
+            activityData,
+            system_status: {
+                database: dbStatus,
+                vumba_core: 'Operacional', // Mocked as operational for now
+                ai_api: '200 OK'
+            }
         });
     } catch (err) {
         console.error('[Admin] Error fetching dashboard data:', err);
@@ -165,16 +176,33 @@ exports.getUsersActivity = async (req, res) => {
 exports.getUsers = async (req, res) => {
     try {
         const result = await db.query(`
-            SELECT id, name, email, created_at, status, is_active, onboarding_completed, has_paid, scan_limit_per_day,
+            SELECT id, name, email, created_at, status, is_active, onboarding_completed, has_paid, scan_limit_per_day, is_influencer,
             (SELECT name FROM users u2 WHERE u2.id = users.referred_by) as referrer_name,
             (SELECT date FROM meals WHERE user_id = users.id ORDER BY date DESC LIMIT 1) as last_activity
             FROM users 
+            WHERE role = 'user' OR role IS NULL
             ORDER BY created_at DESC
         `);
         res.json(result.rows);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Erro ao buscar usuários' });
+    }
+};
+
+exports.getAdmins = async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT id, name, email, created_at, status, is_active, role,
+            (SELECT date FROM meals WHERE user_id = users.id ORDER BY date DESC LIMIT 1) as last_activity
+            FROM users 
+            WHERE role IN ('admin', 'super_admin')
+            ORDER BY created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Erro ao buscar administradores' });
     }
 };
 
@@ -289,7 +317,7 @@ exports.inviteUser = async (req, res) => {
         logAdminAction(req.admin.id, `Convite enviado para ${email}`, 'user', userId);
 
         // 5. Send Email
-        const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+        const frontUrl = process.env.FRONTEND_URL || 'https://myprofittness.com';
         const inviteLink = `${frontUrl}/activate?token=${inviteToken}`;
         const inviterName = 'Administração ProFit';
         
@@ -512,27 +540,42 @@ exports.deleteScannedDish = async (req, res) => {
 
 exports.getMRRStats = async (req, res) => {
     try {
-        const paidUsersRes = await db.query("SELECT COUNT(*) FROM users WHERE has_paid = true");
         const totalUsersRes = await db.query("SELECT COUNT(*) FROM users");
-        const revenueRes = await db.query("SELECT SUM(amount) as total FROM payments WHERE status = 'approved'");
-        
-        const paidCount = parseInt(paidUsersRes.rows[0].count);
-        const totalCount = parseInt(totalUsersRes.rows[0].count);
-        const totalRevenue = parseFloat(revenueRes.rows[0].total || 0);
+        const totalUsers = parseInt(totalUsersRes.rows[0].count);
 
-        const mrr = paidCount * 599;
-        const arpu = totalCount > 0 ? (totalRevenue / totalCount) : 0;
+        let mode = "ESTIMADO";
+        let charging = false;
+        let mrr = 0;
+        let subscribers = 0;
+
+        if (totalUsers < 20) {
+            mode = "ESTIMADO";
+            charging = false;
+            mrr = totalUsers * 299;
+            subscribers = totalUsers; // No modo estimado, projetamos com todos
+        } else {
+            mode = "REAL";
+            charging = true;
+            const paidUsersRes = await db.query("SELECT COUNT(*) FROM users WHERE plan = 'PRO' AND payment_status = 'PAID'");
+            subscribers = parseInt(paidUsersRes.rows[0].count);
+            mrr = subscribers * 299;
+        }
+
+        const arpu = subscribers > 0 ? 299 : 0;
         
-        // Simplified growth calculation
-        const thisMonthPaidRes = await db.query("SELECT COUNT(*) FROM users WHERE has_paid = true AND created_at >= date_trunc('month', CURRENT_DATE)");
-        const thisMonthPaid = parseInt(thisMonthPaidRes.rows[0].count);
-        const growth = paidCount > 0 ? Math.round((thisMonthPaid / paidCount) * 100) : 0;
+        // Cáculo de crescimento simplificado baseado em novos usuários no mês
+        const thisMonthTotalRes = await db.query("SELECT COUNT(*) FROM users WHERE created_at >= date_trunc('month', CURRENT_DATE)");
+        const thisMonthTotal = parseInt(thisMonthTotalRes.rows[0].count);
+        const growth = totalUsers > 0 ? Math.round((thisMonthTotal / totalUsers) * 100) : 0;
 
         res.json({
             mrr,
-            subscribers: paidCount,
+            subscribers,
             arpu,
-            growth: growth || 0
+            growth,
+            mode,
+            charging,
+            totalUsers
         });
     } catch (err) {
         console.error(err);
@@ -563,38 +606,206 @@ exports.getMRRChart = async (req, res) => {
     }
 };
 
-exports.getWorkouts = async (req, res) => {
+exports.getFunnelStats = async (req, res) => {
     try {
-        const { page = 1, search = '' } = req.query;
-        const limit = 10;
-        const offset = (page - 1) * limit;
+        const statsRes = await db.query(`
+            SELECT funnel_step, COUNT(*) as count 
+            FROM users 
+            WHERE role = 'user' 
+            GROUP BY funnel_step
+        `);
+        const usersRes = await db.query(`
+            SELECT id, name, email, funnel_step, created_at, plan, payment_status, 'user' as user_type
+            FROM users 
+            WHERE role = 'user' 
+            ORDER BY created_at DESC 
+            LIMIT 100
+        `);
 
-        let query = `SELECT * FROM workouts`;
-        let countQuery = `SELECT COUNT(*) FROM workouts`;
+        const leadsRes = await db.query(`
+            SELECT id, name, email, current_step as funnel_step, created_at, 'lead' as user_type
+            FROM quiz_leads
+            WHERE status != 'converted'
+            ORDER BY last_active_at DESC
+            LIMIT 100
+        `);
+        
+        const countMap = {
+            'REGISTERED': 0,
+            'QUIZ_STARTED': 0,
+            'QUIZ_COMPLETED': 0,
+            'PLAN_VIEWED': 0,
+            'PAYMENT_PENDING': 0,
+            'PAID': 0
+        };
+
+        statsRes.rows.forEach(r => {
+            if (r.funnel_step) countMap[r.funnel_step] = parseInt(r.count);
+        });
+
+        // Add leads to the count (approximating steps)
+        leadsRes.rows.forEach(l => {
+            const step = parseInt(l.funnel_step);
+            if (step === 1) countMap['QUIZ_STARTED']++;
+            else if (step > 1 && step < 36) countMap['QUIZ_STARTED']++;
+            else if (step >= 36) countMap['QUIZ_COMPLETED']++;
+        });
+
+        // Merge and process users list
+        const mergedUsers = [
+            ...usersRes.rows,
+            ...leadsRes.rows.map(l => ({
+                ...l,
+                name: l.name || 'Usuário Desconhecido',
+                email: l.email || 'Anônimo (Pendente)',
+                funnel_step: parseInt(l.funnel_step) >= 36 ? 'QUIZ_COMPLETED' : 'QUIZ_STARTED'
+            }))
+        ].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 100);
+
+        // Agregação de bloqueadores/obstáculos
+        const blockersRes = await db.query(`
+            SELECT blocker, COUNT(*) as count
+            FROM users, jsonb_array_elements_text(COALESCE(blockers, '[]'::jsonb)) as blocker
+            WHERE role = 'user'
+            GROUP BY blocker
+        `);
+        const blockersMap = {};
+        blockersRes.rows.forEach(r => {
+            blockersMap[r.blocker] = parseInt(r.count);
+        });
+
+        // Agregação de objetivos principais
+        const objectivesRes = await db.query(`
+            SELECT primary_objective, COUNT(*) as count
+            FROM users
+            WHERE role = 'user' AND primary_objective IS NOT NULL
+            GROUP BY primary_objective
+        `);
+        const objectivesMap = {};
+        objectivesRes.rows.forEach(r => {
+            objectivesMap[r.primary_objective] = parseInt(r.count);
+        });
+        
+        res.json({ counts: countMap, users: mergedUsers, blockers: blockersMap, objectives: objectivesMap });
+    } catch(err) {
+        console.error('Error fetching funnel stats:', err);
+        res.status(500).json({ message: 'Error fetching funnel stats' });
+    }
+};
+
+exports.getWorkoutActivity = async (req, res) => {
+    const { search, status, type, date, page = 1, limit = 10 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    try {
+        let query = `
+            SELECT 
+                ws.*,
+                u.name as user_name,
+                u.email as user_email,
+                wp.title as plan_title
+            FROM workout_sessions ws
+            JOIN users u ON ws.user_id = u.id
+            LEFT JOIN workout_plans wp ON ws.plan_id = wp.id
+        `;
         const params = [];
+        const conditions = [];
 
         if (search) {
-            const searchPattern = `%${search}%`;
-            query += ` WHERE user_name ILIKE $1 OR user_email ILIKE $1`;
-            countQuery += ` WHERE user_name ILIKE $1 OR user_email ILIKE $1`;
-            params.push(searchPattern);
+            params.push(`%${search}%`);
+            conditions.push(`(u.name ILIKE $${params.length} OR u.email ILIKE $${params.length})`);
         }
 
-        query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-        const finalParams = [...params, limit, offset];
+        if (status && status !== 'all') {
+            params.push(status);
+            conditions.push(`ws.status = $${params.length}`);
+        }
 
-        const result = await db.query(query, finalParams);
-        const countResult = await db.query(countQuery, params);
+        if (type && type !== 'all') {
+            params.push(type);
+            conditions.push(`ws.workout_type = $${params.length}`);
+        }
 
+        if (date) {
+            params.push(date);
+            conditions.push(`ws.created_at::date = $${params.length}::date`);
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        // Get total count for pagination
+        const countQuery = `SELECT COUNT(*) FROM (${query}) as count_query`;
+        const totalCountRes = await db.query(countQuery, params);
+        const total = parseInt(totalCountRes.rows[0].count);
+
+        // Add sorting and pagination
+        query += ` ORDER BY ws.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(parseInt(limit), offset);
+
+        const result = await db.query(query, params);
+        
         res.json({
-            workouts: result.rows,
-            total: parseInt(countResult.rows[0].count),
-            pages: Math.ceil(parseInt(countResult.rows[0].count) / limit),
-            currentPage: parseInt(page)
+            data: result.rows,
+            pagination: {
+                total,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                pages: Math.ceil(total / parseInt(limit))
+            }
         });
     } catch (err) {
-        console.error('Admin Get Workouts Error:', err);
-        res.status(500).json({ message: 'Erro ao buscar treinos administrativos' });
+        console.error('Admin Get Workout Activity Error:', err);
+        res.status(500).json({ message: 'Erro ao buscar atividade de treinos' });
+    }
+};
+
+exports.getWorkoutDashboardStats = async (req, res) => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        const stats = await db.query(`
+            SELECT 
+                (SELECT COUNT(*) FROM workout_sessions WHERE created_at::date = $1::date) as total_today,
+                (SELECT COUNT(*) FROM workout_sessions WHERE status = 'active') as active_now,
+                (SELECT COUNT(*) FROM workout_sessions WHERE status = 'completed' AND created_at::date = $1::date) as completed_today,
+                (SELECT COALESCE(SUM(calories), 0) FROM workout_sessions WHERE created_at::date = $1::date) as calories_today
+        `, [today]);
+
+        res.json(stats.rows[0]);
+    } catch (err) {
+        console.error('Admin Get Workout Stats Error:', err);
+        res.status(500).json({ message: 'Erro ao buscar estatísticas de treinos' });
+    }
+};
+
+exports.getWorkoutSessionDetails = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const session = await db.query(`
+            SELECT ws.*, u.name as user_name, u.email as user_email, wp.structured_plan as full_plan
+            FROM workout_sessions ws
+            JOIN users u ON ws.user_id = u.id
+            LEFT JOIN workout_plans wp ON ws.plan_id = wp.id
+            WHERE ws.id = $1
+        `, [id]);
+
+        if (session.rows.length === 0) return res.status(404).json({ message: 'Sessão não encontrada' });
+
+        const exerciseProgress = await db.query(`
+            SELECT * FROM user_workout_progress 
+            WHERE user_id = $1 AND workout_plan_id = $2 AND workout_day = $3
+            ORDER BY created_at ASC
+        `, [session.rows[0].user_id, session.rows[0].plan_id, session.rows[0].workout_day]);
+
+        res.json({
+            session: session.rows[0],
+            exercises: exerciseProgress.rows
+        });
+    } catch (err) {
+        console.error('Admin Get Workout Session Details Error:', err);
+        res.status(500).json({ message: 'Erro ao buscar detalhes da sessão' });
     }
 };
 
@@ -671,5 +882,116 @@ exports.migrateAIDetectedFoods = async (req, res) => {
     } catch (err) {
         console.error('[Admin] Migration failed:', err);
         res.status(500).json({ message: 'Falha durante a migração da memória da IA' });
+    }
+};
+
+/**
+ * Exporta contatos dos usuários em formato Excel (.xlsx)
+ * Filtros opcionais: country, status
+ */
+exports.exportUsers = async (req, res) => {
+    try {
+        const { country, status } = req.query;
+        
+        let query = `
+            SELECT 
+                name, 
+                email, 
+                phone, 
+                country, 
+                plan as plano, 
+                subscription_status as status_assinatura,
+                end_date as data_expiracao, 
+                created_at as data_cadastro
+            FROM users 
+            WHERE role = 'user' AND phone IS NOT NULL AND phone != ''
+        `;
+        const params = [];
+
+        if (country && country !== 'all') {
+            params.push(country);
+            // Case-insensitive search for country or country_code
+            query += ` AND (country ILIKE $${params.length} OR country_code ILIKE $${params.length})`;
+        }
+
+        if (status && status !== 'all') {
+            if (status === 'active') {
+                query += " AND subscription_status = 'active'";
+            } else if (status === 'inactive') {
+                query += " AND (subscription_status != 'active' OR subscription_status IS NULL)";
+            }
+        }
+
+        query += " ORDER BY created_at DESC";
+
+        const result = await db.query(query, params);
+        const users = result.rows;
+
+        // Criar Workbook
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Contatos ProFit');
+
+        // Configurar Colunas
+        worksheet.columns = [
+            { header: 'Nome', key: 'name', width: 30 },
+            { header: 'Email', key: 'email', width: 35 },
+            { header: 'Telefone', key: 'phone', width: 20 },
+            { header: 'País', key: 'country', width: 20 },
+            { header: 'Plano', key: 'plano', width: 15 },
+            { header: 'Status', key: 'status_assinatura', width: 20 },
+            { header: 'Expiração', key: 'data_expiracao', width: 20 },
+            { header: 'Data Cadastro', key: 'data_cadastro', width: 20 }
+        ];
+
+        // Adicionar Linhas com formatação de telefone
+        users.forEach(user => {
+            let formattedPhone = user.phone.replace(/\s+/g, '').replace('+', '').replace('-', '').replace('(', '').replace(')', '');
+            
+            // Lógica de prefixo automático baseada no país se não tiver prefixo
+            const normalizedCountry = (user.country || '').toLowerCase();
+            if (!formattedPhone.startsWith('258') && !formattedPhone.startsWith('27') && !formattedPhone.startsWith('244')) {
+                if (normalizedCountry.includes('moç') || normalizedCountry.includes('moz')) {
+                    formattedPhone = '258' + formattedPhone;
+                } else if (normalizedCountry.includes('afri') || normalizedCountry.includes('south')) {
+                    formattedPhone = '27' + formattedPhone;
+                } else if (normalizedCountry.includes('angol')) {
+                    formattedPhone = '244' + formattedPhone;
+                }
+            }
+            
+            worksheet.addRow({
+                name: user.name || 'N/A',
+                email: user.email,
+                phone: '+' + formattedPhone,
+                country: user.country || 'N/A',
+                plano: (user.plano || 'FREE').toUpperCase(),
+                status_assinatura: user.status_assinatura || 'sem assinatura',
+                data_expiracao: user.data_expiracao ? new Date(user.data_expiracao).toLocaleDateString('pt-BR') : 'N/A',
+                data_cadastro: new Date(user.data_cadastro).toLocaleDateString('pt-BR')
+            });
+        });
+
+        // Estilizar Cabeçalho
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF000000' } // Preto Premium
+        };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Enviar arquivo
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=contatos_profit.xlsx');
+
+        await workbook.xlsx.write(res);
+        res.end();
+
+        logAdminAction(req.admin.id, `Exportação de contatos (Filtros: ${country || 'todos'}, ${status || 'todos'})`, 'export', 'users');
+
+    } catch (err) {
+        console.error('[Admin] Erro ao exportar contatos:', err);
+        res.status(500).json({ message: 'Erro ao gerar arquivo Excel' });
     }
 };

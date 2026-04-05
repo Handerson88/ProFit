@@ -17,11 +17,11 @@ import {
   RefreshCcw,
   Plus
 } from 'lucide-react';
-import { api } from '../../services/api';
+import { api, getImagePath } from '../../services/api';
 import { socketService } from '../../services/socket';
 import { toast } from 'react-hot-toast';
-const API_URL = import.meta.env.VITE_API_URL || '';
 import { ConfirmModal } from '../../components/ConfirmModal';
+import { formatMaputoDate, formatMaputoTime } from '../../utils/dateUtils';
 
 interface ScannedDish {
   id: string;
@@ -198,7 +198,7 @@ const AdminDishes: React.FC = () => {
           <input 
             type="text" 
             placeholder="Buscar por prato ou usuário..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#38A169] outline-none transition-all dark:text-white"
+            className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-card)] dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#38A169] outline-none transition-all dark:text-white"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -206,7 +206,7 @@ const AdminDishes: React.FC = () => {
 
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative group">
-            <div className="flex items-center gap-2 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-xl cursor-not-allowed opacity-50">
+            <div className="flex items-center gap-2 bg-[var(--bg-card)] dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-xl cursor-not-allowed opacity-50">
               <Calendar size={18} className="text-slate-400" />
               <span className="text-sm font-medium dark:text-white">
                 {period === 'all' ? 'Todo Período' : period === 'today' ? 'Hoje' : period === 'week' ? 'Esta Semana' : 'Este Mês'}
@@ -228,7 +228,7 @@ const AdminDishes: React.FC = () => {
           
           <button 
             onClick={() => fetchDishes()}
-            className="p-2.5 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400"
+            className="p-2.5 bg-[var(--bg-card)] dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400"
           >
             <Filter size={18} />
           </button>
@@ -236,7 +236,7 @@ const AdminDishes: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+      <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -272,7 +272,7 @@ const AdminDishes: React.FC = () => {
                         <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-200 dark:border-slate-700">
                           {dish.image_url ? (
                             <img 
-                              src={dish.image_url.startsWith('data:') ? dish.image_url : `${API_URL}${dish.image_url}`} 
+                              src={getImagePath(dish.image_url)} 
                               alt={dish.dish_name} 
                               className="w-full h-full object-cover" 
                             />
@@ -344,7 +344,7 @@ const AdminDishes: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-slate-600 dark:text-slate-400">{formatDate(dish.created_at)}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{formatMaputoDate(dish.created_at)}</p>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
@@ -385,11 +385,11 @@ const AdminDishes: React.FC = () => {
       {/* Details Modal */}
       {isDetailsModalOpen && selectedDish && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1A202C] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+          <div className="bg-[var(--bg-card)] dark:bg-[#1A202C] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
             <div className="relative h-64 bg-slate-100 dark:bg-slate-800">
               {selectedDish.image_url ? (
                 <img 
-                  src={selectedDish.image_url.startsWith('data:') ? selectedDish.image_url : `${API_URL}${selectedDish.image_url}`} 
+                  src={getImagePath(selectedDish.image_url)} 
                   alt={selectedDish.dish_name} 
                   className="w-full h-full object-cover"
                 />
@@ -413,7 +413,7 @@ const AdminDishes: React.FC = () => {
                 </span>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{selectedDish.dish_name}</h2>
                 <p className="text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
-                  <UserIcon size={14} /> {selectedDish.user_name} • {formatDate(selectedDish.created_at)}
+                  <UserIcon size={14} /> {selectedDish.user_name} • {formatMaputoDate(selectedDish.created_at)} às {formatMaputoTime(selectedDish.created_at)}
                 </p>
               </div>
 
@@ -459,7 +459,7 @@ const AdminDishes: React.FC = () => {
 
               <button 
                 onClick={() => setIsDetailsModalOpen(false)}
-                className="w-full py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-2xl hover:opacity-90 transition-opacity"
+                className="w-full py-3.5 bg-slate-900 dark:bg-[var(--bg-card)] text-white dark:text-slate-900 font-bold rounded-2xl hover:opacity-90 transition-opacity"
               >
                 Concluído
               </button>
@@ -471,7 +471,7 @@ const AdminDishes: React.FC = () => {
       {/* Edit Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#1A202C] w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800">
+          <div className="bg-[var(--bg-card)] dark:bg-[#1A202C] w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">Editar Informações</h2>
               <button 

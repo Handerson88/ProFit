@@ -29,7 +29,12 @@ interface User {
   plan_status?: 'active' | 'inactive';
   plan_expiration?: string;
   plan?: 'free' | 'pro' | 'premium';
-  subscription_status?: 'active' | 'inactive';
+  subscription_status?: string;
+  end_date?: string;
+  is_blocked?: boolean;
+  is_early_adopter?: boolean;
+  is_influencer?: boolean;
+  created_at?: string;
 }
 
 interface AuthContextType {
@@ -40,7 +45,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   totalUsersCount: number;
   login: (email: string, password: string) => Promise<User>;
-  register: (name: string, email: string, password: string, referralCode?: string) => Promise<User>;
+  register: (name: string, email: string, password: string, referralCode?: string, extraData?: any) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   checkAuth: () => Promise<boolean>;
@@ -94,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const SESSION_VERSION = 'v5';
+  const SESSION_VERSION = 'v7';
 
   useEffect(() => {
     // Force clear old sessions on system reset
@@ -131,8 +136,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.token) {
         localStorage.setItem('token', data.token);
         setToken(data.token);
-        await refreshUser();
-        setIsAuthenticated(true);
+        
+        // Set user immediately from login response to avoid "processing" hang
+        if (data.user) {
+          setUser(data.user);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          setIsAuthenticated(true);
+        }
+
+        // Start background refresh to get full profile details (bootstrap) but don't block
+        refreshUser().catch(e => console.warn('Background refresh failed:', e));
+        
         return data.user;
       }
       throw new Error('Login failed');
@@ -141,16 +155,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (name: string, email: string, password: string, referralCode?: string) => {
+  const register = async (name: string, email: string, password: string, referralCode?: string, extraData: any = {}) => {
     setAuthLoading(true);
     try {
-      const data = await api.auth.register(name, email, password, referralCode);
+      const data = await api.auth.register(name, email, password, referralCode, extraData);
       if (data.token) {
         localStorage.setItem('token', data.token);
         setToken(data.token);
-        await refreshUser();
-        setIsAuthenticated(true);
-        return data.user;
+        
+        // Use the user data returned from registration if available
+        if (data.user) {
+          setUser(data.user);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          setIsAuthenticated(true);
+          
+          // Background refresh to get full profile if needed, but don't block
+          refreshUser().catch(e => console.warn('Background refresh failed:', e));
+          
+          return data.user;
+        } else {
+          // Fallback if user data not in response
+          await refreshUser();
+          setIsAuthenticated(true);
+          return user!;
+        }
       }
       throw new Error('Registration failed');
     } finally {

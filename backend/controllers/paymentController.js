@@ -1,157 +1,226 @@
-const db = require('../config/database');
-const { v4: uuidv4 } = require('uuid');
+const paymentService = require('../services/paymentService');
 const emailService = require('../services/emailService');
+const fs = require('fs');
+const path = require('path');
+const db = require('../config/database');
+const crypto = require('crypto');
 
-/**
- * ProFit Pro - Payment Controller
- * Suporta M-Pesa e e-Mola (Moçambique)
- */
-
-exports.createPayment = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { amount, method, phone } = req.body;
-
-    // O novo Plano Pro custa fixo 349 MZN.
-    // Aceitamos o valor do frontend mas podemos validar aqui.
-    const finalAmount = 349;
-
-
-    if (!amount || !method || !phone) {
-      return res.status(400).json({ message: 'Amount, method and phone are required' });
-    }
-
-    const paymentId = uuidv4();
-    const transactionId = 'TX' + Math.random().toString(36).substring(2, 10).toUpperCase();
-
-    // 1. Registrar intenção de pagamento no banco
-    await db.query(`
-      INSERT INTO payments (id, user_id, amount, method, phone, transaction_id, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `, [paymentId, userId, finalAmount, method, phone, transactionId, 'pending']);
-
-    const useSimulation = process.env.USE_PAYMENT_SIMULATION === 'true';
-
-    if (useSimulation) {
-        console.log(`[PAYMENT SIMULATION] Iniciando cobrança de ${finalAmount} via ${method} para ${phone}`);
+exports.initiatePayment = async (req, res) => {
+    try {
+        const userId = req.user ? req.user.id : null;
+        const { phone, method, couponCode, plan, email } = req.body;
         
-        // Simulação: Aprovado automaticamente após 10 segundos
-        setTimeout(async () => {
-            try {
-                await db.query(
-                    "UPDATE payments SET status = 'approved', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
-                    [paymentId]
-                );
-                // Ativar Plano Pro (30 dias)
-                await db.query(`
-                    UPDATE users 
-                    SET plan_type = 'pro', 
-                        plan_status = 'active', 
-                        plan = 'pro',
-                        subscription_status = 'active',
-                        plan_expiration = GREATEST(COALESCE(plan_expiration, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP) + INTERVAL '30 days',
-                        has_paid = true
-                    WHERE id = $1`, 
-                    [userId]
-                );
-
-                // (Opcional) Marcar descontos antigos como usados se necessário
-                await db.query("UPDATE discounts SET is_used = true WHERE user_id = $1 AND is_used = false", [userId]);
-
-                // 🏅 LÓGICA DE INDICAÇÃO v2 (50% OFF por 10 pagantes)
-                const currentUserRes = await db.query("SELECT referred_by FROM users WHERE id = $1", [userId]);
-                const referrerId = currentUserRes.rows[0].referred_by;
-
-                if (referrerId) {
-                    const countRes = await db.query(
-                        "SELECT COUNT(*) FROM users WHERE referred_by = $1 AND has_paid = true", 
-                        [referrerId]
-                    );
-                    const payingReferrals = parseInt(countRes.rows[0].count);
-
-                    // Se atingiu 10 pagantes, concede 50% de desconto
-                    if (payingReferrals >= 10) {
-                        const discountCheck = await db.query(
-                            "SELECT id FROM discounts WHERE user_id = $1 AND percentage = 50 AND is_used = false",
-                            [referrerId]
-                        );
-                        
-                        if (discountCheck.rows.length === 0) {
-                            await db.query(
-                                "INSERT INTO discounts (id, user_id, percentage) VALUES ($1, $2, $3)",
-                                [uuidv4(), referrerId, 50]
-                            );
-                            
-                            // Enviar email de bônus real!
-                            const referrerUserRes = await db.query("SELECT id, name, email FROM users WHERE id = $1", [referrerId]);
-                            if (referrerUserRes.rows.length > 0) {
-                                // Usamos a função de milestone de email atualizada para o novo bônus
-                                emailService.sendReferralMilestoneEmail(referrerUserRes.rows[0], 50).catch(e => console.error('[PAYMENT] Erro email bonus:', e));
-                            }
-                        }
-                    }
-                }
-
-
-                // Enviar email de sucesso
-                const userEmailRes = await db.query('SELECT name, email FROM users WHERE id = $1', [userId]);
-                if (userEmailRes.rows.length > 0) {
-                    await emailService.sendPaymentApprovedEmail(userEmailRes.rows[0], finalAmount);
-                }
-                
-                console.log(`[PAYMENT] Pagamento ${paymentId} aprovado via SIMULAÇÃO.`);
-            } catch (e) {
-                console.error('Erro na aprovação simulada:', e);
-                // Em caso de erro real de processamento
-                const userRes = await db.query('SELECT name, email FROM users WHERE id = $1', [userId]);
-                if (userRes.rows.length > 0) {
-                    await emailService.sendPaymentFailedEmail(userRes.rows[0], "Erro técnico no processamento do pagamento.");
-                }
-            }
-        }, 10000);
-
-    } else {
-        // --- INTEGRAÇÃO REAL AQUI ---
-        // Exemplo para M-Pesa ou e-Mola
-        console.log(`[PAYMENT LIVE] Enviando requisição real para ${method}...`);
-        
-        if (method === 'mpesa') {
-            // Aqui você faria o POST para a API do M-Pesa usando:
-            // process.env.MPESA_API_KEY
-            // process.env.MPESA_SERVICE_PROVIDER_CODE
-            // etc...
-        } else if (method === 'emola') {
-            // Aqui você faria o POST para a API do e-Mola usando:
-            // process.env.EMOLA_CLIENT_ID
-            // etc...
+        if (!phone || !method || !email) {
+            return res.status(400).json({ message: 'Telefone, e-mail e método (M-Pesa/e-Mola) são obrigatórios.' });
         }
+
+        // Base price based on plan
+        let baseAmount = plan === 'anual' ? 2490 : 299;
+        let amount = baseAmount;
+        let couponId = null;
+
+        // 1. Check if user already used a coupon before (Strict Section 6)
+        let userHasUsed = false;
+        if (userId) {
+            const userRes = await db.query('SELECT has_used_coupon FROM users WHERE id = $1', [userId]);
+            userHasUsed = userRes.rows.length > 0 && userRes.rows[0].has_used_coupon;
+        } else {
+            // Check by email for guests
+            const emailRes = await db.query('SELECT has_used_coupon FROM users WHERE email = $1', [email.toLowerCase()]);
+            userHasUsed = emailRes.rows.length > 0 && emailRes.rows[0].has_used_coupon;
+        }
+
+        // Apply coupon if provided
+        if (couponCode) {
+            // Block if already used ANY coupon
+            if (userHasUsed) {
+                return res.status(403).json({ 
+                    message: 'Este cupom não é mais válido para sua conta ou e-mail. Você já utilizou um benefício promocional anteriormente.' 
+                });
+            }
+
+            const couponRes = await db.query(
+                'SELECT * FROM coupons WHERE code = $1 AND active = true',
+                [couponCode.toUpperCase()]
+            );
+
+            if (couponRes.rows.length === 0) {
+                return res.status(404).json({ message: 'Cupom inválido ou inativo.' });
+            }
+
+            const coupon = couponRes.rows[0];
+            const now = new Date();
+            
+            // 3. Check expiration
+            if (coupon.expires_at && new Date(coupon.expires_at) < now) {
+                return res.status(400).json({ message: 'Este cupom expirou.' });
+            }
+
+            // 4. Check max uses
+            if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
+                return res.status(400).json({ message: 'Este cupom atingiu o limite de usos.' });
+            }
+
+            // 5. Check if user already used THIS specific coupon (extra safety)
+            const usageCheck = await db.query(
+                'SELECT * FROM coupon_usages WHERE coupon_id = $1 AND user_id = $2',
+                [coupon.id, userId]
+            );
+
+            if (usageCheck.rows.length > 0) {
+                return res.status(400).json({ 
+                    message: 'Você já utilizou este cupom.' 
+                });
+            }
+
+            couponId = coupon.id;
+            if (coupon.discount_type === 'percent') {
+                amount = Math.max(0, baseAmount * (1 - coupon.discount_value / 100));
+            } else if (coupon.discount_type === 'fixed') {
+                amount = Math.max(0, baseAmount - coupon.discount_value);
+            }
+            console.log(`[Payment] Cupom ${couponCode} aplicado ao plano ${plan || 'mensal'}. Novo valor: ${amount} MZN`);
+        } else {
+            console.log(`[Payment] Processando plano ${plan || 'mensal'} sem cupom. Valor: ${amount} MZN`);
+        }
+        
+        // Iniciando pagamento
+        const result = await paymentService.iniciarPagamento(userId, phone, method, amount, couponId);
+        
+        // MODO SIMULAÇÃO: Se ativo, confirma automaticamente após um curtíssimo atraso (Modo Teste)
+        if (process.env.USE_PAYMENT_SIMULATION === 'true') {
+            const delay = 500; // Quase instantâneo (0.5s)
+            console.log(`[TEST MODE] Auto-confirmando pagamento para user: ${userId} em ${delay}ms...`);
+            setTimeout(async () => {
+                try {
+                    await paymentService.confirmarPagamento(userId, amount, result.transactionId);
+                    console.log(`[TEST MODE] ✅ Pagamento TESTE confirmado com sucesso para TX: ${result.transactionId}`);
+                } catch (err) {
+                    console.error('[TEST MODE] ❌ Erro na auto-confirmação:', err);
+                }
+            }, delay);
+        }
+
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Initiate Payment Error:', error);
+        res.status(500).json({ message: 'Erro ao iniciar pagamento.', error: error.message });
     }
-
-    res.status(201).json({ 
-      id: paymentId, 
-      status: 'pending',
-      transaction_id: transactionId,
-      message: useSimulation ? 'Aguardando (Simulação ativa - 10s)...' : 'Aguardando confirmação no telemóvel...'
-    });
-
-  } catch (error) {
-    console.error('Error creating payment:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
 };
 
-exports.getPaymentStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await db.query('SELECT * FROM payments WHERE id = $1', [id]);
+exports.webhook = async (req, res) => {
+    console.log('[Webhook Pagamento] Dados recebidos:', JSON.stringify(req.body));
     
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Payment not found' });
-    }
+    try {
+        // 1. Signature Validation (Security)
+        const signature = req.headers['x-debito-signature'];
+        const webhookSecret = process.env.DEBITO_WEBHOOK_SECRET;
 
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching payment status:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+        if (webhookSecret && signature) {
+            const hmac = crypto.createHmac('sha256', webhookSecret);
+            const digest = hmac.update(JSON.stringify(req.body)).digest('hex');
+            
+            if (signature !== digest) {
+                console.error('[Webhook] Assinatura inválida detectada.');
+                return res.status(401).json({ message: 'Invalid signature' });
+            }
+        }
+
+        // 2. Extract Data (Debito.co.mz format)
+        // payload: { status: "COMPLETED", external_id: "TX-...", amount: 299, ... }
+        const { status, external_id, amount } = req.body;
+
+        if (!external_id || !status) {
+            console.error('[Webhook] Payload incompleto:', req.body);
+            return res.status(400).json({ message: 'Faltam dados obrigatórios no webhook.' });
+        }
+
+        // 3. Find User by Transaction ID
+        const paymentCheck = await db.query('SELECT user_id FROM payments WHERE transaction_id = $1', [external_id]);
+        if (paymentCheck.rows.length === 0) {
+            console.error('[Webhook] Transação não encontrada no banco:', external_id);
+            return res.status(404).json({ message: 'Transação não encontrada.' });
+        }
+
+        const userId = paymentCheck.rows[0].user_id;
+
+        if (status === 'COMPLETED' || status === 'SUCCESS') {
+            console.log(`[Webhook] Processando sucesso para TX: ${external_id}, User: ${userId}`);
+            const result = await paymentService.confirmarPagamento(userId, amount, external_id);
+            
+            if (result.success) {
+                // Additional update (funnel)
+                await db.query("UPDATE users SET funnel_step = 'PAID' WHERE id = $1", [userId]);
+                return res.status(200).json({ message: 'OK' });
+            } else {
+                return res.status(500).json({ message: 'Erro ao confirmar no service.' });
+            }
+        } else {
+            // Status different from SUCCESS (FAILED, CANCELLED)
+            console.log(`[Webhook] Pagamento não concluído. Status: ${status} para TX: ${external_id}`);
+            await db.query("UPDATE payments SET status = $1, updated_at = NOW() WHERE transaction_id = $2", [status, external_id]);
+            
+            const userRes = await db.query('SELECT email, name FROM users WHERE id = $1', [userId]);
+            if (userRes.rows.length > 0) {
+                await sendFailureEmail(userRes.rows[0].email, userRes.rows[0].name);
+            }
+            
+            return res.status(200).json({ message: 'Falha processada.' });
+        }
+    } catch (error) {
+        console.error('[Webhook] Falha crítica no processamento:', error);
+        return res.status(500).json({ message: 'Erro interno.', error: error.message });
+    }
 };
+
+exports.getStatus = async (req, res) => {
+    const { transactionId } = req.params;
+    try {
+        // We remove the user_id check here to allow polling from guest checkout sessions
+        const result = await db.query(
+            'SELECT status FROM payments WHERE transaction_id = $1',
+            [transactionId]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Transação não encontrada.' });
+        }
+        
+        res.json({ status: result.rows[0].status });
+    } catch (error) {
+        console.error('Get status error:', error);
+        res.status(500).json({ message: 'Erro ao verificar status.' });
+    }
+};
+
+async function sendSuccessEmail(email, name) {
+    try {
+        const templatePath = path.join(__dirname, '../templates/emails/payment-success.html');
+        let html = fs.readFileSync(templatePath, 'utf8');
+        html = html.replace('{{name}}', name || 'Usuário');
+        
+        await emailService.sendEmail({
+            to: email,
+            subject: 'Pagamento confirmado com sucesso',
+            html: html
+        });
+    } catch (error) {
+        console.error('Failed to send success email:', error);
+    }
+}
+
+async function sendFailureEmail(email, name) {
+    try {
+        const templatePath = path.join(__dirname, '../templates/emails/payment-failed.html');
+        let html = fs.readFileSync(templatePath, 'utf8');
+        html = html.replace('{{name}}', name || 'Usuário');
+        
+        await emailService.sendEmail({
+            to: email,
+            subject: 'Não conseguimos confirmar seu pagamento',
+            html: html
+        });
+    } catch (error) {
+        console.error('Failed to send failure email:', error);
+    }
+}

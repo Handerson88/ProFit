@@ -48,11 +48,11 @@ export const InviteModal: React.FC<InviteModalProps> = ({ isOpen, onClose }) => 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="w-full max-w-md bg-white rounded-[40px] shadow-[0_15px_40px_rgba(0,0,0,0.04)] overflow-hidden relative"
+            className="w-full max-w-md bg-[var(--bg-card)] rounded-[40px] shadow-[0_15px_40px_rgba(0,0,0,0.04)] overflow-hidden relative"
           >
             <button
               onClick={onClose}
-              className="absolute top-6 right-6 p-2 bg-[#F6F7F9] rounded-full text-gray-500 hover:bg-gray-200 transition-colors z-10"
+              className="absolute top-6 right-6 p-2 bg-[var(--bg-app)] rounded-full text-[var(--text-muted)] hover:bg-gray-200 transition-colors z-10"
             >
               <X size={20} />
             </button>
@@ -62,8 +62,8 @@ export const InviteModal: React.FC<InviteModalProps> = ({ isOpen, onClose }) => 
                 <div className="w-16 h-16 bg-[#F0F9EB] text-[#56AB2F] rounded-full flex items-center justify-center mx-auto mb-4">
                   <Send size={32} />
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 mb-2">Convidar Amigo</h2>
-                <p className="text-gray-400 text-sm font-medium">
+                <h2 className="text-2xl font-black text-[var(--text-main)] mb-2">Convidar Amigo</h2>
+                <p className="text-[var(--text-muted)] text-sm font-medium">
                   Envie um acesso exclusivo para treinar com você no ProFit.
                 </p>
               </div>
@@ -83,24 +83,24 @@ export const InviteModal: React.FC<InviteModalProps> = ({ isOpen, onClose }) => 
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="relative group">
-                    <User className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#56AB2F] transition-colors" size={20} />
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[#56AB2F] transition-colors" size={20} />
                     <input
                       type="text"
                       placeholder="Nome completo do amigo"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-14 pr-6 py-5 bg-[#F6F7F9] border-none rounded-2xl text-gray-900 font-medium placeholder:text-gray-400 focus:ring-2 focus:ring-[#A8E063]/20 transition-all outline-none"
+                      className="w-full pl-14 pr-6 py-5 bg-[var(--bg-app)] border-none rounded-2xl text-[var(--text-main)] font-medium placeholder:text-[var(--text-muted)] focus:ring-2 focus:ring-[#A8E063]/20 transition-all outline-none"
                     />
                   </div>
 
                   <div className="relative group">
-                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#56AB2F] transition-colors" size={20} />
+                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[#56AB2F] transition-colors" size={20} />
                     <input
                       type="email"
                       placeholder="Email do amigo"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-14 pr-6 py-5 bg-[#F6F7F9] border-none rounded-2xl text-gray-900 font-medium placeholder:text-gray-400 focus:ring-2 focus:ring-[#A8E063]/20 transition-all outline-none"
+                      className="w-full pl-14 pr-6 py-5 bg-[var(--bg-app)] border-none rounded-2xl text-[var(--text-main)] font-medium placeholder:text-[var(--text-muted)] focus:ring-2 focus:ring-[#A8E063]/20 transition-all outline-none"
                     />
                   </div>
 

@@ -1,6 +1,7 @@
 const { generateWorkoutStructuredPlan, analyzeBodyImage } = require('../services/openaiService');
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
+const { getMaputoNow } = require('../utils/dateUtils');
 
 exports.generateWorkoutPlan = async (req, res) => {
   const user_id = req.user.id;
@@ -22,7 +23,7 @@ exports.generateWorkoutPlan = async (req, res) => {
  
        if (activeCheck.rows.length > 0 && activeCheck.rows[0].next_plan_available_at) {
          const nextAvailable = new Date(activeCheck.rows[0].next_plan_available_at);
-         if (new Date() < nextAvailable) {
+         if (getMaputoNow().toDate() < nextAvailable) {
            return res.status(403).json({ 
              error: 'Você já tem um plano ativo.',
              available_at: activeCheck.rows[0].next_plan_available_at
@@ -68,6 +69,7 @@ exports.generateWorkoutPlan = async (req, res) => {
       console.log('[Controller] Body analysis complete:', bodyAnalysisText);
     }
 
+    console.log('OpenAI Generation Response received.');
     // 2. Generate with OpenAI (Structured JSON)
     const structuredPlan = await generateWorkoutStructuredPlan({
       gender,
@@ -97,9 +99,8 @@ exports.generateWorkoutPlan = async (req, res) => {
     await db.query('UPDATE users SET user_training_days = $1 WHERE id = $2', [JSON.stringify(selectedDays), user_id]);
 
     // 3. Save to database
-    const planStartDate = new Date();
-    const planRenewalDate = new Date();
-    planRenewalDate.setDate(planRenewalDate.getDate() + 30);
+    const planStartDate = getMaputoNow().toDate();
+    const planRenewalDate = getMaputoNow().add(30, 'day').toDate();
 
     const newPlan = await db.query(
       `INSERT INTO workout_plans (
@@ -136,11 +137,12 @@ exports.generateWorkoutPlan = async (req, res) => {
 
         // NEW: Save to administrative workouts table as per request
         await db.query(
-          `INSERT INTO workouts (id, user_id, user_email, user_name, goal, level, duration, exercises, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)`,
+          `INSERT INTO workouts (id, user_id, user_email, user_name, goal, level, duration, exercises, type, calories, status, structured_plan, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)`,
           [
             newPlan.rows[0].id, user_id, userData.email, userData.name,
-            goal, level, duration, JSON.stringify(structuredPlan)
+            goal, level, duration, JSON.stringify(structuredPlan), 
+            'IA', 0, 'active', JSON.stringify(structuredPlan)
           ]
         );
 
@@ -149,16 +151,29 @@ exports.generateWorkoutPlan = async (req, res) => {
           userData, 
           structuredPlan.title
         ).catch(err => console.error('[Workout] Erro ao enviar email de plano:', err));
+
+        // NEW: Real-time update for Dashboard
+        const io = req.app.get('socketio');
+        if (io) {
+          io.to(`user_${user_id}`).emit('workout_plan_added', {
+            message: 'Seu novo plano de treino está pronto! 💪',
+            plan: newPlan.rows[0]
+          });
+        }
       }
     } catch(e) {
       console.error('[Workout] Erro ao processar persistência administrativa/notificação:', e);
     }
 
-    res.status(201).json(newPlan.rows[0]);
+    res.status(201).json({ 
+      success: true, 
+      plan: newPlan.rows[0] 
+    });
   } catch (err) {
     console.error('CRITICAL: Generate Workout Error:', err);
     res.status(500).json({ 
-      message: 'Falha ao gerar treino inteligente',
+      success: false,
+      error: 'Infelizmente nossa IA está com alta demanda técnica agora.',
       detail: err.message
     });
   }
@@ -191,6 +206,7 @@ exports.getActivePlan = async (req, res) => {
     );
     
     const plan = result.rows[0];
+    if (!plan) return res.json(null);
     
     // Safety check: ensure dates are present and not Unix Epoch
     if (!plan.plan_start_date || new Date(plan.plan_start_date).getFullYear() === 1970) {
@@ -243,6 +259,14 @@ exports.markSessionComplete = async (req, res) => {
       message: 'Treino concluído! 💪',
       motivation: 'Excelente trabalho hoje. Continue assim para alcançar seus resultados.'
     });
+
+    // NEW: Also update workout_sessions if this was an active session
+    try {
+      await db.query(
+        "UPDATE workout_sessions SET status = 'completed', end_time = CURRENT_TIMESTAMP WHERE user_id = $1 AND plan_id = $2 AND status = 'active'",
+        [user_id, workout_plan_id]
+      );
+    } catch(e) { console.error('Error updating session on complete:', e); }
   } catch (err) {
     console.error('Mark Progress Error:', err);
     res.status(500).json({ error: 'Erro ao registrar progresso do treino.' });
@@ -345,13 +369,20 @@ exports.migrateWorkoutsToDatabase = async (req, res) => {
 
     for (const plan of plans.rows) {
       await db.query(
-        `INSERT INTO workouts (id, user_id, user_email, user_name, goal, level, duration, exercises, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         ON CONFLICT (id) DO NOTHING`,
+        `INSERT INTO workouts (id, user_id, user_email, user_name, goal, level, duration, exercises, type, status, structured_plan, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         ON CONFLICT (id) DO UPDATE SET 
+            type = EXCLUDED.type, 
+            status = EXCLUDED.status, 
+            structured_plan = EXCLUDED.structured_plan`,
         [
           plan.id, plan.user_id, plan.user_email, plan.user_name, 
           plan.goal, plan.level, plan.duration, 
-          plan.structured_plan || {}, plan.created_at
+          plan.structured_plan || {}, 
+          plan.goal === 'Manual' ? 'Manual' : 'IA',
+          'active',
+          plan.structured_plan || {},
+          plan.created_at
         ]
       );
     }
@@ -362,3 +393,182 @@ exports.migrateWorkoutsToDatabase = async (req, res) => {
     res.status(500).json({ error: 'Falha na migração de treinos.' });
   }
 };
+
+exports.saveManualPlan = async (req, res) => {
+  const user_id = req.user.id;
+  const { structuredPlan } = req.body;
+
+  try {
+    const daysWithExercises = structuredPlan.daily_workouts.filter(dw => dw.exercises && dw.exercises.length > 0).length;
+    const planStartDate = new Date();
+    const planRenewalDate = new Date();
+    planRenewalDate.setDate(planRenewalDate.getDate() + 30);
+    const planId = uuidv4();
+
+    console.log(`Saving manual plan for user ${user_id}...`);
+
+    const newPlan = await db.query(
+      `INSERT INTO workout_plans (
+        id, user_id, title, goal, level, days_per_week, location, duration, 
+        plan_text, structured_plan, next_plan_available_at,
+        plan_start_date, plan_renewal_date
+      )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       RETURNING *`,
+      [
+        planId,
+        user_id,
+        structuredPlan.title || 'Meu Treino Manual',
+        'Manual',
+        'Personalizado',
+        `${daysWithExercises} dias`,
+        'Casa/Academia',
+        'Varia',
+        'Plano de treino criado manualmente pelo usuário.',
+        JSON.stringify(structuredPlan),
+        planRenewalDate,
+        planStartDate,
+        planRenewalDate
+      ]
+    );
+
+    // Update user training days preference based on manual selection
+    const selectedDays = structuredPlan.daily_workouts
+      .filter(dw => dw.exercises && dw.exercises.length > 0)
+      .map(dw => dw.day);
+    await db.query('UPDATE users SET user_training_days = $1 WHERE id = $2', [JSON.stringify(selectedDays), user_id]);
+
+    // Save to admin table
+    const userResult = await db.query('SELECT name, email FROM users WHERE id = $1', [user_id]);
+    if (userResult.rows.length > 0) {
+      const userData = userResult.rows[0];
+      await db.query(
+        `INSERT INTO workouts (id, user_id, user_email, user_name, goal, level, duration, exercises, type, status, structured_plan, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)`,
+        [
+          planId, user_id, userData.email, userData.name,
+          'Manual', 'Personalizado', 'Varia', JSON.stringify(structuredPlan),
+          'Manual', 'active', JSON.stringify(structuredPlan)
+        ]
+      );
+
+      console.log(`Manual plan saved successfully for user ${user_id}`);
+
+      // Trigger real-time update
+      const io = req.app.get('socketio');
+      if (io) {
+        io.to(`user_${user_id}`).emit('workout_plan_added', {
+          message: 'Seu plano manual foi ativado! 💪',
+          plan: newPlan.rows[0]
+        });
+      }
+    }
+
+    res.status(201).json({ 
+      success: true, 
+      plan: newPlan.rows[0] 
+    });
+  } catch (err) {
+    console.error('CRITICAL: Save Manual Plan Error:', err);
+    res.status(500).json({ 
+      success: false,
+      error: 'Falha ao salvar plano manual.',
+      detail: err.message
+    });
+  }
+};
+
+// --- REAL-TIME SESSION TRACKING ---
+
+exports.startWorkoutSession = async (req, res) => {
+  const user_id = req.user.id;
+  const { plan_id, workout_type, workout_day } = req.body;
+
+  try {
+    // Check if there's already an active session
+    const activeCheck = await db.query(
+      "SELECT id FROM workout_sessions WHERE user_id = $1 AND status = 'active'",
+      [user_id]
+    );
+
+    if (activeCheck.rows.length > 0) {
+      // Auto-complete or cancel previous active session? 
+      // For now, let's just use the existing one or create new. 
+      // User might have left a session hanging.
+      await db.query(
+        "UPDATE workout_sessions SET status = 'cancelled', end_time = CURRENT_TIMESTAMP WHERE id = $1",
+        [activeCheck.rows[0].id]
+      );
+    }
+
+    const sessionId = uuidv4();
+    const result = await db.query(
+      `INSERT INTO workout_sessions (id, user_id, plan_id, status, start_time, workout_type, workout_day)
+       VALUES ($1, $2, $3, 'active', CURRENT_TIMESTAMP, $4, $5)
+       RETURNING *`,
+      [sessionId, user_id, plan_id, workout_type || 'IA', workout_day]
+    );
+
+    // Emit Real-time event for Admin
+    const io = req.app.get('socketio');
+    if (io) {
+      io.to('admin_room').emit('workout_session_update', {
+        type: 'session_started',
+        session: result.rows[0]
+      });
+    }
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Start Session Error:', err);
+    res.status(500).json({ error: 'Erro ao iniciar sessão de treino.' });
+  }
+};
+
+exports.endWorkoutSession = async (req, res) => {
+  const user_id = req.user.id;
+  const { session_id, status, duration, calories } = req.body;
+
+  try {
+    const result = await db.query(
+      `UPDATE workout_sessions 
+       SET status = $1, end_time = CURRENT_TIMESTAMP, duration = $2, calories = $3
+       WHERE id = $4 AND user_id = $5
+       RETURNING *`,
+      [status || 'completed', duration || 0, calories || 0, session_id, user_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Sessão não encontrada.' });
+    }
+
+    // Emit Real-time event for Admin
+    const io = req.app.get('socketio');
+    if (io) {
+      io.to('admin_room').emit('workout_session_update', {
+        type: 'session_ended',
+        session: result.rows[0]
+      });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('End Session Error:', err);
+    res.status(500).json({ error: 'Erro ao encerrar sessão de treino.' });
+  }
+};
+
+exports.getWorkoutSessions = async (req, res) => {
+  const user_id = req.user.id;
+  try {
+    const result = await db.query(
+      `SELECT * FROM workout_sessions WHERE user_id = $1 ORDER BY created_at DESC`,
+      [user_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Get Sessions Error:', err);
+    res.status(500).json({ error: 'Erro ao buscar histórico de sessões.' });
+  }
+};
+

@@ -63,3 +63,28 @@ exports.getResponses = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+exports.syncQuizLead = async (req, res) => {
+  const { id, email, name, responses, current_step } = req.body;
+  
+  if (!id) return res.status(400).json({ message: 'Lead ID is required' });
+
+  try {
+    const result = await db.query(`
+      INSERT INTO quiz_leads (id, email, name, responses, current_step, last_active_at)
+      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+      ON CONFLICT (id)
+      DO UPDATE SET 
+        email = COALESCE(EXCLUDED.email, quiz_leads.email),
+        name = COALESCE(EXCLUDED.name, quiz_leads.name),
+        responses = EXCLUDED.responses,
+        current_step = EXCLUDED.current_step,
+        last_active_at = CURRENT_TIMESTAMP
+      RETURNING id
+    `, [id, email || null, name || null, JSON.stringify(responses || {}), current_step || 1]);
+
+    res.json({ success: true, id: result.rows[0].id });
+  } catch (error) {
+    console.error('Error syncing quiz lead:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};

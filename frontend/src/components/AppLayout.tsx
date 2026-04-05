@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 export const AppLayout = ({ children }: { children: ReactNode }) => {
   return (
-    <div className="main-wrapper bg-gray-200/50">
+    <div className="main-wrapper bg-[var(--bg-app)]">
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
          <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
          <div className="absolute top-1/2 -left-24 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl"></div>

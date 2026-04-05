@@ -15,6 +15,7 @@ router.use(authMiddleware);
 
 // Premium Workout Routes
 router.post('/generate', paywallMiddleware, upload.single('image'), workoutController.generateWorkoutPlan);
+router.post('/manual', paywallMiddleware, workoutController.saveManualPlan);
 router.get('/', paywallMiddleware, workoutController.getWorkoutPlans);
 router.get('/active', paywallMiddleware, workoutController.getActivePlan);
 router.get('/details/:id', paywallMiddleware, workoutController.getWorkoutPlanDetails);
@@ -25,5 +26,10 @@ router.get('/exercise/progress', workoutController.getExerciseProgress);
 router.post('/exercise/complete', workoutController.markExerciseComplete);
 router.post('/progress', workoutController.markSessionComplete);
 router.get('/progress', workoutController.getWorkoutProgress);
+
+// Sessions Tracking
+router.post('/sessions/start', workoutController.startWorkoutSession);
+router.post('/sessions/end', workoutController.endWorkoutSession);
+router.get('/sessions/history', workoutController.getWorkoutSessions);
 
 module.exports = router;

@@ -17,7 +17,8 @@ const AdminPlans: React.FC = () => {
         const fetchPlans = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:5000/api/admin/plans', {
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                const response = await fetch(`${apiUrl}/api/admin/plans`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
@@ -43,10 +44,10 @@ const AdminPlans: React.FC = () => {
             <div className="grid grid-cols-1 gap-4">
                 {loading ? (
                     [1, 2, 3].map(i => (
-                        <div key={i} className="h-24 bg-white dark:bg-[#1E293B] rounded-[14px] border border-[#E6EAF0] dark:border-[#334155] animate-pulse" />
+                        <div key={i} className="h-24 bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[14px] border border-[#E6EAF0] dark:border-[#334155] animate-pulse" />
                     ))
                 ) : plans.map((plan) => (
-                    <div key={plan.id} className="bg-white dark:bg-[#1E293B] p-5 rounded-[14px] border border-[#E6EAF0] dark:border-[#334155] flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-sm dark:hover:bg-[#243147] transition-all group">
+                    <div key={plan.id} className="bg-[var(--bg-card)] dark:bg-[#1E293B] p-5 rounded-[14px] border border-[#E6EAF0] dark:border-[#334155] flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-sm dark:hover:bg-[#243147] transition-all group">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-[#EDF2F7] dark:bg-slate-800 text-[#2D3748] dark:text-white rounded-[10px] flex items-center justify-center border border-[#E2E8F0] dark:border-slate-700 transition-colors">
                                 <Dumbbell size={24} />
@@ -82,7 +83,7 @@ const AdminPlans: React.FC = () => {
                 ))}
 
                 {!loading && plans.length === 0 && (
-                    <div className="p-12 text-center bg-white dark:bg-[#1E293B] rounded-[14px] border border-dashed border-[#E6EAF0] dark:border-[#334155] text-[#718096] dark:text-slate-500 transition-colors">
+                    <div className="p-12 text-center bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[14px] border border-dashed border-[#E6EAF0] dark:border-[#334155] text-[#718096] dark:text-slate-500 transition-colors">
                         <p className="text-[14px]">Nenhum plano de treino gerado ainda.</p>
                     </div>
                 )}

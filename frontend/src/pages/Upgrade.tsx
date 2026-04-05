@@ -16,19 +16,19 @@ export const Upgrade = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F6F7F9] flex flex-col items-center justify-center p-6 pb-24">
+    <div className="min-h-screen bg-[var(--bg-app)] flex flex-col items-center justify-center p-6 pb-24">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-white rounded-[40px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-white text-center"
+        className="w-full max-w-md bg-[var(--bg-card)] rounded-[40px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-white text-center"
       >
         <div className="w-20 h-20 bg-[#56AB2F]/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
           <Lock className="w-10 h-10 text-[#56AB2F]" />
         </div>
 
-        <h1 className="text-3xl font-black text-gray-900 mb-4">🚀 Desbloqueie o Pro</h1>
+        <h1 className="text-3xl font-black text-[var(--text-main)] mb-4">🚀 Desbloqueie o Pro</h1>
         
-        <p className="text-gray-500 font-medium mb-8 leading-relaxed">
+        <p className="text-[var(--text-muted)] font-medium mb-8 leading-relaxed">
           O ProFit atingiu o limite de <span className="text-[#56AB2F] font-bold">{totalUsersCount}</span> usuários ativos. 
           Para continuar aproveitando todas as funcionalidades, ative seu plano PRO agora.
         </p>
@@ -40,12 +40,12 @@ export const Upgrade = () => {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.1 }}
-              className="flex items-start space-x-4 p-4 rounded-2xl bg-[#F6F7F9]/50 border border-transparent hover:border-[#56AB2F]/10 transition-all"
+              className="flex items-start space-x-4 p-4 rounded-2xl bg-[var(--bg-app)]/50 border border-transparent hover:border-[#56AB2F]/10 transition-all"
             >
               <div className="mt-1">{benefit.icon}</div>
               <div>
-                <h3 className="font-bold text-gray-900">{benefit.title}</h3>
-                <p className="text-sm text-gray-400 font-medium">{benefit.desc}</p>
+                <h3 className="font-bold text-[var(--text-main)]">{benefit.title}</h3>
+                <p className="text-sm text-[var(--text-muted)] font-medium">{benefit.desc}</p>
               </div>
             </motion.div>
           ))}
@@ -61,13 +61,13 @@ export const Upgrade = () => {
 
         <button 
           onClick={() => navigate('/profile')}
-          className="mt-6 text-gray-400 font-bold hover:text-gray-600 transition-all underline underline-offset-4"
+          className="mt-6 text-[var(--text-muted)] font-bold hover:text-[var(--text-muted)] transition-all underline underline-offset-4"
         >
           Ver meu perfil
         </button>
       </motion.div>
       
-      <p className="mt-8 text-gray-400 text-xs font-bold uppercase tracking-widest">
+      <p className="mt-8 text-[var(--text-muted)] text-xs font-bold uppercase tracking-widest">
         ProFit Premium Experience
       </p>
     </div>

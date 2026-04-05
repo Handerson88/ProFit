@@ -1,4 +1,45 @@
-export const API_URL = import.meta.env.VITE_API_URL || '/api';
+export const API_URL = import.meta.env.VITE_API_URL || 'https://api.myprofittness.com/api';
+export const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://api.myprofittness.com';
+
+/**
+ * Retorna o caminho completo da imagem.
+ * Ajusta caminhos relativos para apontar para o servidor de uploads.
+ */
+export const getImagePath = (path: string | null | undefined) => {
+  if (!path) return '/placeholder-dish.png';
+  if (path.startsWith('http')) return path;
+  
+  // Ensure we have a leading slash
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  
+  // Try to use VITE_API_URL as base
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl && apiUrl.startsWith('http')) {
+    const baseUrl = apiUrl.replace(/\/api$/, '');
+    return `${baseUrl}${cleanPath}`;
+  }
+  
+  // Fallback to absolute path on the same host
+  // This helps when running on local IP addresses
+  return cleanPath;
+};
+
+
+const getHeaders = (extraHeaders: Record<string, string> = {}) => {
+  const token = localStorage.getItem('token');
+  const language = localStorage.getItem('appLanguage') || 'PT';
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-User-Language': language,
+    ...extraHeaders
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  return headers;
+};
 
 const handleResponse = async (res: Response) => {
   let data;
@@ -9,10 +50,12 @@ const handleResponse = async (res: Response) => {
   }
   
   if (!res.ok) {
-    const isPublicRoute = ['/login', '/register', '/onboarding', '/forgot-password', '/reset-password', '/auth/invite'].some(path => window.location.pathname.startsWith(path));
+    const isPublicRoute = ['/login', '/register', '/onboarding', '/checkout', '/forgot-password', '/reset-password', '/auth/invite'].some(path => window.location.pathname.startsWith(path));
     
     // Redirect to login if unauthorized or if user/profile is not found
-    if ((res.status === 401 || res.status === 403 || (res.status === 404 && res.url.includes('/user/profile'))) && !isPublicRoute) {
+    const isPaywallError = res.status === 403 && data.code === 'PAYWALL_ACTIVE';
+    
+    if ((res.status === 401 || (res.status === 403 && !isPaywallError) || (res.status === 404 && res.url.includes('/user/profile'))) && !isPublicRoute) {
       console.warn(`Auth session invalid (Status ${res.status}). Redirecting to login...`);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -26,52 +69,64 @@ const handleResponse = async (res: Response) => {
 
 export const api = {
   auth: {
-    register: (name: string, email: string, password: string, referralCode?: string) => fetch(`${API_URL}/auth/register`, {
+    register: (name: string, email: string, password: string, referralCode?: string, extraData: any = {}) => fetch(`${API_URL}/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, referralCode })
+      headers: getHeaders(),
+      body: JSON.stringify({ name, email, password, referralCode, ...extraData })
     }).then(handleResponse),
 
     login: (email: string, password: string) => fetch(`${API_URL}/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify({ email, password })
     }).then(handleResponse),
 
     forgotPassword: (email: string) => fetch(`${API_URL}/auth/forgot-password`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify({ email })
     }).then(handleResponse),
 
     resetPassword: (payload: any) => fetch(`${API_URL}/auth/reset-password`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(payload)
     }).then(handleResponse),
 
     createInvite: (name: string, email: string) => fetch(`${API_URL}/auth/invite/create`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify({ name, email })
     }).then(handleResponse),
 
-    verifyInvite: (token: string) => fetch(`${API_URL}/auth/invite/${token}`).then(handleResponse),
+    verifyInvite: (token: string) => fetch(`${API_URL}/auth/invite/${token}`, {
+      headers: getHeaders()
+    }).then(handleResponse),
 
     activateInvite: (payload: any) => fetch(`${API_URL}/auth/invite/activate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(payload)
     }).then(handleResponse),
     
     verify: () => fetch(`${API_URL}/auth/verify`, {
       method: 'GET',
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    // Influencer System
+    verifyInfluencerInvite: (token: string) => fetch(`${API_URL}/auth/influencer/verify?token=${token}`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    acceptInfluencerInvite: (payload: any) => fetch(`${API_URL}/auth/influencer/accept`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(payload)
+    }).then(handleResponse),
+
+    getPromotionStatus: () => fetch(`${API_URL}/auth/promotion-status`, {
+      headers: getHeaders()
     }).then(handleResponse)
   },
 
@@ -83,10 +138,7 @@ export const api = {
   meals: {
     add: (data: any) => fetch(`${API_URL}/meals/add`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify(data)
     }).then(handleResponse),
 
@@ -94,315 +146,304 @@ export const api = {
       const url = new URL(`${API_URL}/meals/summary`, window.location.origin);
       if (date) url.searchParams.append('date', date);
       return fetch(url.toString(), {
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        headers: getHeaders()
       }).then(handleResponse);
     },
 
     getWeeklyStats: () => fetch(`${API_URL}/meals/stats/weekly`, {
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
 
     getHistory: (date?: string) => {
       const url = new URL(`${API_URL}/meals/history`, window.location.origin);
       if (date) url.searchParams.append('date', date);
       return fetch(url.toString(), {
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        headers: getHeaders()
       }).then(handleResponse);
     },
     getRecentMeals: () => fetch(`${API_URL}/meals/recent`, {
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
     getCalorieHistory: () => fetch(`${API_URL}/meals/history/calories`, {
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
     scan: (imageFile: File) => {
       const formData = new FormData();
       formData.append('image', imageFile);
+      const headers = getHeaders();
+      delete headers['Content-Type']; // Let browser set boundary
       return fetch(`${API_URL}/meals/scan`, {
         method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers,
         body: formData
       }).then(handleResponse);
     },
     update: (id: string, data: any) => fetch(`${API_URL}/meals/${id}`, {
       method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify(data)
     }).then(handleResponse),
     delete: (id: string) => fetch(`${API_URL}/meals/${id}`, {
       method: 'DELETE',
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse)
   },
 
   quiz: {
     saveAnswer: (data: { question: string, answer: any, current_step?: string, is_complete?: boolean }) => fetch(`${API_URL}/quiz/answer`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify(data)
     }).then(handleResponse),
 
     getResponses: () => fetch(`${API_URL}/quiz/responses`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
+    }).then(handleResponse),
+    
+    syncLead: (data: { id: string, email?: string, name?: string, responses: any, current_step: number }) => fetch(`${API_URL}/quiz/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     }).then(handleResponse)
   },
 
   activity: {
     log: (action: string, details?: any) => fetch(`${API_URL}/activity/log`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify({ action, details })
     }).then(handleResponse)
   },
 
   app: {
-    getStatus: () => fetch(`${API_URL}/app/status`).then(handleResponse)
+    getStatus: () => fetch(`${API_URL}/auth/promotion-status`).then(handleResponse)
   },
 
   payments: {
-    create: (data: { amount: number, method: string, phone: string, name?: string }) => fetch(`${API_URL}/payment/create`, {
+    create: (data: { amount: number, method: string, phone: string, name?: string, couponCode?: string }) => fetch(`${API_URL}/payment/initiate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify(data)
     }).then(handleResponse),
     getStatus: (id: string) => fetch(`${API_URL}/payment/status/${id}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
+    }).then(handleResponse)
+  },
+
+  coupons: {
+    list: () => fetch(`${API_URL}/admin/coupons`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    create: (data: any) => fetch(`${API_URL}/admin/coupons`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    }).then(handleResponse),
+
+    validate: (code: string) => fetch(`${API_URL}/coupons/validate`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ code })
+    }).then(handleResponse),
+
+    toggleStatus: (id: string, active: boolean) => fetch(`${API_URL}/admin/coupons/toggle/${id}`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ active })
+    }).then(handleResponse),
+
+    getInfluencerStats: () => fetch(`${API_URL}/admin/coupons/influencer-stats`, {
+      headers: getHeaders()
     }).then(handleResponse)
   },
 
   user: {
     getProfile: () => fetch(`${API_URL}/user/profile`, {
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
     
     getDashboardBootstrap: (date?: string) => {
       const url = new URL(`${API_URL}/user/dashboard-bootstrap`, window.location.origin);
       if (date) url.searchParams.append('date', date);
       return fetch(url.toString(), {
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        headers: getHeaders()
       }).then(handleResponse);
     },
 
     update: (data: any) => fetch(`${API_URL}/user/update`, {
       method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify(data)
+    }).then(handleResponse),
+
+    updateFunnelStep: (step: string) => fetch(`${API_URL}/user/funnel-step`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ step })
     }).then(handleResponse),
 
     updateAccount: (data: any) => fetch(`${API_URL}/user/update`, {
       method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify(data)
     }).then(handleResponse),
 
     submitQuiz: (data: any) => fetch(`${API_URL}/user/quiz`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify(data)
     }).then(handleResponse),
 
     uploadProfilePhoto: (file: File) => {
       const formData = new FormData();
       formData.append('photo', file);
+      const headers = getHeaders();
+      delete headers['Content-Type'];
       return fetch(`${API_URL}/user/photo-upload`, {
         method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers,
         body: formData
       }).then(handleResponse);
     },
     updateNotificationSettings: (notifications_enabled: boolean) => fetch(`${API_URL}/user/notifications`, {
       method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify({ notifications_enabled })
     }).then(handleResponse),
     getPreferences: () => fetch(`${API_URL}/user/preferences`, {
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
     updatePreferences: (theme_mode: string) => fetch(`${API_URL}/user/preferences`, {
       method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify({ theme_mode })
     }).then(handleResponse),
     getReferrals: () => fetch(`${API_URL}/user/referrals`, {
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
     completeOnboarding: () => fetch(`${API_URL}/user/update`, {
       method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify({ onboarding_completed: true })
     }).then(handleResponse)
   },
 
   notifications: {
     getAll: () => fetch(`${API_URL}/notifications`, {
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
 
     getNotifications: () => fetch(`${API_URL}/notifications`, {
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
 
     markAsRead: (id: string) => fetch(`${API_URL}/notifications/${id}/read`, {
       method: 'PUT',
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
 
     markAllAsRead: () => fetch(`${API_URL}/notifications/read-all`, {
       method: 'PUT',
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
     
     registerDevice: (subscription: any, device_type: string = 'web') => fetch(`${API_URL}/notifications/register-device`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify({ subscription, device_type })
     }).then(handleResponse)
   },
   workouts: {
     generate: (data: any) => {
       const isFormData = data instanceof FormData;
+      const headers = getHeaders();
+      if (isFormData) delete headers['Content-Type'];
+      
       return fetch(`${API_URL}/workouts/generate`, {
         method: 'POST',
-        headers: {
-          ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers,
         body: isFormData ? data : JSON.stringify(data)
       }).then(handleResponse);
     },
+    saveManual: (structuredPlan: any) => fetch(`${API_URL}/workouts/manual`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ structuredPlan })
+    }).then(handleResponse),
     getActive: () => fetch(`${API_URL}/workouts/active`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
     getDetails: (id: string) => fetch(`${API_URL}/workouts/details/${id}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
     markComplete: (workout_plan_id: string, day_of_week: string) => fetch(`${API_URL}/workouts/progress`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify({ workout_plan_id, day_of_week })
     }).then(handleResponse),
     getProgress: (workout_plan_id: string) => fetch(`${API_URL}/workouts/progress?workout_plan_id=${workout_plan_id}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
     markExerciseComplete: (workout_plan_id: string, exercise_name: string, workout_day: string, completed: boolean, completed_sets: number[]) => fetch(`${API_URL}/workouts/exercise/complete`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify({ workout_plan_id, exercise_name, workout_day, completed, completed_sets })
     }).then(handleResponse),
     getExerciseProgress: (workout_plan_id: string, workout_day: string) => fetch(`${API_URL}/workouts/exercise/progress?workout_plan_id=${workout_plan_id}&workout_day=${workout_day}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
     reset: () => fetch(`${API_URL}/workouts/reset`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
+    }).then(handleResponse),
+    startSession: (data: { plan_id: string, workout_type: string, workout_day: string }) => fetch(`${API_URL}/workouts/sessions/start`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    }).then(handleResponse),
+    endSession: (data: { session_id: string, status: string, duration: number, calories: number }) => fetch(`${API_URL}/workouts/sessions/end`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    }).then(handleResponse),
+    getSessionsHistory: () => fetch(`${API_URL}/workouts/sessions/history`, {
+      headers: getHeaders()
     }).then(handleResponse)
   },
   admin: {
     getDashboardData: () => fetch(`${API_URL}/admin/dashboard`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      headers: getHeaders()
     }).then(handleResponse),
     getPreferences: () => fetch(`${API_URL}/admin/preferences`, {
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getHeaders()
     }).then(handleResponse),
     updatePreferences: (theme_mode: string) => fetch(`${API_URL}/admin/preferences`, {
       method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      headers: getHeaders(),
       body: JSON.stringify({ theme_mode })
     }).then(handleResponse),
 
     getUsers: () => fetch(`${API_URL}/admin/users`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      headers: getHeaders()
     }).then(handleResponse),
+
+    getAdmins: () => fetch(`${API_URL}/admin/admins`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    exportUsers: (country: string = 'all', status: string = 'all') => {
+      const url = new URL(`${API_URL}/admin/users/export`, window.location.origin);
+      if (country !== 'all') url.searchParams.append('country', country);
+      if (status !== 'all') url.searchParams.append('status', status);
+      
+      return fetch(url.toString(), {
+        headers: getHeaders()
+      }).then(res => {
+        if (!res.ok) throw new Error('Falha ao exportar');
+        return res.blob();
+      });
+    },
 
     getUsersActivity: () => fetch(`${API_URL}/admin/users/activity`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
@@ -418,6 +459,24 @@ export const api = {
     }).then(handleResponse),
 
     getNotificationTemplates: () => fetch(`${API_URL}/admin/notifications/templates`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+
+    scheduleAdminNotification: (data: any) => fetch(`${API_URL}/admin/notifications/schedule`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(data)
+    }).then(handleResponse),
+
+    getScheduledNotifications: () => fetch(`${API_URL}/admin/notifications/scheduled`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+
+    deleteScheduledNotification: (id: string) => fetch(`${API_URL}/admin/notifications/scheduled/${id}`, {
+      method: 'DELETE',
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse),
 
@@ -506,7 +565,19 @@ export const api = {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse),
     
-    getWorkouts: (page: number = 1, search: string = '') => fetch(`${API_URL}/admin/workouts?page=${page}&search=${search}`, {
+    getWorkoutActivity: (params: { search?: string, status?: string, type?: string, date?: string, page?: number, limit?: number }) => {
+      const url = new URL(`${API_URL}/admin/workouts/activity`, window.location.origin);
+      Object.entries(params).forEach(([key, val]) => {
+        if (val !== undefined && val !== null) url.searchParams.append(key, val.toString());
+      });
+      return fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      }).then(handleResponse);
+    },
+    getWorkoutStats: () => fetch(`${API_URL}/admin/workouts/stats`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+    getWorkoutSessionDetails: (id: string) => fetch(`${API_URL}/admin/workouts/session/${id}`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse),
 
@@ -522,6 +593,42 @@ export const api = {
 
     migrateAIFoods: () => fetch(`${API_URL}/admin/ai-foods/migrate`, {
       method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+
+    inviteInfluencer: (email: string, name?: string) => fetch(`${API_URL}/admin/influencers/invite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ email, name })
+    }).then(handleResponse),
+
+    // Coupons Management
+    getCoupons: () => fetch(`${API_URL}/admin/coupons`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(handleResponse),
+    
+    createCoupon: (data: any) => fetch(`${API_URL}/admin/coupons`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(data)
+    }).then(handleResponse),
+
+    toggleCoupon: (id: string, active: boolean) => fetch(`${API_URL}/admin/coupons/toggle/${id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ active })
+    }).then(handleResponse),
+
+    getInfluencerStats: () => fetch(`${API_URL}/admin/coupons/influencer-stats`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     }).then(handleResponse)
   },
@@ -580,3 +687,6 @@ export const api = {
     }).then(handleResponse)
   }
 };
+
+export default api;
+

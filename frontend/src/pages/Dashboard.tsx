@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Bell, MoreVertical, Droplets, Footprints, Camera, Target, Flame, Clock, Crown, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bell, MoreVertical, Droplets, Footprints, Camera, Target, Flame, Clock, Crown, Sparkles, Trash2, Edit3, AlertCircle, X, UserPlus, Gift, CheckCircle2, User, Star } from 'lucide-react';
 import { AppLayout } from '../components/AppLayout';
 import { BottomNav } from '../components/BottomNav';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
+import { api, getImagePath } from '../services/api';
 import { socketService } from '../services/socket';
 
 import { CalendarModal } from '../components/CalendarModal';
@@ -14,27 +14,28 @@ import { PremiumBanner } from '../components/PremiumBanner';
 import { MilestonePopUp } from '../components/MilestonePopUp';
 import { appService } from '../services/appService';
 import { useAuth } from '../context/AuthContext';
-import { Trash2, Edit3, AlertCircle, X, UserPlus, Gift } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+
 import { NotificationCenter } from '../components/NotificationCenter';
+import { formatMaputoTime, formatMaputoLongDate, getMaputoNow, isMaputoToday, getMaputoDayName } from '../utils/dateUtils';
+import { notificationService } from '../services/notificationService';
 
 
-const formatDateHeader = (date: Date) => {
-  const today = new Date();
-  if (date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear()) {
-    return 'Hoje';
+const formatDateHeader = (date: Date, langData: any) => {
+  const nowMaputo = getMaputoNow().toDate();
+  if (date.getDate() === nowMaputo.getDate() && date.getMonth() === nowMaputo.getMonth() && date.getFullYear() === nowMaputo.getFullYear()) {
+    return langData.dash_today;
   }
-  const formatter = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long' });
-  const formatted = formatter.format(date);
-  // capitalize month
-  return formatted.replace(/ de [a-z]/g, (match) => match.toUpperCase());
+  return formatMaputoLongDate(date);
 };
 
 const CalendarSlider = ({ selectedDate, onSelectDate, onOpenCalendar }: { selectedDate: Date, onSelectDate: (d: Date) => void, onOpenCalendar: () => void }) => {
-  const dayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const { langData } = useLanguage();
+  const dayLabels = langData.dash_days_short;
   const [calendarDays, setCalendarDays] = useState<{date: Date, day: string, dayNum: number}[]>([]);
 
   useEffect(() => {
-    const now = new Date();
+    const now = getMaputoNow().toDate();
     now.setHours(0, 0, 0, 0);
     const generated = [];
     
@@ -57,8 +58,8 @@ const CalendarSlider = ({ selectedDate, onSelectDate, onOpenCalendar }: { select
           onClick={onOpenCalendar}
           className="flex items-center space-x-2 cursor-pointer active:scale-95 transition-transform bg-[var(--bg-app)]/50 px-3 py-1.5 rounded-full shadow-sm"
         >
-          <span className="font-bold text-lg text-gray-900">{formatDateHeader(selectedDate)}</span>
-          <ChevronRight className="w-4 h-4 text-gray-700 rotate-90" />
+          <span className="font-bold text-lg text-[var(--text-main)]">{formatDateHeader(selectedDate, langData)}</span>
+          <ChevronRight className="w-4 h-4 text-[var(--text-main)] rotate-90" />
         </div>
         <div className="flex space-x-2">
           <button className="w-8 h-8 flex justify-center items-center bg-[var(--bg-card)] rounded-full shadow-sm active:scale-95 transition-all text-[var(--text-main)]">
@@ -79,12 +80,12 @@ const CalendarSlider = ({ selectedDate, onSelectDate, onOpenCalendar }: { select
               onClick={() => onSelectDate(item.date)}
               className="flex flex-col items-center group cursor-pointer active:scale-95 transition-all"
             >
-              <span translate="no" className={`text-[11px] font-bold mb-3 ${isSelected ? 'text-gray-900' : 'text-gray-400'}`}>
+              <span translate="no" className={`text-[11px] font-bold mb-3 ${isSelected ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
                 {item.day}
               </span>
               <div className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 relative ${
                 isSelected 
-                  ? 'bg-gradient-to-r from-[#A8E063] to-[#56AB2F] shadow-md shadow-primary/20 text-white' 
+                  ? 'bg-gradient-to-r from-[#22C55E] to-[#22C55E] shadow-md shadow-primary/20 text-white' 
                   : 'bg-[var(--bg-card)] text-[var(--text-main)] shadow-sm'
               }`}>
                 <span className={`text-sm font-bold`}>{item.dayNum}</span>
@@ -92,7 +93,7 @@ const CalendarSlider = ({ selectedDate, onSelectDate, onOpenCalendar }: { select
                   <div className="absolute top-1 right-1 w-2 h-2 bg-[#56AB2F] rounded-full"></div>
                 )}
                 {isToday && isSelected && (
-                  <div className="absolute top-1 right-1 w-2 border border-white h-2 bg-gradient-to-r from-[#A8E063] to-[#56AB2F] rounded-full"></div>
+                  <div className="absolute top-1 right-1 w-2 border border-white h-2 bg-gradient-to-r from-[#22C55E] to-[#22C55E] rounded-full"></div>
                 )}
               </div>
             </div>
@@ -108,6 +109,7 @@ const CalendarSlider = ({ selectedDate, onSelectDate, onOpenCalendar }: { select
 
 
 const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }: any) => {
+  const { langData } = useLanguage();
   const safeTarget = target > 0 ? target : 2000;
   const percent = Math.min((total / safeTarget) * 100, 100);
   
@@ -128,8 +130,8 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
     });
   }
 
-  const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const todayIndex = new Date().getDay();
+  const days = langData.dash_days_short;
+  const todayIndex = getMaputoNow().day();
 
   return (
     <div className="card-premium mb-8">
@@ -144,13 +146,13 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
               <span className="text-3xl font-black text-[var(--text-main)] leading-none">{total}</span>
               <span className="text-sm font-bold text-[var(--text-muted)]">kcal</span>
             </div>
-            <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">Consumido hoje</p>
+            <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">{langData.dash_consumed_today}</p>
           </div>
         </div>
         <div className="text-right pt-1">
-          <p className="text-[13px] font-medium text-[var(--text-muted)]">Meta: <span className="font-bold text-[var(--text-main)]">{target}</span> kcal</p>
+          <p className="text-[13px] font-medium text-[var(--text-muted)]">{langData.dash_goal}: <span className="font-bold text-[var(--text-main)]">{target}</span> kcal</p>
           <div className="mt-1 inline-flex items-center px-2 py-0.5 bg-[var(--bg-accent-soft)] rounded-full">
-            <span className="text-[10px] font-black text-[#56AB2F]">{Math.round(percent)}% da meta</span>
+            <span className="text-[10px] font-black text-[#56AB2F]">{Math.round(percent)}% {langData.dash_of_goal}</span>
           </div>
         </div>
       </div>
@@ -158,7 +160,7 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
       {/* Vertical Chart Section */}
       <div className="flex justify-between items-end h-32 mb-8 px-1 relative">
         {/* Target dashed line */}
-        <div className="absolute top-[30%] left-0 w-full border-t border-dashed border-[var(--border-main)] z-0"></div>
+        <div className="absolute top-[30%] left-0 w-full border-t border-dashed border-[var(--border-main)]/30 z-0"></div>
         
         {days.map((day, i) => {
           const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -171,38 +173,39 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
 
           return (
             <div key={i} className="flex flex-col items-center flex-1 h-full relative z-10">
-              {isActive && barPercent > 0 && (
-                <div className="absolute -top-7 bg-[#1A1A1A] text-white text-[9px] font-black px-2 py-1 rounded-full shadow-lg z-20">
+              {barPercent > 0 && (
+                <div className={`absolute -top-7 ${isActive ? 'bg-[#1A1A1A] scale-110 z-20' : 'bg-gray-400/20 text-[var(--text-muted)] scale-90'} text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm transition-all`}>
                   {barPercent}%
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#1A1A1A] rotate-45"></div>
+                  {isActive && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#1A1A1A] rotate-45"></div>}
                 </div>
               )}
-              <div className="w-[18px] bg-[var(--bg-surface)] rounded-full flex-1 mb-2 relative overflow-hidden flex flex-col justify-end">
+              <div className="w-[16px] bg-[var(--bg-surface)] rounded-full flex-1 mb-2 relative overflow-hidden flex flex-col justify-end border border-[var(--border-main)]/20 shadow-inner">
                 <motion.div 
                    initial={{ height: 0 }}
                    animate={{ height: `${barHeight}%` }}
                    transition={{ duration: 1, ease: "easeOut", delay: i * 0.05 }}
-                   className={`w-full rounded-full ${isActive ? 'bg-gradient-to-t from-[#56AB2F] to-[#A8E063]' : 'bg-[var(--bg-accent-soft)] opacity-50'}`}
+                   className={`w-full rounded-full ${isActive ? 'bg-gradient-to-t from-[#22C55E] to-[#4ADE80] shadow-[0_0_10px_rgba(34,197,94,0.3)]' : 'bg-[var(--bg-accent-soft)] opacity-40'}`}
                 />
               </div>
-              <span translate="no" className={`text-[9px] font-bold uppercase ${isActive ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>{day}</span>
+              <span translate="no" className={`text-[9px] font-bold uppercase tracking-tighter ${isActive ? 'text-[var(--text-main)] font-black' : 'text-[var(--text-muted)] opacity-50'}`}>{day}</span>
             </div>
           );
         })}
       </div>
 
+
       {/* Macros Row */}
       <div className="grid grid-cols-3 gap-3 pt-6 border-t border-[var(--border-main)]">
         <div className="bg-[var(--bg-orange-soft)] rounded-2xl p-3 text-center">
-          <p className="text-[10px] font-bold text-orange-400 uppercase mb-1">Proteína</p>
+          <p className="text-[10px] font-bold text-orange-400 uppercase mb-1">{langData.dash_protein}</p>
           <p className="text-base font-black text-[var(--text-main)]">{Math.round(Number(protein) || 0)}g</p>
         </div>
         <div className="bg-[var(--bg-blue-soft)] rounded-2xl p-3 text-center">
-          <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Carbos</p>
+          <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">{langData.dash_carbs}</p>
           <p className="text-base font-black text-[var(--text-main)]">{Math.round(Number(carbs) || 0)}g</p>
         </div>
         <div className="bg-[var(--bg-red-soft)] rounded-2xl p-3 text-center">
-          <p className="text-[10px] font-bold text-red-400 uppercase mb-1">Gordura</p>
+          <p className="text-[10px] font-bold text-red-400 uppercase mb-1">{langData.dash_fat}</p>
           <p className="text-base font-black text-[var(--text-main)]">{Math.round(Number(fat) || 0)}g</p>
         </div>
       </div>
@@ -212,9 +215,10 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
 
 export const Dashboard = () => {
   const navigate = useNavigate();
+  const { langData } = useLanguage();
   const { totalUsersCount } = useAuth();
   const [recentMeals, setRecentMeals] = useState<any[]>([]);
-  const [userName, setUserName] = useState('Usuário');
+  const [userName, setUserName] = useState(langData.PT ? 'Usuário' : 'User');
   const [userGoal, setUserGoal] = useState('');
   const [meals, setMeals] = useState<any[]>([]);
   const [summary, setSummary] = useState<any[]>([]);
@@ -227,7 +231,7 @@ export const Dashboard = () => {
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(getMaputoNow().toDate());
   const [dailyCache, setDailyCache] = useState<Record<string, any>>({});
   const [dailyTotals, setDailyTotals] = useState<any>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -267,7 +271,7 @@ export const Dashboard = () => {
         String(selectedDate.getMonth() + 1).padStart(2, '0'),
         String(selectedDate.getDate()).padStart(2, '0')
       ].join('-');
-      const isToday = selectedDate.toDateString() === new Date().toDateString();
+      const isToday = isMaputoToday(selectedDate);
 
       if (!dailyCache[dateStr] || isToday) {
         setIsLoading(true);
@@ -310,7 +314,7 @@ export const Dashboard = () => {
         console.error('Error loading dashboard data:', err);
         // We only show full error screen if we don't have cached data
         if (!dailyCache[dateStr]) {
-          setError(err.message || 'Não foi possível carregar seus dados. Verifique sua conexão.');
+          setError(err.message || langData.dash_load_error);
         }
       } finally {
         setIsLoading(false);
@@ -345,6 +349,11 @@ export const Dashboard = () => {
   
             socket?.on('meal_added', (data: any) => {
                 console.log('Real-time sync: Meal added, refreshing...', data);
+                refreshData();
+            });
+
+            socket?.on('workout_plan_added', (data: any) => {
+                console.log('Real-time sync: Workout plan added, refreshing...', data);
                 refreshData();
             });
           }
@@ -407,10 +416,21 @@ export const Dashboard = () => {
 
   const handleEnableNotifications = async () => {
     try {
+      // 1. Mark as enabled in user profile
       await api.user.updateNotificationSettings(true);
-      if ('Notification' in window) {
-        await Notification.requestPermission();
+      
+      // 2. Perform the full Web Push subscription (Ask permission + Register key + Send to backend)
+      const success = await notificationService.subscribe();
+      
+      if (success) {
+        console.log('[Dashboard] Native notifications activated successfully');
+      } else {
+        console.warn('[Dashboard] Could not activate native push, fallback to browser permission only');
+        if ('Notification' in window) {
+          await Notification.requestPermission();
+        }
       }
+
       localStorage.setItem('notification_prompt_dismissed', 'true');
       setShowNotificationPrompt(false);
     } catch (err) {
@@ -455,7 +475,7 @@ export const Dashboard = () => {
   };
 
   const CoachMessageCard = ({ workout }: { workout: any }) => {
-    if (!workout || !workout.structured_plan) return null;
+    if (!workout || !workout.structured_plan || workout.goal === 'Manual') return null;
     const plan = typeof workout.structured_plan === 'string' ? JSON.parse(workout.structured_plan) : workout.structured_plan;
     const [showAnalysis, setShowAnalysis] = useState(false);
     
@@ -466,18 +486,18 @@ export const Dashboard = () => {
         className="card-premium mb-8 border-2 border-[#56AB2F]/10 relative overflow-hidden"
       >
         <div className="flex items-start space-x-4 relative z-10">
-          <div className="w-14 h-14 bg-gradient-to-br from-[#A8E063] to-[#56AB2F] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20 flex-shrink-0">
+          <div className="w-14 h-14 bg-gradient-to-br from-[#22C55E] to-[#22C55E] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20 flex-shrink-0">
             <UserPlus className="w-8 h-8" />
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-black text-[#56AB2F] uppercase tracking-widest bg-[var(--bg-accent-soft)] px-2 py-0.5 rounded-md">Master Coach IA</span>
+              <span className="text-[10px] font-black text-[#22C55E] uppercase tracking-widest bg-[var(--bg-accent-soft)] px-2 py-0.5 rounded-md">Master Coach IA</span>
               {workout.body_analysis && (
                 <button 
                   onClick={() => setShowAnalysis(!showAnalysis)}
                   className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-md hover:bg-blue-100 transition-colors"
                 >
-                  {showAnalysis ? 'Ver Mensagem' : 'Ver Análise Corporal'}
+                  {showAnalysis ? langData.dash_analysis_message : langData.dash_body_analysis}
                 </button>
               )}
             </div>
@@ -496,7 +516,7 @@ export const Dashboard = () => {
                   </p>
                   <div className="flex items-center text-[10px] font-black text-blue-600 uppercase tracking-widest">
                     <Sparkles className="w-3 h-3 mr-1" />
-                    Análise Baseada em Visão IA
+                    {langData.dash_ai_vision}
                   </div>
                 </motion.div>
               ) : (
@@ -529,7 +549,7 @@ export const Dashboard = () => {
            <p className="text-[var(--text-muted)] font-bold mb-4">Você ainda não tem um plano de treino.</p>
            <button 
              onClick={() => navigate('/workout')}
-             className="px-6 py-2 bg-[#56AB2F] text-white rounded-xl font-bold shadow-md shadow-primary/10"
+             className="px-6 py-2 bg-[#22C55E] text-white rounded-xl font-bold shadow-md shadow-primary/10"
            >
              Criar meu plano
            </button>
@@ -538,8 +558,7 @@ export const Dashboard = () => {
     }
 
     const plan = typeof workout.structured_plan === 'string' ? JSON.parse(workout.structured_plan) : workout.structured_plan;
-    const todayName = new Date().toLocaleDateString('pt-BR', { weekday: 'long' });
-    const capitalizedTodayName = todayName.charAt(0).toUpperCase() + todayName.slice(1);
+    const capitalizedTodayName = getMaputoDayName(getMaputoNow().toDate());
     
     // Find today's workout in daily_workouts.
     // GPT sometimes returns "segunda-feira" or "Segunda-feira".
@@ -551,15 +570,15 @@ export const Dashboard = () => {
     return (
       <div 
         onClick={() => navigate('/workout')}
-        className="bg-[#1A1A1A] rounded-[32px] p-6 shadow-xl mb-8 border border-white/5 relative overflow-hidden group cursor-pointer"
+        className="bg-[var(--bg-card)] rounded-[32px] p-6 shadow-xl mb-8 border border-white/5 relative overflow-hidden group cursor-pointer"
       >
         <div className="relative z-10">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <span className="text-[10px] font-black text-[#A8E063] uppercase tracking-[0.2em]">Treino de Hoje</span>
-              <h3 className="text-white text-xl font-black mt-1">{todayWorkout?.muscles || 'Descanso Ativo'}</h3>
+              <span className="text-[10px] font-black text-[#22C55E] uppercase tracking-[0.2em]">{langData.dash_workout_today}</span>
+              <h3 className="text-white text-xl font-black mt-1">{todayWorkout?.muscles || (langData.PT ? 'Descanso Ativo' : 'Active Rest')}</h3>
             </div>
-            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-[#A8E063]">
+            <div className="w-10 h-10 bg-[var(--bg-card)]/10 rounded-xl flex items-center justify-center text-[#22C55E]">
               <Target className="w-6 h-6" />
             </div>
           </div>
@@ -567,37 +586,37 @@ export const Dashboard = () => {
           {todayWorkout ? (
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
-                <div className="px-3 py-1 bg-white/10 rounded-lg">
-                  <span className="text-white/60 text-[10px] font-bold block uppercase tracking-wider">Exercícios</span>
+                <div className="px-3 py-1 bg-[var(--bg-card)]/10 rounded-lg">
+                  <span className="text-white/60 text-[10px] font-bold block uppercase tracking-wider">{langData.dash_workout_exercises}</span>
                   <span className="text-white font-black">{todayWorkout.exercises?.length || 0}</span>
                 </div>
-                <div className="px-3 py-1 bg-white/10 rounded-lg">
-                  <span className="text-white/60 text-[10px] font-bold block uppercase tracking-wider">Foco</span>
+                <div className="px-3 py-1 bg-[var(--bg-card)]/10 rounded-lg">
+                  <span className="text-white/60 text-[10px] font-bold block uppercase tracking-wider">{langData.dash_workout_focus}</span>
                   <span className="text-white font-black truncate max-w-[120px] inline-block">{todayWorkout.muscles}</span>
                 </div>
               </div>
-              <p className="text-white/40 text-[11px] font-medium italic">"{todayWorkout.coach_tip || plan.message}"</p>
+              {todayWorkout.coach_tip && (
+                <p className="text-white/40 text-[11px] font-medium italic">"{todayWorkout.coach_tip}"</p>
+              )}
             </div>
           ) : (
-            <p className="text-white/60 text-sm font-bold">Aproveite para descansar e recuperar suas energias! ⚡</p>
+            <p className="text-white/60 text-sm font-bold">{langData.dash_workout_rest}</p>
           )}
 
-          <div className="mt-6 flex items-center text-[#A8E063] text-sm font-black uppercase tracking-widest group-hover:translate-x-1 transition-transform">
-            Ver plano completo
+          <div className="mt-6 flex items-center text-[#22C55E] text-sm font-black uppercase tracking-widest group-hover:translate-x-1 transition-transform">
+            {langData.dash_workout_view_all}
             <ChevronRight className="w-4 h-4 ml-1" />
           </div>
         </div>
         {/* Background glow */}
-        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-[#56AB2F]/20 rounded-full blur-[80px] group-hover:bg-[#56AB2F]/30 transition-colors"></div>
+        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-[#22C55E]/20 rounded-full blur-[80px] group-hover:bg-[#22C55E]/30 transition-colors"></div>
       </div>
     );
   };
 
   const RecentMealCard = ({ meal }: { meal: any }) => {
-    const formattedTime = meal.created_at ? new Date(meal.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
-    const imageSource = (meal?.image_url && typeof meal.image_url === 'string') 
-      ? (meal.image_url.startsWith('http') || meal.image_url.startsWith('data:') ? meal.image_url : meal.image_url)
-      : null;
+    const formattedTime = formatMaputoTime(meal.created_at || getMaputoNow().toDate());
+    const imageSource = meal?.image_url ? getImagePath(meal.image_url) : null;
     
     return (
       <div className="card-premium mb-4 hover:shadow-md transition-all group">
@@ -643,7 +662,7 @@ export const Dashboard = () => {
             </div>
             <div className="flex items-center space-x-1.5 mb-3">
               <div className="flex items-center bg-[var(--bg-orange-soft)] px-2 py-0.5 rounded-md">
-                <Flame className="w-3.5 h-3.5 text-orange-500 fill-current mr-1" />
+                <Flame className="w-3.5 h-3.5 text-[#22C55E] fill-current mr-1" />
                 <span className="text-sm font-black text-[var(--text-main)]">{meal.calories}</span>
                 <span className="text-[10px] font-bold text-[var(--text-muted)] ml-0.5">kcal</span>
               </div>
@@ -652,11 +671,11 @@ export const Dashboard = () => {
             <div className="flex flex-wrap gap-3">
                <div className="flex items-center space-x-1">
                  <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
-                 <span className="text-[11px] font-bold text-[var(--text-main)]">{Math.round(meal.protein)}g proteína</span>
+                 <span className="text-[11px] font-bold text-[var(--text-main)]">{Math.round(meal.protein)}g {langData.dash_protein.toLowerCase()}</span>
                </div>
                <div className="flex items-center space-x-1">
                  <div className="w-1.5 h-1.5 rounded-full bg-orange-400"></div>
-                 <span className="text-[11px] font-bold text-[var(--text-main)]">{Math.round(meal.carbs)}g carbos</span>
+                 <span className="text-[11px] font-bold text-[var(--text-main)]">{Math.round(meal.carbs)}g {langData.dash_carbs.toLowerCase()}</span>
                </div>
             </div>
           </div>
@@ -667,17 +686,17 @@ export const Dashboard = () => {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="absolute inset-x-0 inset-y-[-20px] bg-white/95 backdrop-blur-sm z-20 flex items-center justify-between px-2"
+                className="absolute inset-x-0 inset-y-[-20px] bg-[var(--bg-card)]/95 backdrop-blur-sm z-20 flex items-center justify-between px-2"
               >
                 <div className="flex items-center space-x-2">
                    <div className="w-8 h-8 bg-rose-500/20 rounded-full flex items-center justify-center text-rose-500">
                     <AlertCircle className="w-4 h-4" />
                   </div>
-                  <span className="text-sm font-bold text-[var(--text-main)]">Excluir?</span>
+                  <span className="text-sm font-bold text-[var(--text-main)]">{langData.dash_delete_meal}</span>
                 </div>
                 <div className="flex space-x-1">
-                  <button onClick={() => setMealToDelete(null)} className="px-3 py-1.5 rounded-lg text-gray-400 font-bold text-[10px] uppercase">Não</button>
-                  <button onClick={() => handleDeleteMeal(meal.id)} className="px-3 py-1.5 bg-rose-500 text-white rounded-lg font-bold text-[10px] uppercase shadow-md shadow-rose-500/20">Sim</button>
+                  <button onClick={() => setMealToDelete(null)} className="px-3 py-1.5 rounded-lg text-[var(--text-muted)] font-bold text-[10px] uppercase">{langData.dash_no}</button>
+                  <button onClick={() => handleDeleteMeal(meal.id)} className="px-3 py-1.5 bg-rose-500 text-white rounded-lg font-bold text-[10px] uppercase shadow-md shadow-rose-500/20">{langData.dash_yes}</button>
                 </div>
               </motion.div>
             )}
@@ -685,7 +704,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Ingredients & Observations */}
-        <div className="space-y-3 pt-4 border-t border-gray-50">
+        <div className="space-y-3 pt-4 border-t border-[var(--border-main)]">
           {(() => {
             try {
               const ingredients = typeof meal.ingredients === 'string' ? JSON.parse(meal.ingredients) : meal.ingredients;
@@ -708,7 +727,7 @@ export const Dashboard = () => {
           
           {(meal.nutrition_observation || meal.recommendation) && (
             <div className="bg-[var(--bg-accent-soft)] p-3 rounded-2xl border border-[var(--border-main)]">
-              <p className="text-[11px] text-[#56AB2F] font-medium leading-relaxed italic">
+              <p className="text-[11px] text-[#22C55E] font-medium leading-relaxed italic">
                  "{meal.nutrition_observation || meal.recommendation}"
               </p>
             </div>
@@ -753,13 +772,13 @@ export const Dashboard = () => {
         <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center text-rose-500 mb-4">
           <AlertCircle size={32} />
         </div>
-        <h2 className="text-xl font-bold text-[var(--text-main)] mb-2">Ops! Algo deu errado</h2>
+        <h2 className="text-xl font-bold text-[var(--text-main)] mb-2">{langData.dash_error_title}</h2>
         <p className="text-[var(--text-muted)] mb-6">{error}</p>
         <button 
           onClick={() => { setError(null); setIsLoading(true); window.location.reload(); }}
           className="btn-primary"
         >
-          Tentar novamente
+          {langData.dash_retry}
         </button>
       </div>
     );
@@ -776,22 +795,22 @@ export const Dashboard = () => {
           <div>
             <p className="text-sm text-[var(--text-muted)] font-medium tracking-wide mb-1">
               {(() => {
-                const hour = new Date().getHours();
-                if (hour >= 5 && hour < 12) return 'Bom dia';
-                if (hour >= 12 && hour < 18) return 'Boa tarde';
-                return 'Boa noite';
+                const hour = getMaputoNow().hour();
+                if (hour >= 5 && hour < 12) return langData.dash_hello_morning;
+                if (hour >= 12 && hour < 18) return langData.dash_hello_afternoon;
+                return langData.dash_hello_night;
               })()} 👋
             </p>
             <div className="flex items-center space-x-2">
               <h1 className="text-[28px] font-bold text-[var(--text-main)] leading-tight">{userName}</h1>
-              {profile?.subscription_status === 'active' && (profile?.plan === 'pro' || profile?.plan === 'premium') && (
+              {profile?.subscription_status === 'ativo' && (profile?.plan === 'pro' || profile?.plan === 'premium') && (
                 <div className="flex flex-col items-start mt-1">
-                  <span className="bg-[#10b981] text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center">
-                    PRO ATIVO ✅
-                  </span>
+                  <div className="plan-badge-pill">
+                    {profile?.is_early_adopter || profile?.is_influencer ? 'FREE' : 'PRO'}
+                  </div>
                   {profile?.plan_expiration && (
-                    <span className="text-[8px] font-bold text-[var(--text-muted)] mt-0.5 uppercase tracking-tighter">
-                      Válido até: {new Date(profile.plan_expiration).toLocaleDateString('pt-BR')}
+                    <span className="text-[8px] font-black text-[var(--text-muted)] mt-0.5 uppercase tracking-tighter">
+                      {langData.dash_valid_until}: {new Date(profile.plan_expiration).toLocaleDateString(langData.PT ? 'pt-BR' : 'en-ZA')}
                     </span>
                   )}
                 </div>
@@ -805,10 +824,10 @@ export const Dashboard = () => {
 
         {/* Banner de Plano/Pagamento */}
         {(() => {
-          const isPro = profile?.subscription_status === 'active' && (profile?.plan === 'pro' || profile?.plan === 'premium');
+          const isPro = profile?.subscription_status === 'ativo' && (profile?.plan === 'pro' || profile?.plan === 'premium');
           
           // Se não for Pro ou estiver inativo, mostra banner para assinar/renovar
-          if (!isPro) {
+          if (!isPro && !profile?.is_influencer) {
             return (
               <div className="mb-8">
                 <PremiumBanner onUpgrade={() => navigate('/plans')} />
@@ -818,8 +837,8 @@ export const Dashboard = () => {
 
           // Se for Pro, verifica expiração próxima
           if (isPro && profile?.plan_expiration) {
-            const expDate = new Date(profile.plan_expiration);
-            const today = new Date();
+            const expDate = getMaputoNow().tz('UTC').set('date', new Date(profile.plan_expiration).getDate()).toDate(); // Fix comparison
+            const today = getMaputoNow().toDate();
             const diffDays = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
             if (diffDays <= 3 && diffDays > 0) {
@@ -835,8 +854,8 @@ export const Dashboard = () => {
                       <AlertCircle size={24} />
                     </div>
                     <div>
-                      <h4 className="font-black text-amber-900 leading-tight">Plano Expira em {diffDays} {diffDays === 1 ? 'dia' : 'dias'}</h4>
-                      <p className="text-amber-700/80 text-xs font-bold uppercase tracking-wider mt-0.5">Renove agora para manter o Pro</p>
+                      <h4 className="font-black text-amber-900 leading-tight">{langData.dash_plan_expires_in} {diffDays} {diffDays === 1 ? langData.dash_day : langData.dash_days}</h4>
+                      <p className="text-amber-700/80 text-xs font-bold uppercase tracking-wider mt-0.5">{langData.dash_renew_now}</p>
                     </div>
                   </div>
                   <ChevronRight size={20} className="text-amber-400" />
@@ -882,8 +901,8 @@ export const Dashboard = () => {
 
               <div className="mt-8 mb-8">
                 <div className="flex justify-between items-center px-2 mb-4">
-                  <h3 className="text-lg font-black text-[var(--text-main)]">Refeições registradas</h3>
-                  <button className="text-sm font-bold text-[#56AB2F]" onClick={() => navigate('/history')}>Ver tudo</button>
+                  <h3 className="text-lg font-black text-[var(--text-main)]">{langData.dash_meals_title}</h3>
+                  <button className="text-sm font-bold text-[#22C55E]" onClick={() => navigate('/history')}>{langData.dash_view_all}</button>
                 </div>
                 
                 {recentMeals.length > 0 ? (
@@ -894,7 +913,7 @@ export const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="bg-[var(--bg-card)] rounded-[32px] p-8 border border-[var(--border-main)] text-center">
-                    <p className="text-[var(--text-muted)] text-sm font-bold">Nenhuma refeição registrada recentemente.</p>
+                    <p className="text-[var(--text-muted)] text-sm font-bold">{langData.dash_no_meals}</p>
                   </div>
                 )}
               </div>

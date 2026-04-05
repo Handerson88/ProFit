@@ -25,7 +25,7 @@ export const PremiumBanner: React.FC<PremiumBannerProps> = ({ onUpgrade }) => {
 
       <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="text-center sm:text-left">
-          <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold mb-3 backdrop-blur-md">
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-[var(--bg-card)]/20 text-white text-xs font-bold mb-3 backdrop-blur-md">
             <Crown size={12} className="mr-1.5" />
             PLANO PRO
           </div>
@@ -41,7 +41,7 @@ export const PremiumBanner: React.FC<PremiumBannerProps> = ({ onUpgrade }) => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onUpgrade || (() => navigate('/plans'))}
-          className="bg-white text-indigo-600 px-8 py-4 rounded-2xl font-black text-sm shadow-lg shadow-black/10 flex items-center gap-2 transition-colors hover:bg-indigo-50"
+          className="bg-[var(--bg-card)] text-indigo-600 px-8 py-4 rounded-2xl font-black text-sm shadow-lg shadow-black/10 flex items-center gap-2 transition-colors hover:bg-indigo-50"
         >
           Ativar Agora
           <ArrowRight size={18} />

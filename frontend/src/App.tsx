@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Onboarding } from './pages/Onboarding';
 import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { Quiz } from './pages/Quiz';
 import { Dashboard } from './pages/Dashboard';
 import { FoodSearch } from './pages/FoodSearch';
@@ -29,32 +28,37 @@ import Checkout from './pages/Checkout';
 import { Achievements } from './pages/Achievements';
 import { Invitations } from './pages/Invitations';
 import { Upgrade } from './pages/Upgrade';
+import { ManualWorkoutCreator } from './pages/ManualWorkoutCreator';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import Welcome from './pages/Welcome';
+import InfluencerAccept from './pages/InfluencerAccept';
+import RenovarPlano from './pages/RenovarPlano';
+import RegisterPassword from './pages/RegisterPassword';
 
 // Admin Imports
 import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminPlans from './pages/admin/AdminPlans';
-import AdminFoods from './pages/admin/AdminFoods';
-import AdminLogs from './pages/admin/AdminLogs';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
 import AdminMRR from './pages/admin/AdminMRR';
-import AdminNotifications from './pages/admin/AdminNotifications';
+import AdminCommunication from './pages/admin/AdminCommunication';
 import AdminDishes from './pages/admin/AdminDishes';
 import { AdminSupport } from './pages/admin/AdminSupport';
 import { AdminThemeProvider } from './context/AdminThemeContext';
 import AdminWorkouts from './pages/admin/AdminWorkouts';
+import AdminFunnel from './pages/admin/AdminFunnel';
+import AdminCoupons from './pages/admin/AdminCoupons';
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, isAuthenticated, isLoading, authLoading, totalUsersCount } = useAuth();
+  const { user, isAuthenticated, isLoading, authLoading, checkOnboardingStatus, totalUsersCount } = useAuth();
   
   if (isLoading || authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen w-full bg-[var(--bg-app)] transition-colors duration-300">
-        <div className="w-12 h-12 border-4 border-[#56AB2F] border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-[#22C55E] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -63,21 +67,38 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Paywall Check: Bloquear se o plano não estiver ativo
-  // Admin sempre tem acesso
-  const allowedWhenBlocked = ['/upgrade', '/plans', '/checkout', '/profile', '/account', '/notifications', '/convites', '/quiz', '/onboarding'];
-  const currentPath = window.location.pathname;
-  const isPlanInactive = user?.subscription_status !== 'active' && user?.role !== 'admin';
+  // Subscription & Block Check (ERRA 5, 6 & 9)
+  const isBlocked = user?.is_blocked === true;
+  const isExpired = user?.end_date && new Date(user.end_date) < new Date();
+  
+  // BYPASS PROMOCIONAL DINÂMICO (20 USUÁRIOS / 30 DIAS)
+  const getDaysSinceCreation = () => {
+    if (!user?.created_at) return 0;
+    const date = new Date(user.created_at);
+    if (isNaN(date.getTime())) return 0; // Fallback para 0 dias se der erro na data
+    return (new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
+  };
 
-  if (isPlanInactive && !allowedWhenBlocked.some(path => currentPath.startsWith(path))) {
-    return <Navigate to="/plans" replace />;
+  const daysSinceCreation = getDaysSinceCreation();
+  
+  // Se o servidor disse 'ativo', respeitamos. Caso contrário, verificamos a regra dos 20 users.
+  const isServerActive = user?.subscription_status === 'ativo';
+  const isUnderLimit = totalUsersCount > 0 ? totalUsersCount <= 20 : true;
+  const isPromoActive = isServerActive || isUnderLimit || user?.is_early_adopter;
+  
+  const isInactive = !isPromoActive && (user?.subscription_status !== 'ativo' || isExpired) && user?.role !== 'admin' && !user?.is_influencer;
+  
+  const allowedWhenBlocked = ['/renovar-plano', '/checkout', '/profile', '/account', '/quiz', '/onboarding'];
+  const currentPath = window.location.pathname;
+
+  if ((isBlocked || isInactive) && !allowedWhenBlocked.some(path => currentPath.startsWith(path))) {
+    return <Navigate to="/renovar-plano" replace />;
   }
 
   // Onboarding Check: Force users to quiz if not completed
-  const { checkOnboardingStatus } = useAuth();
   const isOnboardingCompleted = checkOnboardingStatus();
   
-  if (!isOnboardingCompleted && currentPath !== '/quiz' && currentPath !== '/onboarding' && user?.role !== 'admin') {
+  if (!isOnboardingCompleted && currentPath !== '/quiz' && !currentPath.startsWith('/quiz/') && currentPath !== '/onboarding' && user?.role !== 'admin') {
     return <Navigate to="/quiz" replace />;
   }
 
@@ -85,7 +106,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 };
 
 const PublicRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated, isLoading, authLoading } = useAuth();
+  const { isAuthenticated, isLoading, authLoading, checkOnboardingStatus, user } = useAuth();
   
   if (isLoading || authLoading) {
     return (
@@ -96,8 +117,11 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
   }
 
   if (isAuthenticated) {
-    const { checkOnboardingStatus, user } = useAuth();
     if (!checkOnboardingStatus() && user?.role !== 'admin') {
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/quiz') || currentPath === '/onboarding') {
+          return children;
+        }
         return <Navigate to="/quiz" replace />;
     }
     if (user?.role === 'admin') {
@@ -128,7 +152,7 @@ const AdminProtectedRoute = ({ children }: { children: JSX.Element }) => {
 };
 
 const RootRoute = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
 
   if (isLoading) {
@@ -139,8 +163,11 @@ const RootRoute = () => {
     );
   }
 
-  // Se já estiver logado, sempre vai para o dashboard
+  // Se já estiver logado, redireciona conforme o papel
   if (isAuthenticated) {
+    if (user?.role === 'admin') {
+      return <Navigate to="/admin" replace />;
+    }
     return <Navigate to="/home" replace />;
   }
 
@@ -149,74 +176,88 @@ const RootRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Caso contrário (navegador + deslogado), mostra a landing page
-  return <LandingPage />;
+  // Caso contrário (navegador + deslogado), mostra a tela de boas-vindas
+  return <Welcome />;
 };
 
 
 
+import { LanguageProvider } from './context/LanguageContext';
+
+import { QuizProvider } from './context/QuizContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
 function App() {
   return (
-    <AuthProvider>
-    <ThemeProvider>
-      <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-        <Route path="/activate" element={<PublicRoute><ActivateAccount /></PublicRoute>} />
-        <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-        <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
-        <Route path="/accept-invite" element={<PublicRoute><AcceptInvite /></PublicRoute>} />
-        
-        {/* Protected Routes */}
-        {/* Main Entry Points */}
-        <Route path="/" element={<RootRoute />} />
-        <Route path="/home" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/quiz" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
-        <Route path="/add-meal" element={<ProtectedRoute><FoodSearch /></ProtectedRoute>} />
-        <Route path="/log-meal" element={<ProtectedRoute><AddMeal /></ProtectedRoute>} />
-        <Route path="/workout" element={<ProtectedRoute><WorkoutPlanner /></ProtectedRoute>} />
-        <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
-        <Route path="/scanner" element={<ProtectedRoute><FoodScanner /></ProtectedRoute>} />
-        <Route path="/scan-result" element={<ProtectedRoute><ScanResult /></ProtectedRoute>} />
-        <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-        <Route path="/workout/session/:day" element={<ProtectedRoute><WorkoutSession /></ProtectedRoute>} />
-        <Route path="/preferences" element={<ProtectedRoute><Preferences /></ProtectedRoute>} />
-        <Route path="/ai-chat" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
-        <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
-        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-        <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
-        <Route path="/convites" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
-        <Route path="/upgrade" element={<ProtectedRoute><Upgrade /></ProtectedRoute>} />
+    <ErrorBoundary>
+      <AuthProvider>
+      <LanguageProvider>
+      <QuizProvider>
+      <ThemeProvider>
+        <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/onboarding" element={<PublicRoute><Onboarding /></PublicRoute>} />
+          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/quiz/*" element={<PublicRoute><Quiz /></PublicRoute>} />
+          <Route path="/oferta" element={<LandingPage />} />
+          <Route path="/activate" element={<PublicRoute><ActivateAccount /></PublicRoute>} />
+          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+          <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+          <Route path="/accept-invite" element={<PublicRoute><AcceptInvite /></PublicRoute>} />
+          <Route path="/register-password" element={<PublicRoute><RegisterPassword /></PublicRoute>} />
+          <Route path="/checkout" element={<PublicRoute><Checkout /></PublicRoute>} />
+          
+          {/* Protected Routes */}
+          {/* Main Entry Points */}
+          <Route path="/" element={<RootRoute />} />
+          <Route path="/home" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/add-meal" element={<ProtectedRoute><FoodSearch /></ProtectedRoute>} />
+          <Route path="/log-meal" element={<ProtectedRoute><AddMeal /></ProtectedRoute>} />
+          <Route path="/workout" element={<ProtectedRoute><WorkoutPlanner /></ProtectedRoute>} />
+          <Route path="/workout/manual" element={<ProtectedRoute><ManualWorkoutCreator /></ProtectedRoute>} />
+          <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+          <Route path="/scanner" element={<ProtectedRoute><FoodScanner /></ProtectedRoute>} />
+          <Route path="/scan-result" element={<ProtectedRoute><ScanResult /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+          <Route path="/workout/session/:day" element={<ProtectedRoute><WorkoutSession /></ProtectedRoute>} />
+          <Route path="/preferences" element={<ProtectedRoute><Preferences /></ProtectedRoute>} />
+          <Route path="/ai-chat" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
+          <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
+          <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
+          <Route path="/convites" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
+          <Route path="/upgrade" element={<ProtectedRoute><Upgrade /></ProtectedRoute>} />
+          <Route path="/renovar-plano" element={<RenovarPlano />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={<AdminProtectedRoute><AdminThemeProvider><AdminLayout /></AdminThemeProvider></AdminProtectedRoute>}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="users/:id" element={<AdminUserDetail />} />
-          <Route path="workouts" element={<AdminWorkouts />} />
-          <Route path="plans" element={<AdminPlans />} />
-          <Route path="foods" element={<AdminFoods />} />
-          <Route path="logs" element={<AdminLogs />} />
-          <Route path="mrr" element={<AdminMRR />} />
-          <Route path="notifications" element={<AdminNotifications />} />
-          <Route path="dishes" element={<AdminDishes />} />
-          <Route path="support" element={<AdminSupport />} />
-        </Route>
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminProtectedRoute><AdminThemeProvider><AdminLayout /></AdminThemeProvider></AdminProtectedRoute>}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="users/:id" element={<AdminUserDetail />} />
+            <Route path="workouts" element={<AdminWorkouts />} />
+            <Route path="plans" element={<AdminPlans />} />
+            <Route path="mrr" element={<AdminMRR />} />
+            <Route path="funnel" element={<AdminFunnel />} />
+            <Route path="notifications" element={<AdminCommunication />} />
+            <Route path="coupons" element={<AdminCoupons />} />
+            <Route path="dishes" element={<AdminDishes />} />
+            <Route path="support" element={<AdminSupport />} />
+          </Route>
 
-        {/* Redirect unknown routes */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-      <NotificationPrompt />
-      <PWAInstallPrompt />
-      <Toaster position="top-center" />
-      </BrowserRouter>
-    </ThemeProvider>
-    </AuthProvider>
+          {/* Redirect unknown routes */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <NotificationPrompt />
+        <PWAInstallPrompt />
+        <Toaster position="top-center" />
+        </BrowserRouter>
+      </ThemeProvider>
+      </QuizProvider>
+      </LanguageProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

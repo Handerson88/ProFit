@@ -16,7 +16,7 @@ exports.sendManualBillingEmail = async (req, res) => {
         }
 
         const user = userResult.rows[0];
-        const paymentLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/checkout?userId=${user.id}`;
+        const paymentLink = `${process.env.FRONTEND_URL || 'https://myprofittness.com'}/checkout?userId=${user.id}`;
 
         await emailService.sendBillingEmail(user, paymentLink);
 

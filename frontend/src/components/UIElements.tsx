@@ -41,7 +41,7 @@ export const ProgressBar = ({ value, max, label, colorClass = "bg-accent-gradien
           className={cn("h-full rounded-full transition-all duration-[1500ms] cubic-bezier(0.34, 1.56, 0.64, 1)", colorClass)}
           style={{ width: `${percentage}%` }}
         >
-          <div className="w-full h-full bg-white/20 animate-pulse"></div>
+          <div className="w-full h-full bg-[var(--bg-card)]/20 animate-pulse"></div>
         </div>
       </div>
     </div>

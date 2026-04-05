@@ -71,7 +71,7 @@ const InviteActivation: React.FC = () => {
     if (error && !user) {
         return (
             <div className="min-h-screen bg-[#F7F9FC] flex items-center justify-center p-4">
-                <div className="bg-white p-8 rounded-[24px] shadow-xl max-w-md w-full text-center space-y-4">
+                <div className="bg-[var(--bg-card)] p-8 rounded-[24px] shadow-xl max-w-md w-full text-center space-y-4">
                     <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto">
                         <X size={32} />
                     </div>
@@ -93,15 +93,15 @@ const InviteActivation: React.FC = () => {
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-[32px] shadow-2xl overflow-hidden max-w-md w-full"
+                className="bg-[var(--bg-card)] rounded-[32px] shadow-2xl overflow-hidden max-w-md w-full"
             >
                 {/* Header Section */}
                 <div className="bg-gradient-to-br from-[#10B981] to-[#059669] p-10 text-center space-y-3 relative overflow-hidden">
                     {/* Background Decoration */}
-                    <div className="absolute top-[-20%] right-[-10%] w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                    <div className="absolute top-[-20%] right-[-10%] w-32 h-32 bg-[var(--bg-card)]/10 rounded-full blur-2xl" />
                     <div className="absolute bottom-[-10%] left-[-10%] w-24 h-24 bg-emerald-900/10 rounded-full blur-xl" />
                     
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/30 shadow-xl">
+                    <div className="w-16 h-16 bg-[var(--bg-card)]/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/30 shadow-xl">
                         <Lock className="text-white" size={32} />
                     </div>
                     

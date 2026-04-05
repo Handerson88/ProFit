@@ -36,7 +36,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-[340px] bg-white rounded-[32px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden"
+            className="relative w-full max-w-[340px] bg-[var(--bg-card)] rounded-[32px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden"
           >
             {/* Background Decoration */}
             <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#A8E063]/10 rounded-full blur-2xl" />
@@ -47,11 +47,11 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                 <Bell className="w-8 h-8 text-[#56AB2F]" />
               </div>
               
-              <h3 className="text-[22px] font-black text-gray-900 leading-tight mb-3">
+              <h3 className="text-[22px] font-black text-[var(--text-main)] leading-tight mb-3">
                 {title}
               </h3>
               
-              <p className="text-gray-500 font-medium text-[15px] leading-relaxed mb-8 px-2">
+              <p className="text-[var(--text-muted)] font-medium text-[15px] leading-relaxed mb-8 px-2">
                 {message}
               </p>
 
@@ -65,7 +65,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                 
                 <button
                   onClick={onClose}
-                  className="w-full py-4 text-gray-400 font-bold text-[14px] hover:text-gray-600 active:scale-[0.98] transition-all"
+                  className="w-full py-4 text-[var(--text-muted)] font-bold text-[14px] hover:text-[var(--text-muted)] active:scale-[0.98] transition-all"
                 >
                   {cancelLabel}
                 </button>

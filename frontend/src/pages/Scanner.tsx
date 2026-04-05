@@ -215,16 +215,16 @@ export const FoodScanner = () => {
 
   if (hasPermission === false) {
     return (
-      <div className="h-screen bg-[#F6F7F9] flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-20 h-20 bg-white rounded-[24px] shadow-sm flex items-center justify-center mb-6">
-          <Aperture className="w-10 h-10 text-gray-400" />
+      <div className="h-screen bg-[var(--bg-app)] flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-20 h-20 bg-[var(--bg-card)] rounded-[24px] shadow-sm flex items-center justify-center mb-6">
+          <Aperture className="w-10 h-10 text-[var(--text-muted)]" />
         </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Camera Access Denied</h2>
-        <p className="text-gray-500 mb-8 max-w-xs font-medium">Camera permission is required to scan food. Please enable it in your browser settings.</p>
+        <h2 className="text-xl font-bold text-[var(--text-main)] mb-2">Camera Access Denied</h2>
+        <p className="text-[var(--text-muted)] mb-8 max-w-xs font-medium">Camera permission is required to scan food. Please enable it in your browser settings.</p>
         <button onClick={startCamera} className="bg-gradient-to-r from-[#A8E063] to-[#56AB2F] shadow-lg text-white font-bold uppercase tracking-widest px-8 py-4 rounded-full active:scale-95 transition-all">
           Retry Camera
         </button>
-        <button onClick={() => navigate(-1)} className="mt-8 text-gray-500 font-bold hover:text-gray-800 transition-colors">Go Back</button>
+        <button onClick={() => navigate(-1)} className="mt-8 text-[var(--text-muted)] font-bold hover:text-[var(--text-main)] transition-colors">Go Back</button>
       </div>
     );
   }
@@ -277,9 +277,9 @@ export const FoodScanner = () => {
         <div className="relative z-20 flex justify-between items-center px-6 pt-10">
           <button 
             onClick={() => navigate(-1)} 
-            className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-transform"
+            className="w-12 h-12 bg-[var(--bg-card)] rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-transform"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-800" />
+            <ArrowLeft className="w-5 h-5 text-[var(--text-main)]" />
           </button>
           
           <h1 className="text-xl font-semibold text-white tracking-wide drop-shadow-md">Scanner</h1>
@@ -305,7 +305,7 @@ export const FoodScanner = () => {
               <motion.div 
                 animate={{ top: ['0%', '100%'] }}
                 transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-                className="absolute left-0 right-0 h-[2px] bg-white transform-gpu"
+                className="absolute left-0 right-0 h-[2px] bg-[var(--bg-card)] transform-gpu"
                 style={{
                   boxShadow: '0 0_15px_4px_rgba(255,255,255,0.4),_0_0_30px_8px_rgba(255,255,255,0.1)',
                   width: '100%',
@@ -343,7 +343,7 @@ export const FoodScanner = () => {
                     {qualityError.message}
                   </p>
                   
-                  <div className="w-full bg-white/10 rounded-2xl p-4 mb-6 text-left">
+                  <div className="w-full bg-[var(--bg-card)]/10 rounded-2xl p-4 mb-6 text-left">
                     <p className="text-[10px] font-black uppercase text-[#A8E063] mb-3 tracking-widest">Dicas para uma boa foto:</p>
                     <ul className="space-y-2">
                       {qualityError.tips.map((tip, i) => (
@@ -383,9 +383,9 @@ export const FoodScanner = () => {
                   
                   <h3 className="text-white font-black text-2xl mb-4 leading-tight">Limite Atingido!</h3>
                   
-                  <div className="bg-white/10 rounded-3xl p-6 mb-8 border border-white/10">
+                  <div className="bg-[var(--bg-card)]/10 rounded-3xl p-6 mb-8 border border-white/10">
                     <p className="text-white text-base font-medium leading-relaxed">
-                       Você atingiu o limite diário de scans do plano atual. Volte amanhã ou atualize seu plano.
+                       Atingiu o limite, meu amigo! 🛑 Espere até amanhã ou pague o plano para scans ilimitados.
                     </p>
                   </div>
                   
@@ -427,8 +427,8 @@ export const FoodScanner = () => {
                     }}
                     className={`flex-1 min-w-0 h-[84px] rounded-2xl backdrop-blur-md transition-all flex flex-col items-center justify-center border-2 ${
                       isActive 
-                        ? 'bg-white/10 border-[#56AB2F] shadow-[0_0_15px_rgba(86,171,47,0.3)]' 
-                        : 'bg-white/5 border-transparent hover:bg-white/10'
+                        ? 'bg-[var(--bg-card)]/10 border-[#56AB2F] shadow-[0_0_15px_rgba(86,171,47,0.3)]' 
+                        : 'bg-[var(--bg-card)]/5 border-transparent hover:bg-[var(--bg-card)]/10'
                     }`}
                   >
                     <Icon className={`w-5 h-5 mb-1.5 ${isActive ? 'text-[#A8E063]' : 'text-white/70'}`} strokeWidth={isActive ? 2.5 : 2} />
@@ -455,7 +455,7 @@ export const FoodScanner = () => {
                   {/* Gallery Button */}
                   <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-14 h-14 bg-white/20 backdrop-blur-md border border-white/30 rounded-full flex items-center justify-center active:scale-95 transition-transform group hover:bg-white/30"
+                    className="w-14 h-14 bg-[var(--bg-card)]/20 backdrop-blur-md border border-white/30 rounded-full flex items-center justify-center active:scale-95 transition-transform group hover:bg-[var(--bg-card)]/30"
                   >
                     <ImageIcon className="w-6 h-6 text-white" />
                   </button>
@@ -466,12 +466,12 @@ export const FoodScanner = () => {
                     disabled={isScanning}
                     className="relative w-[84px] h-[84px] rounded-full border-[4px] border-white flex items-center justify-center group outline-none active:scale-95 transition-all shadow-[0_4px_30px_rgba(0,0,0,0.3)]"
                   >
-                    <div className="w-[68px] h-[68px] bg-white rounded-full flex items-center justify-center transform group-active:scale-95 transition-transform duration-200">
+                    <div className="w-[68px] h-[68px] bg-[var(--bg-card)] rounded-full flex items-center justify-center transform group-active:scale-95 transition-transform duration-200">
                     </div>
                   </button>
 
                   {/* Flash/Mute Button */}
-                  <button className="w-14 h-14 bg-white/20 backdrop-blur-md border border-white/30 rounded-full flex items-center justify-center active:scale-95 transition-transform group hover:bg-white/30">
+                  <button className="w-14 h-14 bg-[var(--bg-card)]/20 backdrop-blur-md border border-white/30 rounded-full flex items-center justify-center active:scale-95 transition-transform group hover:bg-[var(--bg-card)]/30">
                     <ZapOff className="w-6 h-6 text-white" />
                   </button>
                 </motion.div>
@@ -484,11 +484,11 @@ export const FoodScanner = () => {
                   className="w-full absolute inset-0 flex items-center justify-center"
                 >
                   {/* Result Card styled as an elegant floating panel */}
-                  <div className="w-full max-w-sm bg-white/95 backdrop-blur-2xl rounded-[32px] p-6 shadow-2xl border border-white">
+                  <div className="w-full max-w-sm bg-[var(--bg-card)]/95 backdrop-blur-2xl rounded-[32px] p-6 shadow-2xl border border-white">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-widest text-[#56AB2F] mb-1">Detected</p>
-                        <h3 className="text-2xl font-black text-gray-900">{scanResult.name}</h3>
+                        <h3 className="text-2xl font-black text-[var(--text-main)]">{scanResult.name}</h3>
                       </div>
                       <div className="bg-[#A8E063]/20 text-[#56AB2F] px-3 py-1.5 rounded-full text-xs font-bold leading-none">
                         {scanResult.confidence}%
@@ -497,25 +497,25 @@ export const FoodScanner = () => {
                     
                     <div className="bg-gray-50 rounded-[20px] p-4 flex justify-between mb-6">
                        <div className="text-center">
-                         <p className="text-[10px] font-bold uppercase text-gray-400 mb-1">Energy</p>
-                         <p className="text-xl font-black text-gray-900">{scanResult.calories} <span className="text-xs font-bold text-gray-400">kcal</span></p>
+                         <p className="text-[10px] font-bold uppercase text-[var(--text-muted)] mb-1">Energy</p>
+                         <p className="text-xl font-black text-[var(--text-main)]">{scanResult.calories} <span className="text-xs font-bold text-[var(--text-muted)]">kcal</span></p>
                        </div>
                        <div className="w-px bg-gray-200 block"></div>
                        <div className="text-center">
-                         <p className="text-[10px] font-bold uppercase text-gray-400 mb-1">Protein</p>
-                         <p className="text-xl font-black text-gray-900">{scanResult.protein}<span className="text-sm">g</span></p>
+                         <p className="text-[10px] font-bold uppercase text-[var(--text-muted)] mb-1">Protein</p>
+                         <p className="text-xl font-black text-[var(--text-main)]">{scanResult.protein}<span className="text-sm">g</span></p>
                        </div>
                        <div className="w-px bg-gray-200 block"></div>
                        <div className="text-center">
-                         <p className="text-[10px] font-bold uppercase text-gray-400 mb-1">Carbs</p>
-                         <p className="text-xl font-black text-gray-900">{scanResult.carbs}<span className="text-sm">g</span></p>
+                         <p className="text-[10px] font-bold uppercase text-[var(--text-muted)] mb-1">Carbs</p>
+                         <p className="text-xl font-black text-[var(--text-main)]">{scanResult.carbs}<span className="text-sm">g</span></p>
                        </div>
                     </div>
 
                     <div className="flex space-x-3">
                       <button 
                         onClick={resetScanner}
-                        className="flex-1 py-4 bg-gray-100 text-gray-700 font-bold rounded-2xl active:scale-95 transition-all text-sm uppercase tracking-wider hover:bg-gray-200"
+                        className="flex-1 py-4 bg-gray-100 text-[var(--text-main)] font-bold rounded-2xl active:scale-95 transition-all text-sm uppercase tracking-wider hover:bg-gray-200"
                       >
                         Retake
                       </button>

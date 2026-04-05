@@ -16,12 +16,20 @@ export const NotificationPrompt = () => {
     // Check if we already have permission before loading
     const initialPermission = Notification.permission;
     
+    // Avoid redundant registration if already successful in this session
+    if (sessionStorage.getItem('notification_registered')) {
+      setStatus('success');
+      setTimeout(() => setShow(false), 2000);
+      return;
+    }
+
     setStatus('loading');
     try {
       const success = await notificationService.subscribe();
       
       if (success) {
         setStatus('success');
+        sessionStorage.setItem('notification_registered', 'true');
       } else {
         // If it's a manual click, we can show it's denied/failed
         // If it was auto-trigger, we just keep quiet
@@ -33,21 +41,7 @@ export const NotificationPrompt = () => {
       }
       
       if (success) {
-        // CASE: Just granted permission -> Send test notification immediately
-        if (initialPermission !== 'granted') {
-          try {
-            const swRegistration = await navigator.serviceWorker.ready;
-            await swRegistration.showNotification('🎉 Notificações Ativas!', {
-              body: 'Agora você vai receber lembretes importantes do seu plano alimentar 💪',
-              icon: '/faviconnovo.png',
-              badge: '/faviconnovo.png',
-              vibrate: [200, 100, 200]
-            } as any);
-          } catch (notifErr) {
-            console.error('[NotificationPrompt] Failed to show test notification:', notifErr);
-          }
-        }
-        
+        // Removed client-side test notification to avoid duplication with backend welcome push
         setTimeout(() => setShow(false), 3000);
       } else {
         setShow(true);
@@ -72,6 +66,11 @@ export const NotificationPrompt = () => {
     const permission = Notification.permission;
     
     if (permission === 'granted') {
+      // If already registered in this session, don't even trigger handleEnable (which hits the API)
+      if (sessionStorage.getItem('notification_registered')) {
+        setShow(false);
+        return;
+      }
       handleEnable();
       return;
     }
@@ -122,7 +121,7 @@ export const NotificationPrompt = () => {
             className="w-full max-w-sm pointer-events-auto"
           >
             {/* Card */}
-            <div className="relative bg-white rounded-[28px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-gray-100">
+            <div className="relative bg-[var(--bg-card)] rounded-[28px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-[var(--border-main)]">
               
               {/* Gradient header strip */}
               <div className="h-1.5 w-full bg-gradient-to-r from-[#56AB2F] via-[#A8E063] to-[#56AB2F]" />
@@ -130,7 +129,7 @@ export const NotificationPrompt = () => {
               {/* Close button */}
               <button
                 onClick={handleDismiss}
-                className="absolute top-4 right-4 w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-all active:scale-90"
+                className="absolute top-4 right-4 w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[var(--text-muted)] hover:bg-gray-200 hover:text-[var(--text-muted)] transition-all active:scale-90"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -145,15 +144,15 @@ export const NotificationPrompt = () => {
                     <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mb-4">
                       <CheckCircle2 className="w-7 h-7 text-green-600" />
                     </div>
-                    <h3 className="text-lg font-black text-gray-900 mb-1">Notificações ativadas com sucesso 🔔</h3>
-                    <p className="text-sm text-gray-400 font-medium">Você agora receberá lembretes e atualizações do Profit.</p>
+                    <h3 className="text-lg font-black text-[var(--text-main)] mb-1">Notificações ativadas com sucesso 🔔</h3>
+                    <p className="text-sm text-[var(--text-muted)] font-medium">Você agora receberá lembretes e atualizações do Profit.</p>
                   </motion.div>
                 ) : status === 'denied' ? (
                   <div className="flex flex-col items-center text-center py-2">
                     <div className="w-14 h-14 bg-rose-100 rounded-2xl flex items-center justify-center mb-4">
                       <BellOff className="w-7 h-7 text-rose-500" />
                     </div>
-                    <h3 className="text-lg font-black text-gray-900 mb-2">Acesso bloqueado</h3>
+                    <h3 className="text-lg font-black text-[var(--text-main)] mb-2">Acesso bloqueado</h3>
                     <div className="bg-rose-50 rounded-xl p-3 text-xs text-rose-600 font-medium leading-relaxed text-left mb-4">
                       Para ativar, clique no ícone de cadeado 🔒 na barra de endereços do navegador e altere <strong>Notificações</strong> para <strong>Permitir</strong>.
                     </div>
@@ -173,8 +172,8 @@ export const NotificationPrompt = () => {
                         <Bell className="w-7 h-7 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-[18px] font-black text-gray-900 leading-tight">Ativar notificações</h3>
-                        <p className="text-[12px] text-gray-400 font-semibold mt-0.5">Alertas inteligentes para você</p>
+                        <h3 className="text-[18px] font-black text-[var(--text-main)] leading-tight">Ativar notificações</h3>
+                        <p className="text-[12px] text-[var(--text-muted)] font-semibold mt-0.5">Alertas inteligentes para você</p>
                       </div>
                     </div>
 
@@ -187,7 +186,7 @@ export const NotificationPrompt = () => {
                       ].map((item, i) => (
                         <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5">
                           <span className="text-base">{item.emoji}</span>
-                          <span className="text-[13px] text-gray-600 font-medium">{item.text}</span>
+                          <span className="text-[13px] text-[var(--text-muted)] font-medium">{item.text}</span>
                         </div>
                       ))}
                     </div>
@@ -211,7 +210,7 @@ export const NotificationPrompt = () => {
                     {/* Skip link */}
                     <button
                       onClick={handleDismiss}
-                      className="w-full mt-3 py-2 text-[12px] text-gray-400 font-semibold hover:text-gray-600 transition-colors"
+                      className="w-full mt-3 py-2 text-[12px] text-[var(--text-muted)] font-semibold hover:text-[var(--text-muted)] transition-colors"
                     >
                       Agora não
                     </button>

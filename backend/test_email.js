@@ -4,11 +4,10 @@ const { sendWelcomeEmail } = require('./services/emailService');
 async function testEmail() {
   console.log('Iniciando teste de envio de email...');
   try {
-    const emailTo = 'handersonjulio619@gmail.com';
-    const userName = 'Handerson';
+    const user = { email: 'handersonjulio619@gmail.com', name: 'Handerson', id: 1 };
     
-    console.log(`Disparando template de boas-vindas para: ${emailTo}`);
-    const result = await sendWelcomeEmail(emailTo, userName);
+    console.log(`Disparando template de boas-vindas para: ${user.email}`);
+    const result = await sendWelcomeEmail(user);
     
     console.log('✅ Sucesso! Resposta da Resend:', result);
   } catch (error) {

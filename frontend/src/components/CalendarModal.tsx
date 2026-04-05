@@ -70,7 +70,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, s
         disabled={isFuture}
         onClick={() => handleDateClick(day)}
         className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all relative
-          ${isFuture ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 active:scale-95 cursor-pointer'}
+          ${isFuture ? 'text-gray-300 cursor-not-allowed' : 'text-[var(--text-main)] active:scale-95 cursor-pointer'}
           ${isSelected && !isFuture ? 'bg-gradient-to-r from-[#A8E063] to-[#56AB2F] text-white shadow-md' : ''}
           ${!isSelected && !isFuture ? 'hover:bg-gray-100' : ''}
         `}
@@ -104,32 +104,32 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, s
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[32px] z-50 overflow-hidden shadow-2xl pb-safe"
+            className="fixed bottom-0 left-0 right-0 bg-[var(--bg-card)] rounded-t-[32px] z-50 overflow-hidden shadow-2xl pb-safe"
           >
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Selecionar Data</h2>
-                <button onClick={onClose} className="p-2 bg-gray-50 rounded-full active:scale-95 transition-all text-gray-500">
+                <h2 className="text-xl font-bold text-[var(--text-main)]">Selecionar Data</h2>
+                <button onClick={onClose} className="p-2 bg-gray-50 rounded-full active:scale-95 transition-all text-[var(--text-muted)]">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="bg-[#F6F7F9] rounded-[24px] p-5">
+              <div className="bg-[var(--bg-app)] rounded-[24px] p-5">
                 <div className="flex justify-between items-center mb-6">
-                  <span className="font-bold text-lg text-gray-900 capitalize">
+                  <span className="font-bold text-lg text-[var(--text-main)] capitalize">
                     {monthNames[currentViewDate.getMonth()]} {currentViewDate.getFullYear()}
                   </span>
                   <div className="flex space-x-2">
                     <button 
                       onClick={handlePrevMonth}
-                      className="w-8 h-8 flex justify-center items-center bg-white rounded-full shadow-sm active:scale-95 transition-all text-gray-700"
+                      className="w-8 h-8 flex justify-center items-center bg-[var(--bg-card)] rounded-full shadow-sm active:scale-95 transition-all text-[var(--text-main)]"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={handleNextMonth}
                       disabled={isNextDisabled}
-                      className={`w-8 h-8 flex justify-center items-center rounded-full transition-all ${isNextDisabled ? 'bg-white/50 border border-gray-100 cursor-not-allowed' : 'bg-white shadow-sm active:scale-95'} text-gray-700`}
+                      className={`w-8 h-8 flex justify-center items-center rounded-full transition-all ${isNextDisabled ? 'bg-[var(--bg-card)]/50 border border-[var(--border-main)] cursor-not-allowed' : 'bg-[var(--bg-card)] shadow-sm active:scale-95'} text-[var(--text-main)]`}
                     >
                       <ChevronRight className={`w-4 h-4 ${isNextDisabled ? 'text-gray-300' : ''}`} />
                     </button>
@@ -138,7 +138,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, s
 
                 <div className="grid grid-cols-7 gap-y-4 justify-items-center mb-2">
                   {dayLabels.map((lbl, i) => (
-                    <div translate="no" key={i} className="text-[12px] font-bold text-gray-400">
+                    <div translate="no" key={i} className="text-[12px] font-bold text-[var(--text-muted)]">
                       {lbl}
                     </div>
                   ))}

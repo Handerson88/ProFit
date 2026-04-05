@@ -6,12 +6,13 @@ import { socketService } from '../services/socket';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { Paywall } from '../components/Paywall';
+import { formatMaputoTime, formatMaputoDate, getMaputoNow } from '../utils/dateUtils';
 
 export const AIChat = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  if (user?.subscription_status !== 'active') {
+  if (user?.subscription_status !== 'ativo') {
     return <Paywall feature="Consultoria IA" />;
   }
   const [conversations, setConversations] = useState<any[]>([]);
@@ -46,17 +47,23 @@ export const AIChat = () => {
         socket.on('new_message', (data: any) => {
           if (data.conversationId === activeConversationId || data.conversation_id === activeConversationId) {
             setMessages(prev => {
-              // Avoid duplicate messages
-              const exists = prev.some(m => 
-                (data.id && m.id === data.id) || 
-                (data.user_message && data.user_message.id && m.id === data.user_message.id)
+              // Check for temporary message match (Optimistic UI Bridge)
+              const tempIndex = prev.findIndex(m => 
+                m.sender === data.sender && 
+                m.message === data.message && 
+                m.id.startsWith('temp-')
               );
-              if (exists) return prev;
 
-              if (data.user_message) {
-                // This is a package with both user and AI response
-                return [...prev, data.user_message, data];
+              if (tempIndex !== -1) {
+                // Bridge: Replace temp message with real one from socket
+                const updated = [...prev];
+                updated[tempIndex] = { ...data };
+                return updated;
               }
+
+              // Standard duplicate check for non-temp messages
+              if (prev.some(m => m.id === data.id)) return prev;
+              
               return [...prev, data];
             });
             setIsAiTyping(false);
@@ -112,7 +119,7 @@ export const AIChat = () => {
       const { id } = await api.ai.newConversation();
       setActiveConversationId(id);
       setMessages([]);
-      setConversations(prev => [{ id, created_at: new Date().toISOString() }, ...prev]);
+      setConversations(prev => [{ id, created_at: getMaputoNow().toISOString() }, ...prev]);
       setShowHistory(false);
     } catch (err) {
       console.error('Failed to create new chat', err);
@@ -120,15 +127,7 @@ export const AIChat = () => {
   };
 
   const formatTime = (dateStr: string) => {
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) {
-        return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      }
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch (e) {
-      return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
+    return formatMaputoTime(dateStr);
   };
 
 
@@ -147,7 +146,7 @@ export const AIChat = () => {
       id: tempId,
       sender: 'user', 
       message: inputValue, 
-      created_at: new Date().toISOString() 
+      created_at: getMaputoNow().toISOString() 
     };
 
     setMessages(prev => [...prev, userMsg]);
@@ -166,14 +165,20 @@ export const AIChat = () => {
       
       // The socket will likely deliver the message too, but we handle the HTTP response for safety and immediate feedback
       setMessages(prev => {
-        const filtered = prev.filter(m => m.id !== tempId);
-        const updatedUserMsg = response.user_message || { ...userMsg, created_at: response.user_message_created_at || userMsg.created_at };
+        // 1. Check if the message was already updated by the socket (no longer has tempId)
+        const hasTempId = prev.some(m => m.id === tempId);
         
-        // Check if AI response already added via socket
-        const aiResponseExists = prev.some(m => m.id === response.id);
-        if (aiResponseExists) return [...filtered, updatedUserMsg];
+        let next = [...prev];
+        if (hasTempId) {
+           // If temp message still exists, filter it out
+           next = next.filter(m => m.id !== tempId);
+        }
+
+        // 2. Check if AI response was already added by socket
+        const alreadyHasResponse = next.some(m => m.id === response.id);
         
-        return [...filtered, updatedUserMsg, response];
+        if (alreadyHasResponse) return next;
+        return [...next, response];
       });
       
       if (!activeConversationId && response.conversationId) {
@@ -187,7 +192,7 @@ export const AIChat = () => {
         id: `error-${tempId}`,
         sender: 'ai', 
         message: fallbackMsg,
-        created_at: new Date().toISOString()
+        created_at: getMaputoNow().toISOString()
       }]);
     } finally {
       setIsLoading(false);
@@ -223,7 +228,7 @@ export const AIChat = () => {
           {messages.length === 0 && !isAiTyping && !isAdminTyping && (
             <div className="flex flex-col items-center justify-center h-full opacity-40">
               <Sparkles className="w-12 h-12 text-[#56AB2F] mb-4" />
-              <p className="text-sm font-bold text-gray-400 text-center max-w-[200px]">
+              <p className="text-sm font-bold text-[var(--text-muted)] text-center max-w-[200px]">
                 Olá! Sou sua IA Fitness. Como posso te ajudar hoje?
               </p>
             </div>
@@ -256,7 +261,7 @@ export const AIChat = () => {
             <div className="flex justify-start">
               <div className="bg-gray-100 px-5 py-4 rounded-[24px] rounded-tl-none">
                 <div className="flex flex-col">
-                  {isAdminTyping && <p className="text-[8px] font-black uppercase tracking-widest mb-1 text-gray-400">Suporte digitando...</p>}
+                  {isAdminTyping && <p className="text-[8px] font-black uppercase tracking-widest mb-1 text-[var(--text-muted)]">Suporte digitando...</p>}
                   <div className="flex space-x-1.5">
                     <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1 }} className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
                     <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
@@ -327,14 +332,14 @@ export const AIChat = () => {
                       className={`w-full p-5 rounded-2xl text-left border-2 transition-all ${
                         activeConversationId === c.id 
                           ? 'border-[#56AB2F] bg-[var(--bg-accent-soft)]' 
-                          : 'border-[var(--border-main)] bg-[var(--bg-surface)] hover:border-gray-100'
+                          : 'border-[var(--border-main)] bg-[var(--bg-surface)] hover:border-[var(--border-main)]'
                       }`}
                     >
                       <p className="font-bold text-[var(--text-main)] text-sm">
                         Chat #{c.id.slice(0, 8)}
                       </p>
                       <p className="text-[10px] text-[var(--text-muted)] font-medium mt-1 uppercase tracking-widest italic">
-                        {new Date(c.created_at).toLocaleDateString('pt-BR')}
+                        {formatMaputoDate(c.created_at)}
                       </p>
                     </button>
                   ))}

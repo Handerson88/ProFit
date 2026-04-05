@@ -37,9 +37,9 @@ const authenticateToken = (req, res, next) => {
     const userId = decoded.id || decoded.sub;
     req.user = { ...decoded, id: userId }; // Ensure id is always present on req.user
     
-    // Ensure we have the latest data from DB (including role, plan, subscription_status)
+    // Ensure we have the latest data from DB (including role, plan, subscription_status, is_early_adopter)
     try {
-      const userResult = await db.query('SELECT role, plan, subscription_status FROM users WHERE id = $1', [userId]);
+      const userResult = await db.query('SELECT role, plan, subscription_status, is_early_adopter FROM users WHERE id = $1', [userId]);
       if (userResult.rows.length > 0) {
         req.user.role = userResult.rows[0].role;
         req.user.plan = userResult.rows[0].plan;

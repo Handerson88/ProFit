@@ -82,7 +82,7 @@ export const PWAInstallPrompt: React.FC = () => {
         exit={{ opacity: 0, y: 100 }}
         className="fixed bottom-0 left-0 right-0 z-[100] p-4 md:p-6"
       >
-        <div className="bg-white dark:bg-[#1E293B] rounded-[32px] p-6 shadow-2xl border border-[#56AB2F]/20 relative overflow-hidden max-w-sm mx-auto">
+        <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[32px] p-6 shadow-2xl border border-[#56AB2F]/20 relative overflow-hidden max-w-sm mx-auto">
           <button 
             onClick={dismissTemporary}
             className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)]"
@@ -123,7 +123,7 @@ export const PWAInstallPrompt: React.FC = () => {
             ) : !deferredPrompt ? (
                <div className="bg-[var(--bg-app)] rounded-2xl p-4 space-y-3 border border-[var(--border-main)]">
                 <div className="flex items-center space-x-3 text-sm">
-                  <div className="w-8 h-8 bg-gray-500/10 rounded-lg flex items-center justify-center text-gray-400">
+                  <div className="w-8 h-8 bg-gray-500/10 rounded-lg flex items-center justify-center text-[var(--text-muted)]">
                     <span className="text-xl">⋮</span>
                   </div>
                   <span className="font-bold text-[var(--text-main)]">1. Clique nos 3 pontos</span>

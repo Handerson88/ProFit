@@ -43,7 +43,7 @@ const LandingPage: React.FC = () => {
 
   const features = [
     { 
-      icon: <Layout className="text-emerald-500" />, 
+      icon: <Layout className="text-[#22C55E]" />, 
       title: 'Treinos Organizados', 
       desc: 'Planos mensais estruturados para máxima eficiência.' 
     },
@@ -63,12 +63,12 @@ const LandingPage: React.FC = () => {
       desc: 'Defina e alcance objetivos reais com inteligência.' 
     },
     { 
-      icon: <Camera className="text-emerald-400" />, 
+      icon: <Camera className="text-[#22C55E]" />, 
       title: 'Scanner de IA', 
       desc: 'Analise qualquer prato instantaneamente via câmera.' 
     },
     { 
-      icon: <ShieldCheck className="text-emerald-500" />, 
+      icon: <ShieldCheck className="text-[#22C55E]" />, 
       title: 'Segurança Total', 
       desc: 'Seus dados protegidos e sempre acessíveis.' 
     },
@@ -104,20 +104,20 @@ const LandingPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white selection:bg-emerald-500/30 font-sans overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#0F172A] text-white selection:bg-[#22C55E]/30 font-sans overflow-x-hidden relative">
       {/* Global Background Elements */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#22C55E]/10 rounded-full blur-[120px] animate-pulse" />
         <div className="absolute bottom-[-5%] right-[-5%] w-[35%] h-[35%] bg-blue-600/10 rounded-full blur-[100px]" />
         <div className="absolute top-[30%] right-[10%] w-[20%] h-[20%] bg-purple-500/5 rounded-full blur-[80px]" />
       </div>
 
       {/* Header */}
-      <nav className="fixed top-0 w-full z-50 bg-[#020617]/70 backdrop-blur-2xl border-b border-white/[0.03]">
+      <nav className="fixed top-0 w-full z-50 bg-[#0F172A]/70 backdrop-blur-2xl border-b border-white/[0.03]">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="w-9 h-9 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center font-black text-[#020617] shadow-lg shadow-emerald-500/20 transform group-hover:rotate-6 transition-transform">P</div>
-            <span className="text-2xl font-black tracking-tighter" translate="no">Pro<span className="text-emerald-500">Fit</span></span>
+            <div className="w-9 h-9 bg-gradient-to-br from-[#22C55E] to-[#22C55E] rounded-xl flex items-center justify-center font-black text-[#0F172A] shadow-lg shadow-[#22C55E]/20 transform group-hover:rotate-6 transition-transform">P</div>
+            <span className="text-2xl font-black tracking-tighter" translate="no">Pro<span className="text-[#22C55E]">Fit</span></span>
           </div>
 
           <div className="hidden md:flex items-center gap-10">
@@ -126,12 +126,12 @@ const LandingPage: React.FC = () => {
                 {item.label}
               </a>
             ))}
-            <Link to="/login" className="px-8 py-2.5 bg-white text-[#020617] font-bold rounded-full transition-all hover:bg-emerald-500 hover:text-white shadow-xl hover:shadow-emerald-500/40">
+            <Link to="/login" className="px-8 py-2.5 bg-[var(--bg-card)] text-[#0F172A] font-bold rounded-full transition-all hover:bg-[#22C55E] hover:text-white shadow-xl hover:shadow-[#22C55E]/40">
               Entrar
             </Link>
           </div>
 
-          <button className="md:hidden w-10 h-10 flex items-center justify-center bg-white/5 rounded-lg border border-white/10" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button className="md:hidden w-10 h-10 flex items-center justify-center bg-[var(--bg-card)]/5 rounded-lg border border-white/10" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
@@ -143,14 +143,14 @@ const LandingPage: React.FC = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden absolute top-20 left-0 w-full bg-[#020617] border-b border-white/5 overflow-hidden shadow-2xl"
+              className="md:hidden absolute top-20 left-0 w-full bg-[#0F172A] border-b border-white/5 overflow-hidden shadow-2xl"
             >
               <div className="p-8 space-y-6">
                 {navItems.map((item) => (
                   <a 
                     key={item.label} 
                     href={item.href} 
-                    className="block text-xl font-bold text-slate-300 hover:text-emerald-500 transition-colors"
+                    className="block text-xl font-bold text-slate-300 hover:text-[#22C55E] transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.label}
@@ -158,7 +158,7 @@ const LandingPage: React.FC = () => {
                 ))}
                 <Link 
                   to="/login" 
-                  className="block w-full py-5 bg-emerald-500 text-[#020617] text-center font-black text-lg rounded-2xl shadow-lg shadow-emerald-500/20"
+                  className="block w-full py-5 bg-[#22C55E] text-[#0F172A] text-center font-black text-lg rounded-2xl shadow-lg shadow-[#22C55E]/20"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Começar Agora
@@ -179,16 +179,16 @@ const LandingPage: React.FC = () => {
               transition={{ duration: 1, ease: 'easeOut' }}
               className="space-y-10"
             >
-              <div className="inline-flex items-center gap-3 px-5 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+              <div className="inline-flex items-center gap-3 px-5 py-2 bg-[#22C55E]/10 border border-[#22C55E]/20 rounded-full">
                 <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22C55E]"></span>
                 </span>
-                <span className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.2em]">Inteligência Artificial Fitness</span>
+                <span className="text-[11px] font-black text-[#22C55E] uppercase tracking-[0.2em]">Inteligência Artificial Fitness</span>
               </div>
               
               <h1 className="text-6xl md:text-8xl font-black leading-[0.9] tracking-tighter">
-                Seu corpo <br /> em sua <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600">Melhor Versão.</span>
+                Seu corpo <br /> em sua <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#22C55E] via-[#22C55E] to-[#22C55E]">Melhor Versão.</span>
               </h1>
               
               <p className="text-lg md:text-2xl text-slate-400 max-w-xl leading-relaxed font-medium">
@@ -198,11 +198,11 @@ const LandingPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-5">
                 <button 
                   onClick={() => navigate('/login')}
-                  className="px-12 py-6 bg-emerald-500 hover:bg-emerald-400 text-[#020617] font-black text-xl rounded-2xl transition-all hover:scale-[1.03] hover:shadow-[0_0_50px_rgba(16,185,129,0.4)] flex items-center justify-center gap-3 active:scale-95 group"
+                  className="px-12 py-6 bg-[#22C55E] hover:bg-[#22C55E] text-[#0F172A] font-black text-xl rounded-2xl transition-all hover:scale-[1.03] hover:shadow-[0_0_50px_rgba(16,185,129,0.4)] flex items-center justify-center gap-3 active:scale-95 group"
                 >
                   Começar agora <ChevronRight size={24} className="group-hover:translate-x-1 transition-transform" />
                 </button>
-                <button onClick={() => document.getElementById('video-demo')?.scrollIntoView({ behavior: 'smooth' })} className="px-12 py-6 bg-white/5 hover:bg-white/10 text-white font-bold text-xl rounded-2xl transition-all border border-white/10 backdrop-blur-sm flex items-center justify-center gap-3 active:scale-95">
+                <button onClick={() => document.getElementById('video-demo')?.scrollIntoView({ behavior: 'smooth' })} className="px-12 py-6 bg-[var(--bg-card)]/5 hover:bg-[var(--bg-card)]/10 text-white font-bold text-xl rounded-2xl transition-all border border-white/10 backdrop-blur-sm flex items-center justify-center gap-3 active:scale-95">
                   <Play fill="currentColor" size={20} /> Ver demonstração
                 </button>
               </div>
@@ -210,8 +210,8 @@ const LandingPage: React.FC = () => {
               <div className="flex items-center gap-6 pt-10 border-t border-white/5">
                 <div className="flex -space-x-3">
                   {[1,2,3,4,5].map(i => (
-                    <div key={i} className="w-11 h-11 rounded-full border-[3px] border-[#020617] bg-slate-800 flex items-center justify-center overflow-hidden">
-                      <div className={`w-full h-full bg-gradient-to-br ${i % 2 === 0 ? 'from-emerald-500 to-blue-500' : 'from-orange-400 to-rose-500'} opacity-70`} />
+                    <div key={i} className="w-11 h-11 rounded-full border-[3px] border-[#0F172A] bg-slate-800 flex items-center justify-center overflow-hidden">
+                      <div className={`w-full h-full bg-gradient-to-br ${i % 2 === 0 ? 'from-[#22C55E] to-blue-500' : 'from-orange-400 to-rose-500'} opacity-70`} />
                     </div>
                   ))}
                 </div>
@@ -231,7 +231,7 @@ const LandingPage: React.FC = () => {
               transition={{ duration: 1.2, ease: 'easeOut', delay: 0.2 }}
               className="relative lg:h-[800px] flex items-center justify-center"
             >
-              <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/30 to-blue-600/30 rounded-full blur-[150px] animate-pulse scale-75" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#22C55E]/30 to-blue-600/30 rounded-full blur-[150px] animate-pulse scale-75" />
               <img 
                 src="/landing/hero.png" 
                 alt="Application Showcase" 
@@ -242,12 +242,12 @@ const LandingPage: React.FC = () => {
               <motion.div 
                 animate={{ y: [0, -20, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-1/4 -left-10 z-20 bg-white/10 backdrop-blur-2xl p-4 rounded-2xl border border-white/20 shadow-2xl hidden xl:block"
+                className="absolute top-1/4 -left-10 z-20 bg-[var(--bg-card)]/10 backdrop-blur-2xl p-4 rounded-2xl border border-white/20 shadow-2xl hidden xl:block"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center text-white"><Zap fill="currentColor" /></div>
+                  <div className="w-10 h-10 bg-[#22C55E] rounded-lg flex items-center justify-center text-white"><Zap fill="currentColor" /></div>
                   <div>
-                    <p className="text-xs font-black uppercase tracking-wider text-emerald-400">Scanner IA</p>
+                    <p className="text-xs font-black uppercase tracking-wider text-[#22C55E]">Scanner IA</p>
                     <p className="text-sm font-bold">1.2s p/ analisar</p>
                   </div>
                 </div>
@@ -256,7 +256,7 @@ const LandingPage: React.FC = () => {
               <motion.div 
                 animate={{ y: [0, 20, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute bottom-1/4 -right-10 z-20 bg-white/10 backdrop-blur-2xl p-4 rounded-2xl border border-white/20 shadow-2xl hidden xl:block"
+                className="absolute bottom-1/4 -right-10 z-20 bg-[var(--bg-card)]/10 backdrop-blur-2xl p-4 rounded-2xl border border-white/20 shadow-2xl hidden xl:block"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white"><BarChart3 size={20} /></div>
@@ -279,7 +279,7 @@ const LandingPage: React.FC = () => {
 
           <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
-              { icon: <Target className="text-emerald-500" />, title: 'Consistência', desc: 'Acordar sem saber o treino do dia mata o seu progresso.' },
+              { icon: <Target className="text-[#22C55E]" />, title: 'Consistência', desc: 'Acordar sem saber o treino do dia mata o seu progresso.' },
               { icon: <Smartphone className="text-blue-500" />, title: 'Nutrição IA', desc: 'Comer "limpo" sem pesar macros é como dirigir no escuro.' },
               { icon: <BarChart3 className="text-orange-500" />, title: 'Métricas Reais', desc: 'Se você não mede, você não melhora. Simples assim.' },
               { icon: <Heart className="text-rose-500" />, title: 'Foco Mental', desc: 'Muitas opções geram paralisia. Nós simplificamos tudo.' },
@@ -290,9 +290,9 @@ const LandingPage: React.FC = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="p-10 bg-white/[0.02] border border-white/[0.05] rounded-[2.5rem] hover:bg-white/[0.05] transition-all group hover:-translate-y-2 duration-500"
+                className="p-10 bg-[var(--bg-card)]/[0.02] border border-white/[0.05] rounded-[2.5rem] hover:bg-[var(--bg-card)]/[0.05] transition-all group hover:-translate-y-2 duration-500"
               >
-                <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mb-10 group-hover:scale-110 group-hover:bg-emerald-500/20 group-hover:text-emerald-400 transition-all shadow-xl">
+                <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mb-10 group-hover:scale-110 group-hover:bg-[#22C55E]/20 group-hover:text-[#22C55E] transition-all shadow-xl">
                   {item.icon}
                 </div>
                 <h3 className="text-2xl font-black mb-4 tracking-tight">{item.title}</h3>
@@ -320,12 +320,12 @@ const LandingPage: React.FC = () => {
                  alt="Video Placeholder" 
                  className="w-full h-full object-cover grayscale-[0.3] transition-transform duration-[2000ms] group-hover:scale-110" 
                />
-               <button className="absolute inset-0 m-auto w-28 h-28 bg-emerald-500 rounded-full flex items-center justify-center text-[#020617] shadow-[0_0_80px_rgba(16,185,129,0.5)] z-20 group-hover:scale-110 transition-all active:scale-95">
+               <button className="absolute inset-0 m-auto w-28 h-28 bg-[#22C55E] rounded-full flex items-center justify-center text-[#0F172A] shadow-[0_0_80px_rgba(16,185,129,0.5)] z-20 group-hover:scale-110 transition-all active:scale-95">
                   <Play fill="currentColor" size={40} className="ml-1.5" />
                </button>
                <div className="absolute bottom-12 left-12 z-20">
                   <div className="flex items-center gap-3 mb-4">
-                    <span className="px-3 py-1 bg-emerald-500 text-[#020617] text-[10px] font-black uppercase rounded-full">New</span>
+                    <span className="px-3 py-1 bg-[#22C55E] text-[#0F172A] text-[10px] font-black uppercase rounded-full">New</span>
                     <span className="text-white/60 text-xs font-bold uppercase tracking-widest">Demo v2.0</span>
                   </div>
                   <p className="text-4xl font-black tracking-tight">O Poder do Scanner IA</p>
@@ -339,11 +339,11 @@ const LandingPage: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
               <div className="lg:col-span-1 py-10 space-y-8">
-                <h2 className="text-5xl md:text-6xl font-black tracking-tighter leading-tight">Engine de <br /><span className="text-emerald-500">Performance.</span></h2>
+                <h2 className="text-5xl md:text-6xl font-black tracking-tighter leading-tight">Engine de <br /><span className="text-[#22C55E]">Performance.</span></h2>
                 <p className="text-slate-400 text-xl font-medium leading-relaxed">Desenvolvido com tecnologia de visão computacional para tornar sua jornada invisível e eficiente.</p>
                 <button 
                   onClick={() => navigate('/home')}
-                  className="px-8 py-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold rounded-2xl border border-emerald-500/30 flex items-center gap-3 transition-all"
+                  className="px-8 py-4 bg-[#22C55E]/10 hover:bg-[#22C55E]/20 text-[#22C55E] font-bold rounded-2xl border border-[#22C55E]/30 flex items-center gap-3 transition-all"
                 >
                   Explorar todos os recursos <ArrowRight size={20} />
                 </button>
@@ -355,14 +355,14 @@ const LandingPage: React.FC = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="relative p-12 bg-white/[0.02] border border-white/[0.05] rounded-[3.5rem] overflow-hidden group hover:border-emerald-500/30 transition-all shadow-2xl h-full flex flex-col justify-between"
+                  className="relative p-12 bg-[var(--bg-card)]/[0.02] border border-white/[0.05] rounded-[3.5rem] overflow-hidden group hover:border-[#22C55E]/30 transition-all shadow-2xl h-full flex flex-col justify-between"
                 >
-                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#22C55E]/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className="mb-10 w-16 h-16 flex items-center justify-center bg-slate-900 rounded-2xl group-hover:scale-110 transition-transform shadow-lg">
                     {React.cloneElement(f.icon as React.ReactElement, { size: 30 })}
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black mb-5 tracking-tight group-hover:text-emerald-400 transition-colors">{f.title}</h3>
+                    <h3 className="text-2xl font-black mb-5 tracking-tight group-hover:text-[#22C55E] transition-colors">{f.title}</h3>
                     <p className="text-slate-400 leading-relaxed font-medium text-lg">{f.desc}</p>
                   </div>
                 </motion.div>
@@ -372,11 +372,11 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* Section 4: Como Funciona */}
-        <section id="how-it-works" className="py-40 px-6 relative bg-[#020617]/50">
+        <section id="how-it-works" className="py-40 px-6 relative bg-[#0F172A]/50">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-5xl md:text-8xl font-black text-center mb-36 tracking-tighter">Simples. <span className="text-slate-700 tracking-normal font-normal italic">Mas não fácil.</span></h2>
             <div className="grid md:grid-cols-3 gap-24 relative">
-              <div className="absolute top-24 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent hidden lg:block" />
+              <div className="absolute top-24 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#22C55E]/30 to-transparent hidden lg:block" />
               {[
                 { step: '01', title: 'Onboarding IA', desc: 'Entendemos seu metabolismo e criamos seu perfil único em segundos.' },
                 { step: '02', title: 'Plano Dinâmico', desc: 'Sua rotina se adapta ao seu progresso real, não ao contrário.' },
@@ -390,7 +390,7 @@ const LandingPage: React.FC = () => {
                   transition={{ delay: i * 0.2 }}
                   className="text-center group"
                 >
-                  <div className="w-28 h-28 bg-emerald-500 rounded-[2.5rem] flex items-center justify-center text-[#020617] text-4xl font-black mx-auto relative z-10 shadow-[0_20px_50px_rgba(16,185,129,0.4)] group-hover:scale-110 group-hover:rotate-3 transition-all duration-700">
+                  <div className="w-28 h-28 bg-[#22C55E] rounded-[2.5rem] flex items-center justify-center text-[#0F172A] text-4xl font-black mx-auto relative z-10 shadow-[0_20px_50px_rgba(16,185,129,0.4)] group-hover:scale-110 group-hover:rotate-3 transition-all duration-700">
                     {item.step}
                   </div>
                   <h3 className="text-3xl font-black mt-12 mb-6 tracking-tight">{item.title}</h3>
@@ -411,7 +411,7 @@ const LandingPage: React.FC = () => {
               className="lg:w-1/2 space-y-12"
             >
               <h2 className="text-5xl md:text-8xl font-black tracking-tighter leading-[0.9]">
-                Scanner <br /> <span className="text-emerald-500 font-serif italic font-normal lowercase tracking-normal">Instântaneo.</span>
+                Scanner <br /> <span className="text-[#22C55E] font-serif italic font-normal lowercase tracking-normal">Instântaneo.</span>
               </h2>
               <div className="space-y-8">
                 {[
@@ -420,7 +420,7 @@ const LandingPage: React.FC = () => {
                   { t: 'Registro Automático', d: 'Esqueça digitar nomes de alimentos. Aponte e registre.' }
                 ].map((item, i) => (
                   <div key={i} className="flex gap-6 items-start group">
-                    <div className="mt-1 w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-[#020617] transition-all">
+                    <div className="mt-1 w-12 h-12 rounded-xl bg-[#22C55E]/10 flex items-center justify-center text-[#22C55E] group-hover:bg-[#22C55E] group-hover:text-[#0F172A] transition-all">
                       <Camera size={20} />
                     </div>
                     <div>
@@ -430,7 +430,7 @@ const LandingPage: React.FC = () => {
                   </div>
                 ))}
               </div>
-              <button onClick={() => navigate('/home')} className="px-12 py-6 bg-white text-[#020617] font-black text-xl rounded-2xl flex items-center gap-3 transition-all hover:bg-emerald-500 hover:text-white group active:scale-95 shadow-2xl">
+              <button onClick={() => navigate('/home')} className="px-12 py-6 bg-[var(--bg-card)] text-[#0F172A] font-black text-xl rounded-2xl flex items-center gap-3 transition-all hover:bg-[#22C55E] hover:text-white group active:scale-95 shadow-2xl">
                 Testar Scanner agora <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
               </button>
             </motion.div>
@@ -441,7 +441,7 @@ const LandingPage: React.FC = () => {
               transition={{ duration: 1.2, ease: "easeOut" }}
               className="lg:w-1/2 relative"
             >
-              <div className="absolute inset-0 bg-emerald-500/20 blur-[150px] rounded-full scale-110 animate-pulse" />
+              <div className="absolute inset-0 bg-[#22C55E]/20 blur-[150px] rounded-full scale-110 animate-pulse" />
               <img 
                 src="/landing/scanner.png" 
                 alt="Scanner Demo" 
@@ -468,9 +468,9 @@ const LandingPage: React.FC = () => {
               <motion.div 
                 key={i} 
                 whileHover={{ y: -5 }}
-                className="p-8 bg-white/5 border border-white/5 rounded-3xl"
+                className="p-8 bg-[var(--bg-card)]/5 border border-white/5 rounded-3xl"
               >
-                <div className="text-emerald-500 mb-6">{item.icon}</div>
+                <div className="text-[#22C55E] mb-6">{item.icon}</div>
                 <h3 className="text-xl font-bold mb-2">{item.title}</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
               </motion.div>
@@ -491,7 +491,7 @@ const LandingPage: React.FC = () => {
                    whileInView={{ opacity: 1, y: 0 }}
                    viewport={{ once: true }}
                    transition={{ delay: i * 0.1 }}
-                   className="p-12 bg-white/[0.02] border border-white/[0.05] rounded-[3.5rem] flex flex-col h-full hover:bg-white/[0.04] transition-all hover:-translate-y-2 group"
+                   className="p-12 bg-[var(--bg-card)]/[0.02] border border-white/[0.05] rounded-[3.5rem] flex flex-col h-full hover:bg-[var(--bg-card)]/[0.04] transition-all hover:-translate-y-2 group"
                 >
                   <div className="flex gap-1 text-yellow-500 mb-8">
                     {Array.from({ length: t.rating }).map((_, j) => <Star key={j} size={18} fill="currentColor" />)}
@@ -503,7 +503,7 @@ const LandingPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-black text-xl text-white leading-none">{t.name}</p>
-                      <p className="text-sm font-bold text-emerald-500 mt-2 uppercase tracking-widest">{t.role}</p>
+                      <p className="text-sm font-bold text-[#22C55E] mt-2 uppercase tracking-widest">{t.role}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -522,7 +522,7 @@ const LandingPage: React.FC = () => {
               { label: 'Avaliação Média', val: '4.9/5' },
             ].map((stat, i) => (
               <motion.div key={i} {...fadeIn} className="text-center space-y-2">
-                <p className="text-4xl md:text-5xl font-black text-emerald-500">{stat.val}</p>
+                <p className="text-4xl md:text-5xl font-black text-[#22C55E]">{stat.val}</p>
                 <p className="text-slate-400 font-medium uppercase tracking-widest text-[10px]">{stat.label}</p>
               </motion.div>
             ))}
@@ -532,7 +532,7 @@ const LandingPage: React.FC = () => {
         {/* Section 9: Preços (Pricing) */}
         <section id="pricing" className="py-40 px-6 relative">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-5xl md:text-8xl font-black text-center mb-10 tracking-tighter">Invista em <br /> <span className="text-emerald-500 italic font-normal font-serif lowercase tracking-normal">Você.</span></h2>
+            <h2 className="text-5xl md:text-8xl font-black text-center mb-10 tracking-tighter">Invista em <br /> <span className="text-[#22C55E] italic font-normal font-serif lowercase tracking-normal">Você.</span></h2>
             <p className="text-slate-400 text-2xl text-center mb-32 font-medium">Planos flexíveis para cada fase do seu progresso.</p>
             
             <div className="max-w-3xl mx-auto">
@@ -540,7 +540,7 @@ const LandingPage: React.FC = () => {
                 whileHover={{ y: -10 }}
                 className="p-16 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-[4rem] shadow-[0_40px_100px_rgba(79,70,229,0.3)] relative overflow-hidden group transition-all text-center"
               >
-                <div className="absolute top-10 right-10 px-6 py-2 bg-white/20 rounded-full text-[11px] font-black uppercase tracking-widest text-white border border-white/20">Assinatura Mensal</div>
+                <div className="absolute top-10 right-10 px-6 py-2 bg-[var(--bg-card)]/20 rounded-full text-[11px] font-black uppercase tracking-widest text-white border border-white/20">Assinatura Mensal</div>
                 <div className="space-y-12 relative z-10">
                   <div className="space-y-4">
                     <h3 className="text-2xl font-black uppercase tracking-widest text-white/70">Plano Pro</h3>
@@ -560,11 +560,11 @@ const LandingPage: React.FC = () => {
                       'Dicas de coach diárias'
                     ].map(item => (
                       <li key={item} className="flex items-center gap-4 text-lg font-bold text-white">
-                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white"><CheckCircle2 size={14} /></div> {item}
+                        <div className="w-6 h-6 rounded-full bg-[var(--bg-card)]/20 flex items-center justify-center text-white"><CheckCircle2 size={14} /></div> {item}
                       </li>
                     ))}
                   </ul>
-                  <button onClick={() => navigate('/login')} className="w-full max-w-md mx-auto py-7 bg-white text-indigo-600 font-black text-2xl rounded-3xl transition-all shadow-2xl hover:bg-indigo-50 active:scale-95 uppercase tracking-tighter">
+                  <button onClick={() => navigate('/login')} className="w-full max-w-md mx-auto py-7 bg-[var(--bg-card)] text-indigo-600 font-black text-2xl rounded-3xl transition-all shadow-2xl hover:bg-indigo-50 active:scale-95 uppercase tracking-tighter">
                     Ativar Plano Pro
                   </button>
                 </div>
@@ -585,8 +585,8 @@ const LandingPage: React.FC = () => {
                       onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
                       className="w-full flex justify-between items-center py-8 text-left group"
                     >
-                      <span className={`text-xl font-black transition-colors ${expandedFaq === i ? 'text-emerald-500' : 'text-slate-300 group-hover:text-white'}`}>{faq.q}</span>
-                      <div className={`w-8 h-8 rounded-full border border-white/10 flex items-center justify-center transition-all ${expandedFaq === i ? 'bg-emerald-500 border-emerald-500 text-[#020617] rotate-45' : ''}`}>
+                      <span className={`text-xl font-black transition-colors ${expandedFaq === i ? 'text-[#22C55E]' : 'text-slate-300 group-hover:text-white'}`}>{faq.q}</span>
+                      <div className={`w-8 h-8 rounded-full border border-white/10 flex items-center justify-center transition-all ${expandedFaq === i ? 'bg-[#22C55E] border-[#22C55E] text-[#0F172A] rotate-45' : ''}`}>
                         <Plus size={18} />
                       </div>
                     </button>
@@ -604,19 +604,19 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-emerald-500 p-16 md:p-24 rounded-[4rem] text-[#020617] space-y-12 text-center md:text-left relative overflow-hidden group shadow-[0_50px_100px_rgba(16,185,129,0.3)]">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-white/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-[120px] group-hover:bg-white/30 transition-all duration-1000" />
+            <div className="bg-[#22C55E] p-16 md:p-24 rounded-[4rem] text-[#0F172A] space-y-12 text-center md:text-left relative overflow-hidden group shadow-[0_50px_100px_rgba(16,185,129,0.3)]">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--bg-card)]/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-[120px] group-hover:bg-[var(--bg-card)]/30 transition-all duration-1000" />
               <div className="space-y-6 relative z-10">
                 <h2 className="text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter">
                   Sua melhor versão <br /> começa aqui.
                 </h2>
-                <p className="text-2xl font-bold text-[#020617]/70 leading-relaxed">
+                <p className="text-2xl font-bold text-[#0F172A]/70 leading-relaxed">
                   Não deixe para amanhã o corpo que você pode começar a construir hoje.
                 </p>
               </div>
               <button 
                 onClick={() => navigate('/home')}
-                className="w-full md:w-auto px-16 py-7 bg-[#020617] text-white font-black text-2xl rounded-[2rem] transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-4 relative z-10 group shadow-2xl"
+                className="w-full md:w-auto px-16 py-7 bg-[#0F172A] text-white font-black text-2xl rounded-[2rem] transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-4 relative z-10 group shadow-2xl"
               >
                 Começar Grátis agora <ArrowRight size={28} className="group-hover:translate-x-2 transition-transform" />
               </button>
@@ -626,20 +626,20 @@ const LandingPage: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="py-24 px-6 border-t border-white/5 relative bg-[#020617]">
+      <footer className="py-24 px-6 border-t border-white/5 relative bg-[#0F172A]">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-20 mb-24">
             <div className="md:col-span-5 space-y-10">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center font-black text-[#020617] text-2xl shadow-lg">P</div>
-                <span className="text-3xl font-black tracking-tighter" translate="no">Pro<span className="text-emerald-500">Fit</span></span>
+                <div className="w-12 h-12 bg-[#22C55E] rounded-2xl flex items-center justify-center font-black text-[#0F172A] text-2xl shadow-lg">P</div>
+                <span className="text-3xl font-black tracking-tighter" translate="no">Pro<span className="text-[#22C55E]">Fit</span></span>
               </div>
               <p className="text-slate-400 text-xl font-medium leading-relaxed max-w-sm">
                 A plataforma definitiva para quem busca performance, saúde e resultados reais através de tecnologia.
               </p>
               <div className="flex gap-4">
                 {['Twitter', 'Instagram', 'LinkedIn'].map(social => (
-                  <a key={social} href="#" className="w-12 h-12 rounded-xl bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-slate-400 hover:bg-emerald-500 hover:text-[#020617] hover:border-emerald-500 transition-all">
+                  <a key={social} href="#" className="w-12 h-12 rounded-xl bg-[var(--bg-card)]/[0.03] border border-white/[0.05] flex items-center justify-center text-slate-400 hover:bg-[#22C55E] hover:text-[#0F172A] hover:border-[#22C55E] transition-all">
                     <span className="sr-only">{social}</span>
                     <div className="w-5 h-5 bg-current rounded-full" />
                   </a>
@@ -650,29 +650,29 @@ const LandingPage: React.FC = () => {
             <div className="md:col-span-2 space-y-8">
               <h4 className="text-lg font-black uppercase tracking-widest text-slate-500">Produto</h4>
               <ul className="space-y-4 text-slate-400 font-bold text-lg">
-                <li><a href="#features" className="hover:text-emerald-500 transition-colors">Features</a></li>
-                <li><a href="#video-demo" className="hover:text-emerald-500 transition-colors">Demo</a></li>
-                <li><a href="#pricing" className="hover:text-emerald-500 transition-colors">Preços</a></li>
-                <li><a href="#testimonials" className="hover:text-emerald-500 transition-colors">Feedback</a></li>
+                <li><a href="#features" className="hover:text-[#22C55E] transition-colors">Features</a></li>
+                <li><a href="#video-demo" className="hover:text-[#22C55E] transition-colors">Demo</a></li>
+                <li><a href="#pricing" className="hover:text-[#22C55E] transition-colors">Preços</a></li>
+                <li><a href="#testimonials" className="hover:text-[#22C55E] transition-colors">Feedback</a></li>
               </ul>
             </div>
 
             <div className="md:col-span-2 space-y-8">
               <h4 className="text-lg font-black uppercase tracking-widest text-slate-500">Suporte</h4>
               <ul className="space-y-4 text-slate-400 font-bold text-lg">
-                <li><a href="#" className="hover:text-emerald-500 transition-colors">FAQ</a></li>
-                <li><a href="#" className="hover:text-emerald-500 transition-colors">Contato</a></li>
-                <li><a href="#" className="hover:text-emerald-500 transition-colors">Status</a></li>
-                <li><a href="#" className="hover:text-emerald-500 transition-colors">API</a></li>
+                <li><a href="#" className="hover:text-[#22C55E] transition-colors">FAQ</a></li>
+                <li><a href="#" className="hover:text-[#22C55E] transition-colors">Contato</a></li>
+                <li><a href="#" className="hover:text-[#22C55E] transition-colors">Status</a></li>
+                <li><a href="#" className="hover:text-[#22C55E] transition-colors">API</a></li>
               </ul>
             </div>
 
             <div className="md:col-span-3 space-y-8">
               <h4 className="text-lg font-black uppercase tracking-widest text-slate-500">Newsletter</h4>
               <p className="text-slate-400 font-medium">Receba dicas exclusivas de performance.</p>
-              <div className="flex bg-white/[0.03] border border-white/[0.05] rounded-2xl p-2 group-focus-within:border-emerald-500/50 transition-all">
+              <div className="flex bg-[var(--bg-card)]/[0.03] border border-white/[0.05] rounded-2xl p-2 group-focus-within:border-[#22C55E]/50 transition-all">
                 <input type="email" placeholder="Email" className="bg-transparent border-none outline-none px-4 py-3 flex-grow text-white font-medium" />
-                <button className="w-12 h-12 bg-emerald-500 text-[#020617] rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg">
+                <button className="w-12 h-12 bg-[#22C55E] text-[#0F172A] rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg">
                   <ArrowRight size={20} />
                 </button>
               </div>

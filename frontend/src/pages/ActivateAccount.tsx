@@ -97,7 +97,7 @@ const ActivateAccount: React.FC = () => {
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-white p-10 rounded-[32px] shadow-2xl max-w-md w-full text-center space-y-6 border border-slate-100"
+                    className="bg-[var(--bg-card)] p-10 rounded-[32px] shadow-2xl max-w-md w-full text-center space-y-6 border border-slate-100"
                 >
                     <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto shadow-inner">
                         <AlertCircle size={40} />
@@ -123,15 +123,15 @@ const ActivateAccount: React.FC = () => {
             <motion.div 
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden max-w-lg w-full border border-slate-100"
+                className="bg-[var(--bg-card)] rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden max-w-lg w-full border border-slate-100"
             >
                 {/* Visual Header */}
                 <div className="bg-gradient-to-br from-[#10B981] to-[#059669] p-12 text-center relative overflow-hidden">
-                    <div className="absolute top-[-50%] right-[-20%] w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse" />
+                    <div className="absolute top-[-50%] right-[-20%] w-64 h-64 bg-[var(--bg-card)]/10 rounded-full blur-3xl animate-pulse" />
                     <div className="absolute bottom-[-30%] left-[-10%] w-48 h-48 bg-emerald-900/10 rounded-full blur-2xl" />
                     
                     <div className="relative z-10 space-y-4">
-                        <div className="w-20 h-20 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center mx-auto border border-white/30 shadow-2xl transform hover:rotate-6 transition-transform">
+                        <div className="w-20 h-20 bg-[var(--bg-card)]/20 backdrop-blur-xl rounded-3xl flex items-center justify-center mx-auto border border-white/30 shadow-2xl transform hover:rotate-6 transition-transform">
                             <Lock className="text-white" size={38} />
                         </div>
                         <div className="space-y-1">
@@ -188,7 +188,7 @@ const ActivateAccount: React.FC = () => {
                                                 required
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full pl-12 pr-12 py-5 bg-slate-50 border-2 border-transparent rounded-[20px] focus:border-[#10B981]/30 focus:bg-white focus:ring-4 focus:ring-[#10B981]/5 transition-all font-bold text-slate-700 placeholder:text-slate-300"
+                                                className="w-full pl-12 pr-12 py-5 bg-slate-50 border-2 border-transparent rounded-[20px] focus:border-[#10B981]/30 focus:bg-[var(--bg-card)] focus:ring-4 focus:ring-[#10B981]/5 transition-all font-bold text-slate-700 placeholder:text-slate-300"
                                                 placeholder="Sua senha secreta"
                                             />
                                             <button 
@@ -212,7 +212,7 @@ const ActivateAccount: React.FC = () => {
                                                 required
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                                className="w-full pl-12 pr-4 py-5 bg-slate-50 border-2 border-transparent rounded-[20px] focus:border-[#10B981]/30 focus:bg-white focus:ring-4 focus:ring-[#10B981]/5 transition-all font-bold text-slate-700 placeholder:text-slate-300"
+                                                className="w-full pl-12 pr-4 py-5 bg-slate-50 border-2 border-transparent rounded-[20px] focus:border-[#10B981]/30 focus:bg-[var(--bg-card)] focus:ring-4 focus:ring-[#10B981]/5 transition-all font-bold text-slate-700 placeholder:text-slate-300"
                                                 placeholder="Repita a senha"
                                             />
                                         </div>

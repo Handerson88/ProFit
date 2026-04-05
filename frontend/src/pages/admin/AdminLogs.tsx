@@ -17,7 +17,8 @@ const AdminLogs: React.FC = () => {
         const fetchLogs = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:5000/api/admin/logs', {
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                const response = await fetch(`${apiUrl}/api/admin/logs`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
@@ -45,7 +46,7 @@ const AdminLogs: React.FC = () => {
                 <p className="text-[14px] text-[#718096] dark:text-slate-400 mt-0.5 transition-colors">Histórico detalhado de todas as ações administrativas realizadas no sistema.</p>
             </div>
 
-            <div className="bg-white dark:bg-[#1E293B] rounded-[14px] border border-[#E6EAF0] dark:border-[#334155] overflow-hidden shadow-sm transition-colors duration-300">
+            <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[14px] border border-[#E6EAF0] dark:border-[#334155] overflow-hidden shadow-sm transition-colors duration-300">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>

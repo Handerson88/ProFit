@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  User, Mail, Calendar, Ruler, Weight, Target, 
+  User, Bell, Mail, Calendar, Ruler, Weight, Target, 
   ArrowLeft, Edit3, Save, CheckCircle2, X 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,7 @@ export const Account = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -35,6 +36,7 @@ export const Account = () => {
     try {
       const data = await api.user.getProfile();
       setProfile(data);
+      setNotificationsEnabled(!!data.notifications_enabled);
       setFormData({
         name: data.name || '',
         email: data.email || '',
@@ -71,7 +73,7 @@ export const Account = () => {
     if (isNaN(Number(formData.age))) return "Idade deve ser um número.";
     if (isNaN(Number(formData.height))) return "Altura deve ser um número.";
     if (isNaN(Number(formData.weight))) return "Peso deve ser um número.";
-    if (formData.gender !== 'male' && formData.gender !== 'female') return "Selecione um gênero válido.";
+    if (formData.gender !== 'male' && formData.gender !== 'female' && formData.gender !== 'other') return "Selecione um gênero válido.";
     return null;
   };
 
@@ -103,6 +105,19 @@ export const Account = () => {
     }
   };
 
+  const handleToggleNotifications = async () => {
+    const newValue = !notificationsEnabled;
+    setNotificationsEnabled(newValue);
+    try {
+      await api.user.updateNotificationSettings(newValue);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 2000);
+    } catch (err) {
+      setNotificationsEnabled(!newValue); // Rollback
+      setError("Falha ao atualizar configurações de notificação.");
+    }
+  };
+
   const ModernInput = ({ label, icon: Icon, value, name, type = "text", disabled = !isEditing }: any) => (
     <div className={`group bg-[var(--bg-container)] rounded-3xl p-5 border-2 transition-all duration-300 shadow-sm ${
       isEditing ? 'border-[var(--border-main)] focus-within:border-[#56AB2F]/30 focus-within:shadow-lg focus-within:shadow-[#56AB2F]/5' : 'border-transparent'
@@ -130,8 +145,8 @@ export const Account = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F7F9]">
-        <div className="w-12 h-12 border-4 border-gray-200 border-t-[#56AB2F] rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-app)]">
+        <div className="w-12 h-12 border-4 border-[var(--border-main)] border-t-[#56AB2F] rounded-full animate-spin" />
       </div>
     );
   }
@@ -204,11 +219,11 @@ export const Account = () => {
               <h2 className="text-2xl font-black text-[var(--text-main)] mb-1">{profile?.name || 'Seu Nome'}</h2>
               <div className="flex items-center space-x-2">
                 <p className="text-sm font-bold text-[var(--text-muted)] bg-[var(--bg-surface)] px-4 py-1.5 rounded-full">{profile?.email || 'seuemail@exemplo.com'}</p>
-                {profile?.subscription_status === 'active' ? (
-                  <div className="flex flex-col items-start bg-[var(--bg-surface)] px-4 py-1.5 rounded-2xl">
-                    <span className="text-[#56AB2F] text-[9px] font-black uppercase tracking-widest flex items-center">
-                      PRO ATIVO ✅
-                    </span>
+                {profile?.subscription_status === 'ativo' ? (
+                  <div className="flex flex-col items-start gap-2">
+                    <div className="plan-badge-pill">
+                      {profile?.is_early_adopter ? 'FREE' : 'PRO'}
+                    </div>
                     {profile?.plan_expiration && (
                       <div className="flex flex-col">
                         <span className="text-[8px] font-bold text-[var(--text-muted)] mt-0.5 uppercase tracking-tighter">
@@ -264,6 +279,34 @@ export const Account = () => {
             )}
           </AnimatePresence>
 
+          {/* Notifications Toggle Card */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[var(--bg-container)] rounded-3xl p-6 border border-[var(--border-main)] mb-8 shadow-sm flex items-center justify-between"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <Bell size={24} />
+              </div>
+              <div>
+                <h4 className="text-[15px] font-bold text-[var(--text-main)]">Notificações Inteligentes</h4>
+                <p className="text-[11px] text-[var(--text-muted)] font-medium">Lembretes personalizados de refeição e água.</p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={handleToggleNotifications}
+              className={`w-14 h-8 rounded-full relative transition-all duration-300 ${notificationsEnabled ? 'bg-[#56AB2F]' : 'bg-[var(--bg-surface)] border border-[var(--border-main)]'}`}
+            >
+              <motion.div 
+                animate={{ x: notificationsEnabled ? 28 : 4 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className="absolute top-1 w-6 h-6 bg-white rounded-full shadow-md"
+              />
+            </button>
+          </motion.div>
+
           {/* Information Section */}
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-2 ml-2">
@@ -294,20 +337,26 @@ export const Account = () => {
                       <div className="flex space-x-2 mt-1">
                         <button 
                           onClick={() => setFormData({ ...formData, gender: 'male' })}
-                          className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all border-2 ${formData.gender === 'male' ? 'border-[#56AB2F] bg-[#56AB2F]/5 text-[#56AB2F]' : 'border-[var(--border-main)] bg-[var(--bg-surface)] text-[var(--text-muted)]'}`}
+                          className={`flex-1 py-1.5 sm:py-2 px-1 sm:px-2 rounded-xl font-bold text-xs sm:text-sm transition-all border-2 ${formData.gender === 'male' ? 'border-[#56AB2F] bg-[#56AB2F]/5 text-[#56AB2F]' : 'border-[var(--border-main)] bg-[var(--bg-surface)] text-[var(--text-muted)]'}`}
                         >
                           Masculino
                         </button>
                         <button 
                           onClick={() => setFormData({ ...formData, gender: 'female' })}
-                          className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all border-2 ${formData.gender === 'female' ? 'border-[#56AB2F] bg-[#56AB2F]/5 text-[#56AB2F]' : 'border-[var(--border-main)] bg-[var(--bg-surface)] text-[var(--text-muted)]'}`}
+                          className={`flex-1 py-1.5 sm:py-2 px-1 sm:px-2 rounded-xl font-bold text-xs sm:text-sm transition-all border-2 ${formData.gender === 'female' ? 'border-[#56AB2F] bg-[#56AB2F]/5 text-[#56AB2F]' : 'border-[var(--border-main)] bg-[var(--bg-surface)] text-[var(--text-muted)]'}`}
                         >
                           Feminino
+                        </button>
+                        <button 
+                          onClick={() => setFormData({ ...formData, gender: 'other' })}
+                          className={`flex-1 py-1.5 sm:py-2 px-1 sm:px-2 rounded-xl font-bold text-xs sm:text-sm transition-all border-2 ${formData.gender === 'other' ? 'border-[#56AB2F] bg-[#56AB2F]/5 text-[#56AB2F]' : 'border-[var(--border-main)] bg-[var(--bg-surface)] text-[var(--text-muted)]'}`}
+                        >
+                          Outro
                         </button>
                       </div>
                     ) : (
                       <p className="text-lg font-bold text-[var(--text-main)] capitalize">
-                        {formData.gender === 'male' ? 'Masculino' : 'Feminino'}
+                        {formData.gender === 'male' ? 'Masculino' : formData.gender === 'female' ? 'Feminino' : 'Outro'}
                       </p>
                     )}
                   </div>

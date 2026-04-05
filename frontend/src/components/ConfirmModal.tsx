@@ -65,7 +65,7 @@ export function ConfirmModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden p-6"
+            className="relative w-full max-w-sm bg-[var(--bg-card)] rounded-3xl shadow-2xl overflow-hidden p-6"
           >
             <div className="flex flex-col items-center flex-1 text-center">
               {/* Icon Circle */}
@@ -82,10 +82,10 @@ export function ConfirmModal({
               </div>
 
               {/* Content */}
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">
                 {title}
               </h3>
-              <p className="text-sm text-gray-500 mb-8 leading-relaxed">
+              <p className="text-sm text-[var(--text-muted)] mb-8 leading-relaxed">
                 {message}
               </p>
 
@@ -95,7 +95,7 @@ export function ConfirmModal({
                   <button
                     onClick={onClose}
                     disabled={isProcessing}
-                    className="flex-1 px-4 py-3 rounded-xl font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 active:scale-95 transition-all outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50 disabled:active:scale-100"
+                    className="flex-1 px-4 py-3 rounded-xl font-semibold text-slate-900 bg-gray-100 hover:bg-gray-200 active:scale-95 transition-all outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50 disabled:active:scale-100"
                   >
                     {cancelText}
                   </button>

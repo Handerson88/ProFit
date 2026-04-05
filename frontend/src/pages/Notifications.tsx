@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
 import { socketService } from '../services/socket';
+import { getMaputoNow } from '../utils/dateUtils';
 
 export const Notifications = () => {
   const navigate = useNavigate();
@@ -74,13 +75,13 @@ export const Notifications = () => {
       case 'goal': return <Target className="w-5 h-5 text-[#56AB2F]" />;
       case 'meal': return <Utensils className="w-5 h-5 text-orange-500" />;
       case 'system': return <Info className="w-5 h-5 text-purple-500" />;
-      default: return <Bell className="w-5 h-5 text-gray-500" />;
+      default: return <Bell className="w-5 h-5 text-[var(--text-muted)]" />;
     }
   };
 
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
-    const now = new Date();
+    const now = getMaputoNow();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHrs = Math.floor(diffMins / 60);
@@ -93,20 +94,20 @@ export const Notifications = () => {
   };
 
   return (
-    <div className="main-wrapper bg-[#F6F7F9]">
+    <div className="main-wrapper bg-[var(--bg-app)]">
       <div className="app-container bg-transparent shadow-none border-none">
       {/* Header */}
-      <div className="px-6 pt-12 pb-6 flex items-center justify-between sticky top-0 z-40 bg-[#F6F7F9]/90 backdrop-blur-sm">
+      <div className="px-6 pt-12 pb-6 flex items-center justify-between sticky top-0 z-40 bg-[var(--bg-app)]/90 backdrop-blur-sm">
         <div className="flex-1 flex justify-start">
           <button 
             onClick={() => navigate(-1)}
-            className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-95 transition-all text-gray-700 hover:text-gray-900"
+            className="w-10 h-10 bg-[var(--bg-card)] rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-95 transition-all text-[var(--text-main)] hover:text-[var(--text-main)]"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
         </div>
         <div className="flex-[2] flex justify-center">
-          <h1 className="text-[20px] font-black text-gray-900 tracking-tight">Notificações</h1>
+          <h1 className="text-[20px] font-black text-[var(--text-main)] tracking-tight">Notificações</h1>
         </div>
         <div className="flex-1 flex justify-end">
           <button 
@@ -132,7 +133,7 @@ export const Notifications = () => {
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-2">
               <Bell className="w-7 h-7 text-gray-300" />
             </div>
-            <p className="text-gray-400 font-medium">Nenhuma notificação ainda.</p>
+            <p className="text-[var(--text-muted)] font-medium">Nenhuma notificação ainda.</p>
           </motion.div>
         ) : (
           <div className="space-y-3">
@@ -146,7 +147,7 @@ export const Notifications = () => {
                   onClick={() => !n.is_read && handleMarkAsRead(n.id)}
                   className={`
                     relative w-full p-4 rounded-[20px] shadow-[0_8px_30px_rgb(0,0,0,0.03)] transition-colors duration-300
-                    ${!n.is_read ? 'bg-white cursor-pointer' : 'bg-[#f0f2f5]'}
+                    ${!n.is_read ? 'bg-[var(--bg-card)] cursor-pointer' : 'bg-[var(--bg-surface)]'}
                   `}
                 >
                   <div className="flex items-start space-x-4">
@@ -154,10 +155,10 @@ export const Notifications = () => {
                       {getIconForType(n.type)}
                     </div>
                     <div className="flex-1 text-left min-w-0 pr-6">
-                      <p className={`font-bold text-[15px] truncate mb-0.5 ${!n.is_read ? 'text-gray-900' : 'text-gray-600'}`}>
+                      <p className={`font-bold text-[15px] truncate mb-0.5 ${!n.is_read ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
                         {n.title}
                       </p>
-                      <p className={`text-[13px] leading-snug ${!n.is_read ? 'text-gray-500' : 'text-gray-400'}`}>
+                      <p className={`text-[13px] leading-snug ${!n.is_read ? 'text-[var(--text-muted)]' : 'text-[var(--text-muted)]'}`}>
                         {n.message}
                       </p>
                       <p className="text-[11px] font-semibold text-gray-300 mt-2 uppercase tracking-wide">

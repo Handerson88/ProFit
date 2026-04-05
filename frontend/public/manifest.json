@@ -1,6 +1,6 @@
 {
-  "short_name": "Profit",
-  "name": "Profit",
+  "short_name": "ProFit",
+  "name": "ProFit - Treine com Inteligência",
   "icons": [
     {
       "src": "faviconnovo.png",
@@ -11,7 +11,8 @@
     {
       "src": "faviconnovo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "start_url": "/",
