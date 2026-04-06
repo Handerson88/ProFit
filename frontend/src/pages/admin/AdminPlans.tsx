@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../../services/api';
 import { 
   Dumbbell, 
   Calendar, 
@@ -17,8 +18,7 @@ const AdminPlans: React.FC = () => {
         const fetchPlans = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-                const response = await fetch(`${apiUrl}/api/admin/plans`, {
+                const response = await fetch(`${API_URL}/admin/plans`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
