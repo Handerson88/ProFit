@@ -619,19 +619,33 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }
 
 // Database Health Check for Production Verification
 app.get('/api/db-check', async (req, res) => {
+  const connStr = process.env.DATABASE_URL || process.env.URL_DO_BANCO_DE_DADOS || process.env.URL_BANCO_DE_DADOS;
+  const maskedConn = connStr ? connStr.replace(/:([^:@]+)@/, ':****@') : 'MISSING';
+
   try {
     const result = await db.query('SELECT NOW()');
     res.json({ 
       status: 'connected', 
       db_time: result.rows[0].now,
-      env: {
-        has_db_url: !!(process.env.DATABASE_URL || process.env.URL_BANCO_DE_DADOS),
-        has_jwt: !!process.env.JWT_SECRET
+      diagnostics: {
+        has_db_url: !!connStr,
+        masked_url: maskedConn,
+        has_jwt: !!process.env.JWT_SECRET,
+        protocol: connStr?.split(':')[0]
       }
     });
   } catch (err) {
     console.error('Database connection check error:', err);
-    res.status(500).json({ status: 'error', message: err.message });
+    res.status(500).json({ 
+      status: 'error', 
+      message: err.message,
+      diagnostics: {
+        has_db_url: !!connStr,
+        masked_url: maskedConn,
+        has_jwt: !!process.env.JWT_SECRET,
+        error_code: err.code
+      }
+    });
   }
 });
 

@@ -1,11 +1,20 @@
 const { Pool } = require('pg');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
-
 // Robust connection string resolver
 const getConnectionString = () => {
-  let str = process.env.URL_DO_BANCO_DE_DADOS || process.env.DATABASE_URL || process.env.URL_BANCO_DE_DADOS;
-  if (!str) return null;
+  // In Vercel, env vars are already in process.env.
+  // We only load .env if we are local.
+  try {
+    require('dotenv').config({ path: path.join(__dirname, '../.env') });
+  } catch (e) {
+    // Ignore in production
+  }
+
+  let str = process.env.DATABASE_URL || process.env.URL_DO_BANCO_DE_DADOS || process.env.URL_BANCO_DE_DADOS;
+  if (!str) {
+    console.error('DATABASE_URL is MISSING in environment variables!');
+    return null;
+  }
   
   // Ensure sslmode=require if it's a Supabase/Cloud host
   if ((str.includes('supabase.co') || str.includes('pooler.supabase.com')) && !str.includes('sslmode=')) {
