@@ -162,7 +162,7 @@ const SummaryCard = ({ total, target, summary, meals, weeklyData, dailyTotals }:
         {/* Target dashed line */}
         <div className="absolute top-[30%] left-0 w-full border-t border-dashed border-[var(--border-main)]/30 z-0"></div>
         
-        {days.map((day, i) => {
+        {days.map((day: any, i: number) => {
           const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
           const dayData = (weeklyData || []).find((d: any) => d?.day?.toLowerCase() === dayKeys[i]) || { calories: 0 };
           const isActive = i === todayIndex;

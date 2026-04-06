@@ -103,7 +103,6 @@ const Checkout = () => {
         phone: phoneNumber,
         name: searchParams.get('name') || '',
         couponCode: appliedCoupon?.code,
-        email: email,
         plan: searchParams.get('plan') || 'mensal'
       });
       

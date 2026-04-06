@@ -82,7 +82,7 @@ export const Notifications = () => {
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = getMaputoNow();
-    const diffMs = now.getTime() - date.getTime();
+    const diffMs = now.valueOf() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHrs = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHrs / 24);

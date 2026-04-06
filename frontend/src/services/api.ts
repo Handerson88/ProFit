@@ -220,7 +220,7 @@ export const api = {
   },
 
   payments: {
-    create: (data: { amount: number, method: string, phone: string, name?: string, couponCode?: string }) => fetch(`${API_URL}/payment/initiate`, {
+    create: (data: { amount: number, method: string, phone: string, name?: string, couponCode?: string, email?: string, plan?: string }) => fetch(`${API_URL}/payment/initiate`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data)

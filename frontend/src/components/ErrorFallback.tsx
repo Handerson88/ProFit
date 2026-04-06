@@ -21,7 +21,7 @@ export const ErrorFallback: React.FC<{ error: Error; resetErrorBoundary: () => v
         Tivemos um problema inesperado ao preparar sua experiência. Mas não se preocupe!
       </p>
       
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.MODE === 'development' && (
         <pre className="bg-black/40 p-4 rounded-2xl text-[10px] text-rose-400 text-left mb-10 max-w-sm overflow-auto border border-white/5 font-mono">
             {error.message}
             {error.stack && `\n\nStack Trace:\n${error.stack.slice(0, 200)}...`}

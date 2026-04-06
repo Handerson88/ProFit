@@ -881,6 +881,7 @@ export const WorkoutPlanner = () => {
                         message: langData.PT ? 'Deseja realmente apagar o plano atual e gerar um novo? Todo seu progresso nos 30 dias será perdido. Esta ação é irreversível.' : 'Do you really want to delete the current plan and generate a new one? All your 30-day progress will be lost. This action is irreversible.',
                         type: 'danger',
                         confirmText: langData.PT ? 'Apagar Plano' : 'Delete Plan',
+                        showCancel: true,
                         onConfirm: async () => {
                           try {
                             await api.workouts.reset();
