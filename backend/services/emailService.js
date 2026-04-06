@@ -5,7 +5,7 @@ const dayjs = require('dayjs');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'ProFit <onboarding@resend.dev>';
-const APP_URL = process.env.FRONTEND_URL || 'https://myprofittness.com';
+const APP_URL = process.env.FRONTEND_URL || 'https://app.myprofittness.com';
 const fs = require('fs');
 const path = require('path');
 

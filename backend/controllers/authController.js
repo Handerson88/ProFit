@@ -209,7 +209,7 @@ exports.forgotPassword = async (req, res) => {
     const resetToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     // Link para o frontend
-    const frontUrl = process.env.FRONTEND_URL || 'https://myprofittness.com';
+    const frontUrl = process.env.FRONTEND_URL || 'https://app.myprofittness.com';
     const resetLink = `${frontUrl}/reset-password?token=${resetToken}`;
     
     // Dispara email

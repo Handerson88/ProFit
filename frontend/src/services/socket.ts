@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://api.myprofittness.com';
+const SOCKET_URL = (import.meta.env.VITE_API_URL || 'https://api.myprofittness.com').replace(/\/api$/, '');
 
 class SocketService {
   private socket: Socket | null = null;

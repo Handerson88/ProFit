@@ -1,5 +1,5 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'https://api.myprofittness.com/api';
-export const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://api.myprofittness.com';
+export const SOCKET_URL = (import.meta.env.VITE_API_URL || 'https://api.myprofittness.com').replace(/\/api$/, '');
 
 /**
  * Retorna o caminho completo da imagem.
