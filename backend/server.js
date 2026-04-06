@@ -601,18 +601,14 @@ const initDB = async () => {
   }
 };
 
-console.log('Initializing database...');
-initDB().then(() => {
-  console.log('Database initialization complete.');
-  setupWebPush();
-  console.log('Web Push setup called');
-  
-  const cronService = require('./services/cronService');
-  cronService.initCronJobs(io);
-  console.log('Cron jobs initialized');
-}).catch(err => {
-  console.error('CRITICAL: Database initialization failed:', err);
-});
+// Boot Alternativo (Assíncrono)
+initDB()
+  .then(() => console.log('[DB] Inicialização completa'))
+  .catch(e => console.error('[DB] Erro na inicialização, mas o servidor continuará rodando:', e.message));
+
+setupWebPush();
+const cronService = require('./services/cronService');
+cronService.initCronJobs(io);
 
 // Health Check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));

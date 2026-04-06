@@ -188,8 +188,11 @@ exports.login = async (req, res) => {
         } 
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Erro ao conectar com servidor' });
+    console.error('[Login Error] Motivo:', err.message || err);
+    res.status(500).json({ 
+      message: 'Erro ao conectar com servidor',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };
 
