@@ -601,14 +601,7 @@ const initDB = async () => {
   }
 };
 
-// Boot Alternativo (Assíncrono)
-initDB()
-  .then(() => console.log('[DB] Inicialização completa'))
-  .catch(e => console.error('[DB] Erro na inicialização, mas o servidor continuará rodando:', e.message));
 
-setupWebPush();
-const cronService = require('./services/cronService');
-cronService.initCronJobs(io);
 
 // Health Check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
@@ -719,6 +712,16 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT} with Socket.io enabled`);
+  
+  // Inicialização de serviços após servidor estar pronto
+  initDB()
+    .then(() => {
+      console.log('[DB] Inicialização completa');
+      setupWebPush();
+      const cronService = require('./services/cronService');
+      cronService.initCronJobs(io);
+    })
+    .catch(e => console.error('[DB] Erro na inicialização tardia:', e.message));
 });
 
 // Cron jobs are now initialized in the initDB loop above
