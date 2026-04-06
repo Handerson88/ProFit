@@ -107,7 +107,12 @@ exports.login = async (req, res) => {
   const { password } = req.body;
   const email = req.body.email ? req.body.email.trim().toLowerCase() : '';
   try {
-    const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    let result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (result.rows.length === 0) {
+      // Tentar na tabela admins caso não exista na tabela users
+      result = await db.query('SELECT * FROM admins WHERE email = $1', [email]);
+    }
+
     if (result.rows.length === 0) {
       return res.status(404).json({ 
         message: 'Nenhuma conta encontrada com este e-mail. Deseja criar uma conta?',

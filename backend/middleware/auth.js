@@ -39,11 +39,17 @@ const authenticateToken = (req, res, next) => {
     
     // Ensure we have the latest data from DB (including role, plan, subscription_status, is_early_adopter)
     try {
-      const userResult = await db.query('SELECT role, plan, subscription_status, is_early_adopter FROM users WHERE id = $1', [userId]);
+      let userResult = await db.query('SELECT role, plan, subscription_status, is_early_adopter FROM users WHERE id = $1', [userId]);
+      
+      if (userResult.rows.length === 0) {
+        // Tentar na tabela admins
+        userResult = await db.query('SELECT role FROM admins WHERE id = $1', [userId]);
+      }
+
       if (userResult.rows.length > 0) {
         req.user.role = userResult.rows[0].role;
-        req.user.plan = userResult.rows[0].plan;
-        req.user.subscription_status = userResult.rows[0].subscription_status;
+        req.user.plan = userResult.rows[0].plan || 'pro'; 
+        req.user.subscription_status = userResult.rows[0].subscription_status || 'active';
       } else {
         // Auto-create user for Google Login (Supabase Auth) if not in DB
         if (decoded.email) {

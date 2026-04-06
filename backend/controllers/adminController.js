@@ -22,7 +22,12 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
     try {
         // Search in users table instead of separate admins table
-        const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+        let result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+        if (result.rows.length === 0) {
+          // Tentar na tabela admins caso não exista na tabela users
+          result = await db.query('SELECT * FROM admins WHERE email = $1', [email]);
+        }
+        
         if (result.rows.length === 0) return res.status(404).json({ message: 'Conta de administrador não encontrada' });
  
         const admin = result.rows[0];
