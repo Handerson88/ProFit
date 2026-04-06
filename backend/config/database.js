@@ -7,7 +7,9 @@ const getConnectionString = () => {
   } catch (e) {}
   let str = process.env.DATABASE_URL || process.env.URL_DO_BANCO_DE_DADOS || process.env.URL_BANCO_DE_DADOS;
   if (!str) return null;
-  str = str.trim().replace(/^['"]|['"]$/g, '');
+
+  // Limpeza AGRESSIVA: Remove quebras de linha, espaços, tabs e aspas em qualquer lugar da string
+  str = str.replace(/[\n\r\s'"]/g, '');
   if ((str.includes('supabase.co') || str.includes('pooler.supabase.com')) && !str.includes('sslmode=')) {
     str += (str.includes('?') ? '&' : '?') + 'sslmode=require';
   }
@@ -45,5 +47,6 @@ module.exports = {
       throw err;
     }
   },
-  getPool
+  getPool,
+  getCleanConnString: getConnectionString
 };

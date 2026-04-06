@@ -608,7 +608,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }
 
 // Database Health Check for Production Verification
 app.get('/api/db-check', async (req, res) => {
-  const connStr = process.env.DATABASE_URL || process.env.URL_DO_BANCO_DE_DADOS || process.env.URL_BANCO_DE_DADOS;
+  const connStr = db.getCleanConnString();
   const maskedConn = connStr ? connStr.replace(/:([^:@]+)@/, ':****@') : 'MISSING';
 
   try {
