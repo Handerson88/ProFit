@@ -271,7 +271,13 @@ export const api = {
     }).then(handleResponse),
     getStatus: (id: string) => fetch(`${API_URL}/payment/status/${id}`, {
       headers: getHeaders()
-    }).then(handleResponse)
+    }).then(handleResponse),
+    lojouCheckout: (data: { plan_type: 'monthly' | 'annual'; phone?: string; coupon_code?: string }) =>
+      fetch(`${API_URL}/payment/lojou/checkout`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+      }).then(handleResponse)
   },
 
   coupons: {

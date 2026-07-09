@@ -35,6 +35,7 @@ interface User {
   is_early_adopter?: boolean;
   is_influencer?: boolean;
   created_at?: string;
+  phone?: string;
 }
 
 interface AuthContextType {
