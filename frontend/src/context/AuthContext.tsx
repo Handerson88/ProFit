@@ -47,7 +47,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<User>;
   register: (name: string, email: string, password: string, referralCode?: string, extraData?: any) => Promise<User>;
   logout: () => void;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<User | null>;
   checkAuth: () => Promise<boolean>;
   checkOnboardingStatus: () => boolean;
 }
@@ -148,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('token', data.token);
         setToken(data.token);
 
-        let currentUser = data.user as User | undefined;
+        let currentUser: User | null = data.user ?? null;
         if (!currentUser) {
           currentUser = await refreshUser();
         }

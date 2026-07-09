@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Filter, ArrowRight, Zap, Play, CheckCircle2, Eye, CreditCard, RefreshCw, Activity, Utensils, Calendar, Ruler, Smile } from 'lucide-react';
-
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+import { api } from '../../services/api';
 
 export default function AdminFunnel() {
   const [loading, setLoading] = useState(true);
@@ -15,10 +14,7 @@ export default function AdminFunnel() {
   const fetchFunnelStats = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/admin/funnel-stats`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      const data = await res.json();
+      const data = await api.admin.getFunnelStats();
       setFunnelData(data);
     } catch (err) {
       console.error('Error fetching funnel stats:', err);

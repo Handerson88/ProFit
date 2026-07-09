@@ -79,8 +79,8 @@ const AdminWorkouts: React.FC = () => {
                 api.admin.getWorkoutStats()
             ]);
 
-            setSessions(sessionsRes.data);
-            setTotalPages(sessionsRes.pagination.pages);
+            setSessions(sessionsRes.data ?? []);
+            setTotalPages(sessionsRes.pagination?.pages ?? 1);
             setStats(statsRes);
         } catch (err) {
             console.error('Failed to fetch workout data:', err);

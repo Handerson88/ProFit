@@ -134,11 +134,25 @@ const AdminCommunication: React.FC = () => {
         }
     ];
 
+    // One-time init: subscription check + user list
     useEffect(() => {
-        fetchData();
         checkSubscription();
         fetchUsers();
+    }, []);
+
+    // Fetch scheduled/history data when relevant tab is active
+    useEffect(() => {
+        if (activeSubTab === 'scheduled' || activeSubTab === 'history') {
+            fetchData();
+        }
     }, [mainTab, activeSubTab]);
+
+    // Reset sub-tab when switching to influencers (sub-tabs don't apply there)
+    useEffect(() => {
+        if (mainTab === 'influencers') {
+            setActiveSubTab('manual');
+        }
+    }, [mainTab]);
 
     const fetchUsers = async () => {
         try {
@@ -261,9 +275,13 @@ const AdminCommunication: React.FC = () => {
                 throw new Error(data.message || 'Falha na operação.');
             }
 
-            setStatus({ 
-                type: 'success', 
-                message: scheduledAt ? 'Agendado com sucesso! ✅' : 'Email enviado com sucesso ✅' 
+            setStatus({
+                type: 'success',
+                message: scheduledAt
+                    ? 'Agendado com sucesso! ✅'
+                    : isEmail
+                        ? 'Email enviado com sucesso ✅'
+                        : 'Notificação enviada com sucesso! ✅'
             });
             
             // Clear forms on success if it's a direct send
@@ -385,61 +403,63 @@ const AdminCommunication: React.FC = () => {
     };
 
     return (
-        <div className="max-w-[1400px] mx-auto h-[calc(100vh-110px)] flex flex-col space-y-6 animate-in fade-in duration-500 overflow-hidden">
+        <div className="max-w-[1400px] mx-auto flex flex-col space-y-6 animate-in fade-in duration-500 lg:h-[calc(100vh-110px)] lg:overflow-hidden">
             {/* Previous Header & Tabs logic stays same */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-[32px] font-bold text-[#1A202C] dark:text-white tracking-tight flex items-center gap-3">
+                    <h1 className="text-[22px] md:text-[32px] font-bold text-[#1A202C] dark:text-white tracking-tight flex flex-wrap items-center gap-2">
                         Central de Comunicação
-                        <span className="text-[12px] bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 px-3 py-1 rounded-full border border-green-200 dark:border-green-500/30 font-bold uppercase">Multi-Channel</span>
+                        <span className="text-[11px] md:text-[12px] bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 px-3 py-1 rounded-full border border-green-200 dark:border-green-500/30 font-bold uppercase">Multi-Channel</span>
                     </h1>
-                    <p className="text-[16px] text-[#718096] dark:text-slate-400 mt-1">Gerencie push notifications e e-mails de marketing em um só lugar.</p>
+                    <p className="text-[13px] md:text-[16px] text-[#718096] dark:text-slate-400 mt-1">Gerencie push notifications e e-mails de marketing em um só lugar.</p>
                 </div>
 
-                <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1 rounded-2xl border border-slate-200 dark:border-slate-700/50">
-                    <button 
-                        onClick={() => setMainTab('notifications')}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[14px] font-bold transition-all ${mainTab === 'notifications' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-                    >
-                        <Bell size={18} /> Push Notifications
-                    </button>
-                    <button 
-                        onClick={() => setMainTab('emails')}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[14px] font-bold transition-all ${mainTab === 'emails' ? 'bg-white dark:bg-slate-700 text-[#22c55e] dark:text-[#4ade80] shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-                    >
-                        <Mail size={18} /> E-mail Marketing
-                    </button>
-                    <button 
-                        onClick={() => setMainTab('influencers')}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[14px] font-bold transition-all ${mainTab === 'influencers' ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-                    >
-                        <Star size={18} /> Influenciadores
-                    </button>
-                </div>
-            </div>
-
-            <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800">
-                {[
-                    { id: 'manual', label: 'Novo Envio', icon: Send },
-                    { id: 'scheduled', label: 'Agendamentos', icon: Calendar },
-                    { id: 'history', label: 'Histórico de Envios', icon: History }
-                ].map(tab => (
+                <div className="flex flex-wrap gap-1 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-2xl border border-slate-200 dark:border-slate-700/50">
                     <button
-                        key={tab.id}
-                        onClick={() => setActiveSubTab(tab.id as any)}
-                        className={`pb-4 px-2 flex items-center gap-2 text-[14px] font-semibold transition-all relative ${activeSubTab === tab.id ? 'text-[#1A202C] dark:text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                        onClick={() => setMainTab('notifications')}
+                        className={`flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[13px] sm:text-[14px] font-bold transition-all ${mainTab === 'notifications' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                     >
-                        <tab.icon size={16} />
-                        {tab.label}
-                        {activeSubTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 dark:bg-green-500 rounded-full" />}
+                        <Bell size={16} /> <span className="hidden sm:inline">Push</span> Notificações
                     </button>
-                ))}
+                    <button
+                        onClick={() => setMainTab('emails')}
+                        className={`flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[13px] sm:text-[14px] font-bold transition-all ${mainTab === 'emails' ? 'bg-white dark:bg-slate-700 text-[#22c55e] dark:text-[#4ade80] shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                    >
+                        <Mail size={16} /> E-mail
+                    </button>
+                    <button
+                        onClick={() => setMainTab('influencers')}
+                        className={`flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[13px] sm:text-[14px] font-bold transition-all ${mainTab === 'influencers' ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                    >
+                        <Star size={16} /> Influenciadores
+                    </button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0 overflow-hidden pb-4">
-                <div className="lg:col-span-8 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
+            {mainTab !== 'influencers' && (
+                <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
+                    {[
+                        { id: 'manual', label: 'Novo Envio', icon: Send },
+                        { id: 'scheduled', label: 'Agendamentos', icon: Calendar },
+                        { id: 'history', label: 'Histórico de Envios', icon: History }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveSubTab(tab.id as any)}
+                            className={`pb-4 px-2 flex items-center gap-2 text-[14px] font-semibold transition-all relative whitespace-nowrap ${activeSubTab === tab.id ? 'text-[#1A202C] dark:text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                            <tab.icon size={16} />
+                            {tab.label}
+                            {activeSubTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 dark:bg-green-500 rounded-full" />}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 lg:flex-1 lg:min-h-0 lg:overflow-hidden pb-4">
+                <div className="lg:col-span-8 space-y-6 lg:overflow-y-auto pr-0 lg:pr-2 custom-scrollbar">
                     {status && (
-                        <div className={`p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2 ${status.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
+                        <div className={`p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2 ${status.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
                             {status.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
                             <span className="text-[14px] font-medium">{status.message}</span>
                         </div>
@@ -461,7 +481,7 @@ const AdminCommunication: React.FC = () => {
                     )}
 
                     {activeSubTab === 'manual' && mainTab !== 'influencers' && (
-                        <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] p-8 rounded-[24px] border border-[#E6EAF0] dark:border-slate-700/50 shadow-sm space-y-8">
+                        <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] p-4 md:p-8 rounded-[24px] border border-[#E6EAF0] dark:border-slate-700/50 shadow-sm space-y-8">
                             <form onSubmit={handleAction} className="space-y-6">
                                 {mainTab === 'notifications' ? (
                                     <>
@@ -654,15 +674,17 @@ const AdminCommunication: React.FC = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <button 
-                                        type="button"
-                                        onClick={handleTestPush}
-                                        disabled={sending || (mainTab === 'notifications' && !notifTitle)}
-                                        className="py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-2 border-indigo-100 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 disabled:opacity-50"
-                                    >
-                                        <Smartphone size={20} /> Testar no meu Aparelho
-                                    </button>
-                                    <button disabled={sending} type="submit" className={`flex-1 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${mainTab === 'emails' ? 'bg-green-600 hover:bg-green-700 text-white shadow-green-100' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100'} ${sending ? 'opacity-80' : ''}`}>
+                                    {mainTab === 'notifications' && (
+                                        <button
+                                            type="button"
+                                            onClick={handleTestPush}
+                                            disabled={sending || !notifTitle}
+                                            className="py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-2 border-indigo-100 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 disabled:opacity-50"
+                                        >
+                                            <Smartphone size={20} /> Testar no meu Aparelho
+                                        </button>
+                                    )}
+                                    <button disabled={sending} type="submit" className={`${mainTab === 'notifications' ? '' : 'md:col-span-2'} py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${mainTab === 'emails' ? 'bg-green-600 hover:bg-green-700 text-white shadow-green-100' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100'} ${sending ? 'opacity-80' : ''}`}>
                                         {sending ? (
                                             <div className="flex items-center gap-2">
                                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -678,7 +700,7 @@ const AdminCommunication: React.FC = () => {
                     )}
 
                     {mainTab === 'influencers' && (
-                        <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] p-8 rounded-[24px] border border-[#E6EAF0] dark:border-slate-700/50 shadow-sm space-y-8 animate-in slide-in-from-bottom-4">
+                        <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] p-4 md:p-8 rounded-[24px] border border-[#E6EAF0] dark:border-slate-700/50 shadow-sm space-y-8 animate-in slide-in-from-bottom-4">
                             <div className="space-y-2">
                                 <h1 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
                                     <Star className="text-amber-500" fill="currentColor" size={28} />
@@ -765,7 +787,7 @@ const AdminCommunication: React.FC = () => {
                         </div>
                     )}
 
-                    {activeSubTab === 'scheduled' && (
+                    {activeSubTab === 'scheduled' && mainTab !== 'influencers' && (
                         <div className="space-y-4 animate-in fade-in duration-500">
                             {(!Array.isArray(scheduledComms) || scheduledComms.filter(c => mainTab === 'notifications' ? c.type === 'push' : c.type === 'email').length === 0) ? (
                                 <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] p-12 rounded-[24px] border border-dashed border-slate-200 dark:border-slate-700 text-center">
@@ -798,7 +820,7 @@ const AdminCommunication: React.FC = () => {
                         </div>
                     )}
 
-                    {activeSubTab === 'history' && (
+                    {activeSubTab === 'history' && mainTab !== 'influencers' && (
                         <div className="space-y-4 animate-in fade-in duration-500">
                             {(!Array.isArray(commHistory) || commHistory.filter(c => mainTab === 'notifications' ? c.type === 'push' : c.type === 'email').length === 0) ? (
                                 <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] p-12 rounded-[24px] border border-dashed border-slate-200 dark:border-slate-700 text-center">
@@ -809,13 +831,13 @@ const AdminCommunication: React.FC = () => {
                                 (Array.isArray(commHistory) ? commHistory : []).filter(c => mainTab === 'notifications' ? c.type === 'push' : c.type === 'email').map((item, idx) => (
                                     <div key={idx} className="bg-[var(--bg-card)] dark:bg-[#1E293B] p-5 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between group hover:shadow-md transition-all">
                                         <div className="flex items-center gap-4">
-                                            <div className={`p-2.5 rounded-xl ${item.sub_type === 'scheduled' ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400' : (item.type === 'email' ? 'bg-green-50 text-green-600' : 'bg-indigo-50 text-indigo-600')}`}>
+                                            <div className={`p-2.5 rounded-xl ${item.sub_type === 'scheduled' ? 'bg-amber-500/10 text-amber-400' : (item.type === 'email' ? 'bg-green-500/10 text-green-400' : 'bg-indigo-500/10 text-indigo-400')}`}>
                                                 {item.sub_type === 'scheduled' ? <Calendar size={18} /> : (item.type === 'email' ? <Mail size={18} /> : <Bell size={18} />)}
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-[15px] font-bold text-slate-800 dark:text-white line-clamp-1">{item.title || item.sub_type || 'Envio'}</span>
-                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${item.status === 'sent' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${item.status === 'sent' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
                                                         {item.status}
                                                     </span>
                                                 </div>
@@ -836,9 +858,9 @@ const AdminCommunication: React.FC = () => {
                 </div>
 
                 {/* Sidebar - Templates and Preview */}
-                <div className="lg:col-span-4 flex flex-col h-full gap-6 min-h-0">
-                    {/* Templates Sidebar */}
-                    <div className="bg-white dark:bg-[#1E293B] p-6 rounded-[24px] border border-[#E6EAF0] dark:border-slate-700/50 shadow-sm flex flex-col min-h-0 max-h-[50%]">
+                <div className="hidden lg:flex lg:col-span-4 flex-col h-full gap-6 min-h-0">
+                    {/* Templates Sidebar — hidden on influencers tab */}
+                    {mainTab !== 'influencers' && <div className="bg-white dark:bg-[#1E293B] p-6 rounded-[24px] border border-[#E6EAF0] dark:border-slate-700/50 shadow-sm flex flex-col min-h-0 max-h-[50%]">
                         <div className="flex items-center gap-3 mb-6 flex-shrink-0">
                             <div className="p-2 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-xl">
                                 <Layout size={20} />
@@ -867,10 +889,10 @@ const AdminCommunication: React.FC = () => {
                                 </button>
                             ))}
                         </div>
-                    </div>
+                    </div>}
 
-                    {/* Live Mobile Preview */}
-                    <div className="bg-slate-900 rounded-[40px] p-3 shadow-2xl flex-1 max-w-[240px] mx-auto border-[6px] border-slate-800 relative overflow-hidden hidden md:flex flex-col min-h-0">
+                    {/* Live Mobile Preview — only for push and email tabs */}
+                    {mainTab !== 'influencers' && <div className="bg-slate-900 rounded-[40px] p-3 shadow-2xl flex-1 max-w-[240px] mx-auto border-[6px] border-slate-800 relative overflow-hidden hidden md:flex flex-col min-h-0">
                         {/* Notch */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-5 bg-slate-800 rounded-b-2xl z-20"></div>
                         
@@ -930,8 +952,8 @@ const AdminCommunication: React.FC = () => {
                                 )
                              )}
                         </div>
-                    </div>
-                    <p className="text-center text-[11px] text-slate-400 font-bold uppercase tracking-wider">Preview Real-time</p>
+                    </div>}
+                    {mainTab !== 'influencers' && <p className="text-center text-[11px] text-slate-400 font-bold uppercase tracking-wider">Preview Real-time</p>}
                 </div>
             </div>
         </div>

@@ -136,9 +136,9 @@ export const AdminSupport = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-6 h-[75vh]">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:h-[75vh]">
                 {/* Conversations List */}
-                <div className="col-span-4 bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-[#334155] overflow-hidden flex flex-col">
+                <div className={`md:col-span-4 bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-[#334155] overflow-hidden flex flex-col h-[40vh] md:h-auto ${selectedConv ? 'hidden md:flex' : 'flex'}`}>
                     <div className="p-4 border-b border-slate-200 dark:border-[#334155] bg-slate-50 dark:bg-slate-800/50 space-y-4">
                         <h3 className="font-bold text-sm text-slate-700 dark:text-slate-300 uppercase tracking-wider">Conversas Recentes</h3>
                         <div className="relative">
@@ -177,11 +177,17 @@ export const AdminSupport = () => {
                 </div>
 
                 {/* Chat Details */}
-                <div className="col-span-8 bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-[#334155] overflow-hidden flex flex-col">
+                <div className={`md:col-span-8 bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-[#334155] overflow-hidden flex flex-col h-[65vh] md:h-auto ${selectedConv ? 'flex' : 'hidden md:flex'}`}>
                     {selectedConv ? (
                         <>
                             <div className="p-5 border-b border-slate-200 dark:border-[#334155] flex justify-between items-center bg-[var(--bg-card)] dark:bg-[#1E293B] z-10">
                                 <div className="flex items-center gap-4">
+                                    <button
+                                        onClick={() => setSelectedConv(null)}
+                                        className="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
+                                    >
+                                        <ChevronRight size={18} className="rotate-180" />
+                                    </button>
                                     <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-bold">
                                         {selectedConv.user_name[0]}
                                     </div>
@@ -196,7 +202,7 @@ export const AdminSupport = () => {
                                 </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/50 dark:bg-[#0F172A]/30">
+                            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 bg-slate-50/50 dark:bg-[#0F172A]/30">
                                 {messages.map((msg, i) => (
                                     <div key={msg.id || i} className={`flex ${msg.sender === 'user' ? 'justify-start' : 'justify-end'}`}>
                                         <div className={`max-w-[70%] p-4 rounded-2xl shadow-sm ${

@@ -406,7 +406,7 @@ const AdminDishes: React.FC = () => {
               </button>
             </div>
             
-            <div className="p-8">
+            <div className="p-4 md:p-8">
               <div className="mb-6">
                 <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full uppercase tracking-wider">
                   Escaneamento IA
@@ -417,7 +417,7 @@ const AdminDishes: React.FC = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
                 <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-2xl text-center border border-orange-100 dark:border-orange-800/30">
                   <p className="text-[10px] uppercase font-bold text-orange-600/70 dark:text-orange-400/70">Kcal</p>
                   <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{selectedDish.calories}</p>

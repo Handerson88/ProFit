@@ -243,7 +243,7 @@ const AdminCoupons = () => {
               exit={{ opacity: 0, scale: 0.95, y: 16 }}
               className="relative w-full max-w-lg bg-[#1E293B] border border-[#334155] rounded-3xl shadow-2xl overflow-hidden"
             >
-              <div className="p-8">
+              <div className="p-4 md:p-8">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-[20px] font-bold text-white">Novo Cupom Promocional</h2>
                   <button onClick={() => setShowCreateModal(false)} className="text-slate-500 hover:text-white transition-colors">
@@ -252,7 +252,7 @@ const AdminCoupons = () => {
                 </div>
 
                 <form onSubmit={handleCreate} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Código</label>
                       <input required type="text" className={`${inputCls} uppercase tracking-widest font-bold`}
