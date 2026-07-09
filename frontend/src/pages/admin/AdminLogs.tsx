@@ -22,7 +22,7 @@ const AdminLogs: React.FC = () => {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
-                setLogs(data.adminLogs);
+                setLogs(Array.isArray(data) ? data : (data.adminLogs ?? data.logs ?? []));
             } catch (err) {
                 console.error('Error fetching logs:', err);
             } finally {
@@ -33,10 +33,10 @@ const AdminLogs: React.FC = () => {
     }, []);
 
     const getActionColor = (action: string) => {
-        if (action.includes('excluído') || action.includes('removido')) return 'text-rose-600 bg-rose-50';
-        if (action.includes('editado') || action.includes('atualizado')) return 'text-amber-600 bg-amber-50';
-        if (action.includes('Login')) return 'text-emerald-600 bg-emerald-50';
-        return 'text-blue-600 bg-blue-50';
+        if (action.includes('excluído') || action.includes('removido')) return 'text-rose-400 bg-rose-500/10';
+        if (action.includes('editado') || action.includes('atualizado')) return 'text-amber-400 bg-amber-500/10';
+        if (action.includes('Login')) return 'text-emerald-400 bg-emerald-500/10';
+        return 'text-blue-400 bg-blue-500/10';
     };
 
     return (

@@ -15,7 +15,9 @@ import {
   Ticket,
   Brain,
   BarChart2,
-  Share2
+  Share2,
+  Menu,
+  X
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { AdminProfileModal } from './AdminProfileModal';
@@ -29,10 +31,11 @@ const AdminLayout: React.FC = () => {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     useEffect(() => {
         fetchUserProfile();
-        
+
         // Close dropdown when clicking outside
         const handleClickOutside = (e: MouseEvent) => {
             if (!(e.target as HTMLElement).closest('.profile-container')) {
@@ -42,6 +45,11 @@ const AdminLayout: React.FC = () => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Close mobile sidebar on route change
+    useEffect(() => {
+        setIsMobileOpen(false);
+    }, [location.pathname]);
 
     const fetchUserProfile = async () => {
         try {
@@ -100,15 +108,39 @@ const AdminLayout: React.FC = () => {
 
     return (
         <div className="flex h-screen min-w-full bg-[#F7F9FC] dark:bg-[#0F172A] overflow-hidden font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
+            {/* Mobile overlay backdrop */}
+            {isMobileOpen && (
+                <div
+                    className="fixed inset-0 z-30 bg-slate-900/60 lg:hidden"
+                    onClick={() => setIsMobileOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
-            <aside className="w-[260px] bg-[var(--bg-card)] dark:bg-[#1E293B] border-r border-[#E6EAF0] dark:border-[#334155] flex flex-col h-full z-20 flex-shrink-0 transition-colors duration-300 shadow-sm">
-                <div className="p-6 border-b border-[#E6EAF0] dark:border-[#334155] flex items-center gap-2">
-                    <div className="w-7 h-7 bg-[#2D3748] dark:bg-[#38A169] rounded-md flex items-center justify-center font-bold text-white text-sm">
-                        P
+            <aside className={`
+                fixed lg:relative inset-y-0 left-0 z-40 h-screen lg:h-full
+                w-[260px] bg-[var(--bg-card)] dark:bg-[#1E293B]
+                border-r border-[#E6EAF0] dark:border-[#334155]
+                flex flex-col flex-shrink-0
+                transform transition-transform duration-300 ease-in-out
+                ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
+                shadow-sm
+            `}>
+                <div className="p-6 border-b border-[#E6EAF0] dark:border-[#334155] flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 bg-[#2D3748] dark:bg-[#38A169] rounded-md flex items-center justify-center font-bold text-white text-sm">
+                            P
+                        </div>
+                        <span className="text-[18px] font-bold tracking-tight text-[#1A202C] dark:text-white">Admin <span className="text-[#38A169]">ProFit</span></span>
                     </div>
-                    <span className="text-[18px] font-bold tracking-tight text-[#1A202C] dark:text-white">Administrador <span className="text-[#38A169]">ProFit</span></span>
+                    <button
+                        onClick={() => setIsMobileOpen(false)}
+                        className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <X size={18} />
+                    </button>
                 </div>
-                
+
                 <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
                     {navItems.map((item) => (
                         <NavLink
@@ -117,8 +149,8 @@ const AdminLayout: React.FC = () => {
                             end={item.path === '/admin'}
                             className={({ isActive }) => `
                                 flex items-center gap-3 px-[12px] py-[12px] rounded-[10px] transition-all duration-150 text-[14px]
-                                ${isActive 
-                                    ? 'bg-[#EDF2F7] dark:bg-[#334155] text-[#2D3748] dark:text-white font-semibold' 
+                                ${isActive
+                                    ? 'bg-[#EDF2F7] dark:bg-[#334155] text-[#2D3748] dark:text-white font-semibold'
                                     : 'text-[#718096] dark:text-slate-400 hover:bg-[#F7F9FC] dark:hover:bg-[#1E293B] hover:text-[#2D3748] dark:hover:text-white'}
                             `}
                         >
@@ -133,7 +165,7 @@ const AdminLayout: React.FC = () => {
                 </nav>
 
                 <div className="p-4 border-t border-[#E6EAF0] dark:border-[#334155]">
-                    <button 
+                    <button
                         onClick={handleLogout}
                         className="flex items-center gap-3 px-[12px] py-[12px] w-full rounded-[10px] text-[#718096] dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-600 transition-colors text-[14px]"
                     >
@@ -146,18 +178,28 @@ const AdminLayout: React.FC = () => {
             {/* Main Area */}
             <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#F7F9FC] dark:bg-[#0F172A] transition-colors duration-300">
                 {/* Header Superior */}
-                <header className="h-[70px] bg-[var(--bg-card)] dark:bg-[#1E293B] border-b border-[#E6EAF0] dark:border-[#334155] flex items-center justify-between px-8 z-30 flex-shrink-0 transition-all duration-300 shadow-sm relative">
-                    <div className="flex flex-col">
-                        <h2 className="text-[12px] font-medium text-[#A0AEC0] dark:text-slate-500 uppercase tracking-wider">{getBreadcrumb()}</h2>
-                        {user && (
-                            <p className="text-[16px] font-bold text-[#1A202C] dark:text-white mt-0.5 animate-in fade-in slide-in-from-left-2 duration-500">
-                                {getGreeting()}, <span className="text-[#38A169]">{user.name.split(' ')[0]} 👋</span>
-                            </p>
-                        )}
+                <header className="h-[70px] bg-[var(--bg-card)] dark:bg-[#1E293B] border-b border-[#E6EAF0] dark:border-[#334155] flex items-center justify-between px-4 md:px-8 z-30 flex-shrink-0 transition-all duration-300 shadow-sm relative">
+                    <div className="flex items-center gap-3">
+                        {/* Hamburger (mobile only) */}
+                        <button
+                            onClick={() => setIsMobileOpen(true)}
+                            className="lg:hidden p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                        >
+                            <Menu size={20} />
+                        </button>
+
+                        <div className="flex flex-col">
+                            <h2 className="text-[12px] font-medium text-[#A0AEC0] dark:text-slate-500 uppercase tracking-wider hidden sm:block">{getBreadcrumb()}</h2>
+                            {user && (
+                                <p className="text-[15px] font-bold text-[#1A202C] dark:text-white animate-in fade-in slide-in-from-left-2 duration-500">
+                                    {getGreeting()}, <span className="text-[#38A169]">{user.name.split(' ')[0]} 👋</span>
+                                </p>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
-                        <div className="h-8 w-[1px] bg-[#334155]" />
+                    <div className="flex items-center gap-3 md:gap-6">
+                        <div className="hidden md:block h-8 w-[1px] bg-[#334155]" />
 
                         {/* Profile Section */}
                         <div className="profile-container relative">
@@ -221,7 +263,7 @@ const AdminLayout: React.FC = () => {
                 </header>
                 
                 {/* Área de Conteúdo Principal */}
-                <main className="flex-1 overflow-y-auto p-[30px] w-full bg-[#F7F9FC] dark:bg-[#0F172A] transition-colors duration-300">
+                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-[30px] w-full bg-[#F7F9FC] dark:bg-[#0F172A] transition-colors duration-300">
                     <div className="max-w-[1400px] mx-auto w-full">
                         <Outlet />
                     </div>

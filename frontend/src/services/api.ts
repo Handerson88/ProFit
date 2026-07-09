@@ -694,7 +694,65 @@ export const api = {
 
     getInfluencerStats: () => fetch(`${API_URL}/admin/coupons/influencer-stats`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    }).then(handleResponse)
+    }).then(handleResponse),
+
+    getAIConfig: () => fetch(`${API_URL}/admin/ai-config`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    updateAIConfig: (data: any) => fetch(`${API_URL}/admin/ai-config`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    }).then(handleResponse),
+
+    getAILogs: () => fetch(`${API_URL}/admin/ai-config/logs`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    getAITokenStats: () => fetch(`${API_URL}/admin/ai-config/token-stats`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    getSocialRanking: () => fetch(`${API_URL}/admin/social/ranking`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    getSocialSharing: () => fetch(`${API_URL}/admin/social/sharing`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    getSocialWeightHistory: () => fetch(`${API_URL}/admin/social/weight-history`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    getSocialFoodStats: () => fetch(`${API_URL}/admin/social/food-stats`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    getSocialWorkoutStats: () => fetch(`${API_URL}/admin/social/workout-stats`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    getSocialWidgetStats: () => fetch(`${API_URL}/admin/social/widget-stats`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    getAnalyticsSeries: (period: string) => fetch(`${API_URL}/admin/analytics?period=${period}`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    getAnalyticsScreens: () => fetch(`${API_URL}/admin/analytics/screens`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    getAnalyticsFeatures: () => fetch(`${API_URL}/admin/analytics/features`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    getFunnelStats: () => fetch(`${API_URL}/admin/funnel-stats`, {
+      headers: getHeaders()
+    }).then(handleResponse),
   },
   ai: {
     getConversations: () => fetch(`${API_URL}/ai/conversations`, {

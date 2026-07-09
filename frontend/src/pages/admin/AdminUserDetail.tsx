@@ -74,7 +74,7 @@ const AdminUserDetail: React.FC = () => {
                 
                 {/* Profile Card */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[24px] border border-[#E6EAF0] dark:border-[#334155] p-8 shadow-sm transition-colors duration-300">
+                    <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[24px] border border-[#E6EAF0] dark:border-[#334155] p-4 md:p-8 shadow-sm transition-colors duration-300">
                         <div className="flex flex-col items-center text-center">
                             <div className="w-24 h-24 rounded-full bg-slate-50 dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-md flex items-center justify-center text-3xl font-black text-[#2D3748] dark:text-white mb-4 overflow-hidden ring-4 ring-[#F7FAFC] dark:ring-slate-800/10">
                                 {user.name?.[0]?.toUpperCase() || 'U'}
@@ -161,7 +161,7 @@ const AdminUserDetail: React.FC = () => {
                     </div>
 
                     {/* Activity History */}
-                    <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[24px] border border-[#E6EAF0] dark:border-[#334155] shadow-sm overflow-hidden flex flex-col h-full min-h-[500px] transition-colors duration-300">
+                    <div className="bg-[var(--bg-card)] dark:bg-[#1E293B] rounded-[24px] border border-[#E6EAF0] dark:border-[#334155] shadow-sm overflow-hidden flex flex-col h-full min-h-[300px] md:min-h-[500px] transition-colors duration-300">
                         <div className="p-6 border-b border-[#F7FAFC] dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/30 transition-colors">
                             <h3 className="text-[16px] font-bold text-[#2D3748] dark:text-white transition-colors">Histórico de Atividade Recente</h3>
                             <Award className="text-[#A0AEC0] dark:text-slate-500" size={20} />

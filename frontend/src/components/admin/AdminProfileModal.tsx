@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Camera, Lock, User, Mail, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { api } from '../../services/api';
 
 interface AdminProfileModalProps {
   isOpen: boolean;
@@ -9,8 +10,6 @@ interface AdminProfileModalProps {
   user: any;
   onUpdateSuccess?: () => void;
 }
-
-const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const AdminProfileModal: React.FC<AdminProfileModalProps> = ({ isOpen, onClose, user, onUpdateSuccess }) => {
   const [name, setName] = useState(user?.name || '');
@@ -45,21 +44,9 @@ export const AdminProfileModal: React.FC<AdminProfileModalProps> = ({ isOpen, on
     reader.readAsDataURL(file);
 
     setIsPhotoLoading(true);
-    const formData = new FormData();
-    formData.append('photo', file);
 
     try {
-      const res = await fetch(`${API_URL}/user/photo-upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Erro ao enviar foto');
-      
+      await api.user.uploadProfilePhoto(file);
       toast.success('Foto de perfil atualizada!');
       if (onUpdateSuccess) onUpdateSuccess();
     } catch (err: any) {
@@ -90,21 +77,7 @@ export const AdminProfileModal: React.FC<AdminProfileModalProps> = ({ isOpen, on
 
     setIsSaving(true);
     try {
-      const res = await fetch(`${API_URL}/user/update`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          name: name.trim(),
-          ...(password && { password })
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Erro ao salvar perfil');
-
+      await api.user.update({ name: name.trim(), ...(password && { password }) });
       toast.success('Perfil atualizado com sucesso!');
       if (onUpdateSuccess) onUpdateSuccess();
       onClose();

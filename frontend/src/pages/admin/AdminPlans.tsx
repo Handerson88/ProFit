@@ -22,7 +22,7 @@ const AdminPlans: React.FC = () => {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
-                setPlans(data);
+                setPlans(Array.isArray(data) ? data : []);
             } catch (err) {
                 console.error('Error fetching plans:', err);
             } finally {

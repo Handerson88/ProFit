@@ -289,40 +289,40 @@ const AdminUsers: React.FC = () => {
                     <p className="text-[14px] text-[#718096] dark:text-slate-400 mt-0.5 transition-colors">Visualize e gerencie as contas e limites dos usuários.</p>
                 </div>
                 
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <div className="relative flex-1 md:w-[280px]">
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <div className="relative flex-1 min-w-[160px]">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A0AEC0] dark:text-slate-500" size={16} />
-                        <input 
-                            type="text" 
-                            placeholder="Buscar..." 
+                        <input
+                            type="text"
+                            placeholder="Buscar..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-[var(--bg-card)] dark:bg-[#1E293B] border border-[#E6EAF0] dark:border-[#334155] rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#38A169]/10 transition-all text-[14px] dark:text-white"
                         />
                     </div>
-                    <button 
+                    <button
                         onClick={() => {
                             setInviteForm({ name: '', email: '', limit: 3, type: 'normal' });
                             setInviteSuccess(null);
                             setIsInviteModalOpen(true);
                         }}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#38A169] text-white rounded-[10px] text-[14px] font-semibold hover:bg-[#2F855A] transition-colors shadow-sm"
+                        className="flex items-center gap-2 px-3 py-2 bg-[#38A169] text-white rounded-[10px] text-[14px] font-semibold hover:bg-[#2F855A] transition-colors shadow-sm whitespace-nowrap"
                     >
                         <UserPlus size={18} />
-                        <span>Convidar</span>
+                        <span className="hidden sm:inline">Convidar</span>
                     </button>
-                    <button 
+                    <button
                         onClick={handleExport}
                         disabled={isExporting}
-                        className={`flex items-center gap-2 px-4 py-2 ${isExporting ? 'bg-slate-400' : 'bg-[#1A202C] hover:bg-black'} text-white rounded-[10px] text-[14px] font-semibold transition-all shadow-sm`}
+                        className={`flex items-center gap-2 px-3 py-2 ${isExporting ? 'bg-slate-400' : 'bg-[#1A202C] hover:bg-black'} text-white rounded-[10px] text-[14px] font-semibold transition-all shadow-sm whitespace-nowrap`}
                         title="Exportar contatos para Excel"
                     >
                         <FileDown size={18} className={isExporting ? 'animate-bounce' : ''} />
-                        <span>{isExporting ? 'Exportando...' : 'Exportar Contatos'}</span>
+                        <span className="hidden sm:inline">{isExporting ? 'Exportando...' : 'Exportar'}</span>
                     </button>
                     <div className="relative">
                         <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A0AEC0] dark:text-slate-500" size={16} />
-                        <select 
+                        <select
                             value={countryFilter}
                             onChange={(e) => setCountryFilter(e.target.value)}
                             className="pl-10 pr-8 py-2 bg-[var(--bg-card)] dark:bg-[#1E293B] border border-[#E6EAF0] dark:border-[#334155] rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#38A169]/10 transition-all text-[14px] dark:text-white appearance-none cursor-pointer"
@@ -335,7 +335,7 @@ const AdminUsers: React.FC = () => {
                     </div>
                     <div className="relative">
                         <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A0AEC0] dark:text-slate-500" size={16} />
-                        <select 
+                        <select
                             value={subscriptionFilter}
                             onChange={(e) => setSubscriptionFilter(e.target.value)}
                             className="pl-10 pr-8 py-2 bg-[var(--bg-card)] dark:bg-[#1E293B] border border-[#E6EAF0] dark:border-[#334155] rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#38A169]/10 transition-all text-[14px] dark:text-white appearance-none cursor-pointer"
@@ -352,7 +352,7 @@ const AdminUsers: React.FC = () => {
             <div className="flex border-b border-[#E6EAF0] dark:border-[#334155] mb-2">
                 <button 
                     onClick={() => setActiveTab('users')}
-                    className={`px-6 py-3 text-[14px] font-bold transition-all border-b-2 ${
+                    className={`px-3 sm:px-6 py-3 text-[13px] sm:text-[14px] font-bold transition-all border-b-2 ${
                         activeTab === 'users' 
                             ? 'border-[#38A169] text-[#2D3748] dark:text-white' 
                             : 'border-transparent text-[#718096] hover:text-[#2D3748] dark:hover:text-slate-200'
@@ -368,7 +368,7 @@ const AdminUsers: React.FC = () => {
                 </button>
                 <button 
                     onClick={() => setActiveTab('admins')}
-                    className={`px-6 py-3 text-[14px] font-bold transition-all border-b-2 ${
+                    className={`px-3 sm:px-6 py-3 text-[13px] sm:text-[14px] font-bold transition-all border-b-2 ${
                         activeTab === 'admins' 
                             ? 'border-[#38A169] text-[#2D3748] dark:text-white' 
                             : 'border-transparent text-[#718096] hover:text-[#2D3748] dark:hover:text-slate-200'
@@ -384,7 +384,7 @@ const AdminUsers: React.FC = () => {
                 </button>
                 <button 
                     onClick={() => setActiveTab('influencers')}
-                    className={`px-6 py-3 text-[14px] font-bold transition-all border-b-2 ${
+                    className={`px-3 sm:px-6 py-3 text-[13px] sm:text-[14px] font-bold transition-all border-b-2 ${
                         activeTab === 'influencers' 
                             ? 'border-amber-500 text-[#2D3748] dark:text-white' 
                             : 'border-transparent text-[#718096] hover:text-[#2D3748] dark:hover:text-slate-200'
@@ -506,7 +506,7 @@ const AdminUsers: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center justify-end gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                             <button 
                                                 onClick={() => handleSendBilling(user.id)}
                                                 disabled={sendingBillingId === user.id}
