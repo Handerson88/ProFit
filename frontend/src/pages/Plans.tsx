@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Crown, Check, Zap, Clock,
-  Brain, Dumbbell, Flame, BarChart2, Bell, Star, Lock
+  Brain, Dumbbell, Flame, BarChart2, Bell, Star, Lock, Tag, Loader2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -53,6 +53,10 @@ export const Plans = () => {
   const [daysLeft,       setDaysLeft]       = useState(0);
   const [isTrialActive,  setIsTrialActive]  = useState(false);
   const [isPro,          setIsPro]          = useState(false);
+  const [loading,        setLoading]        = useState(false);
+  const [error,          setError]          = useState<string | null>(null);
+  const [couponCode,     setCouponCode]     = useState('');
+  const [showCoupon,     setShowCoupon]     = useState(false);
 
   useEffect(() => {
     if (user?.id) api.user.updateFunnelStep('PLAN_VIEWED').catch(() => {});
@@ -80,16 +84,26 @@ export const Plans = () => {
     });
   }, [user?.id]);
 
-  const selectedPlan = PLANS.find(p => p.id === selected)!;
+  const selectedPlan  = PLANS.find(p => p.id === selected)!;
   const trialBarWidth = Math.min(100, (daysUsed / FREE_TRIAL_DAYS) * 100);
 
-  const handlePay = () => {
-    const params = new URLSearchParams({
-      email: user?.email || '',
-      name:  user?.name  || '',
-      plan:  selected,
-    });
-    navigate(`/checkout?${params.toString()}`);
+  const handlePay = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const body: { plan_type: 'monthly' | 'annual'; phone?: string; coupon_code?: string } = {
+        plan_type: selected,
+      };
+      if (user?.phone) body.phone = user.phone;
+      if (couponCode.trim()) body.coupon_code = couponCode.trim();
+
+      const result = await api.payments.lojouCheckout(body);
+      window.location.href = result.checkout_url;
+    } catch (err: any) {
+      setError(err?.message || 'Erro ao iniciar pagamento. Tenta novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -239,10 +253,40 @@ export const Plans = () => {
       {/* ── Botão Pagar ── */}
       {!isPro && (
         <div className="fixed bottom-0 left-0 right-0 z-40">
-          <div className="max-w-md mx-auto px-5 pb-6 pt-3 bg-gradient-to-t from-[#0A0F14] via-[#0A0F14]/95 to-transparent">
+          <div className="max-w-md mx-auto px-5 pb-6 pt-4 bg-gradient-to-t from-[#0A0F14] via-[#0A0F14]/97 to-transparent space-y-3">
 
-            {/* Resumo do plano selecionado */}
-            <div className="flex items-center justify-between px-1 mb-3">
+            {/* Coupon toggle */}
+            <div>
+              {!showCoupon ? (
+                <button
+                  onClick={() => setShowCoupon(true)}
+                  className="flex items-center gap-1.5 text-[12px] text-slate-500 hover:text-[#22C55E] transition-colors"
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  Tenho um código de desconto
+                </button>
+              ) : (
+                <div className="relative">
+                  <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="Código de desconto (opcional)"
+                    className="w-full bg-white/[0.06] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-[13px] text-white placeholder:text-slate-600 outline-none focus:border-[#22C55E]/50 focus:ring-1 focus:ring-[#22C55E]/20 transition-all"
+                    autoFocus
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Error message */}
+            {error && (
+              <p className="text-[12px] text-red-400 font-medium px-1">{error}</p>
+            )}
+
+            {/* Plan summary */}
+            <div className="flex items-center justify-between px-1">
               <span className="text-[13px] text-slate-400">
                 Plano <strong className="text-white">{selectedPlan.label}</strong>
               </span>
@@ -253,13 +297,17 @@ export const Plans = () => {
 
             <button
               onClick={handlePay}
-              className="btn-primary shadow-xl shadow-[#22C55E]/20"
+              disabled={loading}
+              className="btn-primary shadow-xl shadow-[#22C55E]/20 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Crown className="w-5 h-5" />
-              Pagar Agora
+              {loading
+                ? <Loader2 className="w-5 h-5 animate-spin" />
+                : <Crown className="w-5 h-5" />
+              }
+              {loading ? 'A processar...' : 'Pagar Agora'}
             </button>
 
-            <p className="text-center text-[11px] text-slate-600 mt-2">
+            <p className="text-center text-[11px] text-slate-600">
               Pagamento via M-Pesa ou e-Mola · Acesso imediato após confirmação
             </p>
           </div>
