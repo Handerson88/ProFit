@@ -7,7 +7,9 @@
       "Bash(xargs grep -l \"workout\" -i)",
       "Bash(node -e \"const db=require\\('./config/database'\\); db.query\\('SELECT column_name FROM information_schema.columns WHERE table_name=\\\\'users\\\\' ORDER BY ordinal_position'\\).then\\(r=>{console.log\\(r.rows.map\\(x=>x.column_name\\).join\\(', '\\)\\); process.exit\\(\\)}\\).catch\\(e=>{console.error\\(e.message\\); process.exit\\(1\\)}\\)\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\LENOVO\\\\Music\\\\ProFit\\\\frontend\\\\src\\\\pages\\\\admin\" -File -Recurse)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\LENOVO\\\\Music\\\\ProFit\\\\backend\\\\routes\" -File)",
+      "Bash(Select-Object Name)"
     ],
     "additionalDirectories": [
       "C:\\Users\\LENOVO\\Music\\ProFit\\backend\\middleware",
