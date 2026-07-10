@@ -118,12 +118,11 @@ export const FoodScanner = () => {
       trackingService.logEvent('scan_success', { type: 'camera', food: foodData.name }).catch(console.error);
     } catch (err: any) {
       console.error("Scan failed", err);
-      if (err.response?.status === 422) {
-        setQualityError({
-          message: err.response.data.message,
-          tips: err.response.data.tips
-        });
-      } else if (err.response?.status === 403) {
+      const status = err.status ?? err.response?.status;
+      if (status === 422) {
+        const d = err.response?.data || err;
+        setQualityError({ message: d.message, tips: d.tips || [] });
+      } else if (status === 403) {
         setLimitReached(true);
       } else {
         trackingService.logEvent('scan_failed', { type: 'camera', error: err.message }).catch(console.error);
@@ -178,12 +177,11 @@ export const FoodScanner = () => {
       });
     } catch (err: any) {
       console.error("Upload failed", err);
-      if (err.response?.status === 422) {
-        setQualityError({
-          message: err.response.data.message,
-          tips: err.response.data.tips
-        });
-      } else if (err.response?.status === 403) {
+      const status = err.status ?? err.response?.status;
+      if (status === 422) {
+        const d = err.response?.data || err;
+        setQualityError({ message: d.message, tips: d.tips || [] });
+      } else if (status === 403) {
         setLimitReached(true);
       } else {
         setConfirmOptions({

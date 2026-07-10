@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 
 export const API_URL = 'https://profit.areauflashbrasiltv.com/api';
 export const SOCKET_URL = (import.meta.env.VITE_API_URL || 'https://profit.areauflashbrasiltv.com/').replace(/\/api$/, '');
@@ -73,17 +73,7 @@ const getHeaders = (extraHeaders: Record<string, string> = {}) => {
   return headers;
 };
 
-const safeFetch = async (input: RequestInfo, init?: RequestInit) => {
-  try {
-    const response = await fetch(input, init);
-    return await handleResponse(response);
-  } catch (error: any) {
-    if (error instanceof TypeError || error?.message?.includes('Failed to fetch')) {
-      throw { status: null, message: error.message || 'Erro de rede. Verifique sua conexão ou CORS.' };
-    }
-    throw error;
-  }
-};
+
 
 const handleResponse = async (res: Response) => {
   let data;
@@ -97,9 +87,7 @@ const handleResponse = async (res: Response) => {
     const isPublicRoute = ['/login', '/register', '/onboarding', '/quiz', '/checkout', '/forgot-password', '/reset-password', '/auth/invite', '/activate', '/accept-invite', '/register-password'].some(path => window.location.pathname.startsWith(path));
     
     // Redirect to login if unauthorized or if user/profile is not found
-    const isPaywallError = res.status === 403 && data.code === 'PAYWALL_ACTIVE';
-    
-    if ((res.status === 401 || (res.status === 403 && !isPaywallError) || (res.status === 404 && res.url.includes('/user/profile'))) && !isPublicRoute) {
+    if ((res.status === 401 || (res.status === 404 && res.url.includes('/user/profile'))) && !isPublicRoute) {
       console.warn(`Auth session invalid (Status ${res.status}). Redirecting to login...`);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -419,10 +407,12 @@ export const api = {
         body: JSON.stringify(data)
       }).then(handleResponse),
 
-    removeDevice: () => fetch(`${API_URL}/notifications/device`, {
-      method: 'DELETE',
-      headers: getHeaders()
-    }).then(handleResponse),
+    removeDevice: (payload: { device_id?: string; endpoint?: string; subscription?: any }) =>
+      fetch(`${API_URL}/notifications/device`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(payload)
+      }).then(handleResponse),
   },
   workouts: {
     generate: (data: any) => {

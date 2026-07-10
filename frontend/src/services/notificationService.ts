@@ -115,11 +115,15 @@ class NotificationService {
   async unsubscribe(): Promise<void> {
     try {
       const reg = await navigator.serviceWorker.getRegistration('/sw.js');
+      let endpoint: string | undefined;
       if (reg) {
         const sub = await reg.pushManager.getSubscription();
-        if (sub) await sub.unsubscribe();
+        if (sub) {
+          endpoint = sub.endpoint;
+          await sub.unsubscribe();
+        }
       }
-      await api.notifications.removeDevice();
+      await api.notifications.removeDevice(endpoint ? { endpoint } : undefined);
       await api.user.updateNotificationSettings(false);
     } catch (err) {
       console.error('[Push] Unsubscribe failed:', err);
