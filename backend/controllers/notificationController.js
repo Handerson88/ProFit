@@ -14,6 +14,12 @@ exports.registerDevice = async (req, res) => {
       return res.status(400).json({ error: 'Subscription is required.' });
     }
 
+    // Validate required Web Push subscription fields
+    if (!subscription.endpoint || !subscription.keys?.p256dh || !subscription.keys?.auth) {
+      console.error('[WebPush] Invalid subscription structure:', JSON.stringify(subscription));
+      return res.status(400).json({ error: 'Invalid subscription: missing endpoint or keys.' });
+    }
+
     // Check if subscription already exists for this user
     const checkResult = await db.query(
       'SELECT id FROM user_devices WHERE user_id = $1 AND subscription::text = $2::text',
@@ -52,7 +58,8 @@ exports.registerDevice = async (req, res) => {
           data: { type: 'welcome' }
         });
       } catch (e) {
-        console.warn('[WebPush] Welcome notification flow failed:', e.message);
+        console.error('[WebPush] Welcome notification flow failed:', e?.message || e);
+        if (e?.statusCode) console.error('[WebPush] HTTP status:', e.statusCode, '| body:', e.body);
       }
     }
 

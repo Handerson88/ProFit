@@ -9,12 +9,14 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\LENOVO\\\\Music\\\\ProFit\\\\frontend\\\\src\\\\pages\\\\admin\" -File -Recurse)",
       "Bash(Select-Object FullName)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\LENOVO\\\\Music\\\\ProFit\\\\backend\\\\routes\" -File)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "Bash(findstr /i \"env\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\LENOVO\\Music\\ProFit\\backend\\middleware",
       "C:\\Users\\LENOVO\\Music\\ProFit\\backend\\controllers",
-      "C:\\Users\\LENOVO\\Music\\ProFit\\backend\\routes"
+      "C:\\Users\\LENOVO\\Music\\ProFit\\backend\\routes",
+      "C:\\Users\\LENOVO\\Music\\ProFit\\backend\\services"
     ]
   }
 }

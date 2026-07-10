@@ -1,24 +1,32 @@
 {
-  "short_name": "ProFit",
+  "id": "/",
   "name": "ProFit - Treine com Inteligência",
+  "short_name": "ProFit",
+  "description": "Seu assistente inteligente de calorias e treinos com IA.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0F14",
+  "theme_color": "#56AB2F",
   "icons": [
     {
-      "src": "faviconnovo.png",
+      "src": "/faviconnovo.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "faviconnovo.png",
+      "src": "/faviconnovo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/faviconnovo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ],
-  "start_url": "/",
-  "background_color": "#0F172A",
-  "display": "standalone",
-  "theme_color": "#56AB2F",
-  "description": "Seu assistente inteligente de calorias e treinos com IA.",
-  "orientation": "portrait"
+  ]
 }

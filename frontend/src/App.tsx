@@ -157,10 +157,10 @@ const AdminProtectedRoute = ({ children }: { children: JSX.Element }) => {
 };
 
 const RootRoute = () => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, authLoading, user } = useAuth();
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen w-full bg-[var(--bg-app)]">
         <div className="w-12 h-12 border-4 border-[#56AB2F] border-t-transparent rounded-full animate-spin"></div>

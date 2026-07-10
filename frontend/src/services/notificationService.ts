@@ -3,139 +3,142 @@ import { api } from './api';
 export type NotificationStatus = 'granted' | 'denied' | 'default' | 'unsupported';
 
 class NotificationService {
-  private PUBLIC_VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || (import.meta.env as any).VITE_VAPID_CHAVE_PUBLICA || (import.meta.env as any)['VITE_VAPID_CHAVE_PÚBLICA'] || '';
+  private readonly VAPID_KEY =
+    import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
+
+  // ── Platform detection ──────────────────────────────────────
 
   isIOS(): boolean {
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    );
   }
 
   isStandalone(): boolean {
-    return window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true
+    );
   }
 
-  /** iOS requires the app to be installed (Add to Home Screen) for push to work */
+  /** iOS requires Add to Home Screen for Web Push — return true when blocked */
   isIOSNotPWA(): boolean {
     return this.isIOS() && !this.isStandalone();
   }
 
   /**
-   * Check real browser permission status
+   * Full capability check.
+   * iOS requires PWA mode (Add to Home Screen) for Web Push.
+   * All other platforms just need Notification + serviceWorker APIs.
    */
+  isSupported(): boolean {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+    if (!('Notification' in window)) return false;
+    if (this.isIOS() && !this.isStandalone()) return false;
+    return true;
+  }
+
   getPermissionStatus(): NotificationStatus {
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-      return 'unsupported';
-    }
+    if (!this.isSupported()) return 'unsupported';
     return Notification.permission as NotificationStatus;
   }
 
-  async requestSystemPermission(): Promise<NotificationStatus> {
-    const status = this.getPermissionStatus();
+  // ── Subscribe ───────────────────────────────────────────────
 
-    if (status === 'unsupported' || status === 'granted' || status === 'denied') {
-      return status;
-    }
-
-    return await Notification.requestPermission() as NotificationStatus;
-  }
-
-  /**
-   * Subscribe to push notifications using Web Push
-   */
   async subscribe(): Promise<boolean> {
-    // iOS Safari only supports push in standalone/PWA mode
-    if (this.isIOSNotPWA()) {
-      console.warn('[Notifications] iOS requires the app to be installed (Add to Home Screen)');
+    if (!this.isSupported()) {
+      console.warn('[Push] Not supported on this platform/browser.');
       return false;
     }
 
-    const status = this.getPermissionStatus();
-    if (status === 'unsupported') {
-      console.warn('[Notifications] Not supported in this browser');
+    if (!this.VAPID_KEY) {
+      console.error('[Push] VITE_VAPID_PUBLIC_KEY is not set.');
       return false;
     }
 
-    if (status === 'denied') {
-      console.warn('[Notifications] Permission denied by user');
+    // 1. Request permission
+    let permission = Notification.permission;
+    if (permission === 'default') {
+      permission = await Notification.requestPermission();
+    }
+    if (permission !== 'granted') {
+      console.warn('[Push] Permission not granted:', permission);
       return false;
     }
 
     try {
-      const permission = await this.requestSystemPermission();
-      if (permission !== 'granted') return false;
-
-      if (!this.PUBLIC_VAPID_KEY) {
-        console.error('[Notifications] VAPID Public Key not configured');
-        return false;
+      // 2. Ensure SW is registered
+      let reg = await navigator.serviceWorker.getRegistration('/sw.js');
+      if (!reg) {
+        reg = await navigator.serviceWorker.register('/sw.js');
       }
 
-      // Unregister any existing SW to ensure fresh start
-      const existingRegistrations = await navigator.serviceWorker.getRegistrations();
-      for (const reg of existingRegistrations) {
-        if (reg.active?.scriptURL.includes('firebase-messaging-sw.js')) {
-          await reg.unregister();
-        }
-      }
+      // 3. Wait until SW is active
+      await navigator.serviceWorker.ready;
 
-      await navigator.serviceWorker.register('/sw.js');
-      
-      // Wait for SW to be ready
-      const registration = await navigator.serviceWorker.ready;
+      // 4. Get or create push subscription
+      let subscription = await reg.pushManager.getSubscription();
 
-      let subscription = await registration.pushManager.getSubscription();
-      
       if (subscription) {
-        // If subscription exists, check if keys match (optional but good)
-        // For simplicity, we'll just re-subscribe if needed
+        // Check if it was created with the same VAPID key
+        const existingKey = subscription.options?.applicationServerKey;
+        const newKey = this.urlBase64ToUint8Array(this.VAPID_KEY);
+        if (existingKey && this.uint8ArraysEqual(new Uint8Array(existingKey), newKey)) {
+          // Same key — reuse, just re-register with backend
+          await api.notifications.registerDevice(subscription);
+          return true;
+        }
+        // Different key — unsubscribe and re-subscribe
         await subscription.unsubscribe();
       }
 
-      subscription = await registration.pushManager.subscribe({
+      subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(this.PUBLIC_VAPID_KEY).buffer as ArrayBuffer,
+        applicationServerKey: this.urlBase64ToUint8Array(this.VAPID_KEY),
       });
 
-      // Send subscription to backend
+      // 5. Send to backend
       await api.notifications.registerDevice(subscription);
-      
-      // Mark user as notifications_enabled
       await api.user.updateNotificationSettings(true);
 
-      console.log('[Notifications] Web Push subscription successful');
+      console.log('[Push] Subscription successful.');
       return true;
-    } catch (error) {
-      console.error('[Notifications] Subscribe error:', error);
+    } catch (err) {
+      console.error('[Push] Subscribe failed:', err);
       return false;
     }
   }
 
-  /**
-   * Unsubscribe from push notifications
-   */
+  // ── Unsubscribe ─────────────────────────────────────────────
+
   async unsubscribe(): Promise<void> {
     try {
-      const registration = await navigator.serviceWorker.getRegistration('/sw.js');
-      if (registration) {
-        const subscription = await registration.pushManager.getSubscription();
-        if (subscription) await subscription.unsubscribe();
+      const reg = await navigator.serviceWorker.getRegistration('/sw.js');
+      if (reg) {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) await sub.unsubscribe();
       }
-      // Update backend
+      await api.notifications.removeDevice();
       await api.user.updateNotificationSettings(false);
-    } catch (error) {
-      console.error('[Notifications] Unsubscribe error:', error);
+    } catch (err) {
+      console.error('[Push] Unsubscribe failed:', err);
     }
   }
 
+  // ── Helpers ─────────────────────────────────────────────────
+
+  /** Convert URL-safe base64 VAPID key to Uint8Array (required by pushManager.subscribe) */
   private urlBase64ToUint8Array(base64String: string): Uint8Array {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
+    const raw = window.atob(base64);
+    return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+  }
+
+  private uint8ArraysEqual(a: Uint8Array, b: Uint8Array): boolean {
+    if (a.length !== b.length) return false;
+    return a.every((v, i) => v === b[i]);
   }
 }
 
