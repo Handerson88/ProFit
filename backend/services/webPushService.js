@@ -31,28 +31,28 @@ function setupWebPush() {
  */
 async function sendWebPushNotification(subscription, payload) {
   try {
+    // Build a clean, flat payload — never spread `payload` at the root
+    // because it would overwrite structured fields like `data`.
     const pushPayload = JSON.stringify({
       title: payload.title || 'ProFit',
       body: payload.body || '',
-      icon: '/faviconnovo.png',
-      badge: '/faviconnovo.png',
-      image: payload.image || null, // Optional big image
-      tag: payload.tag || 'profit-alert',
+      icon: 'https://profit.areauflashbrasiltv.com/faviconnovo.png',
+      tag: payload.tag || payload.data?.tag || 'profit-push',
       data: {
-        url: payload.data?.url || payload.data?.click_action || payload.url || payload.click_action || '/',
-        ...payload.data
+        url: payload.data?.url || payload.data?.click_action || payload.url || '/',
+        type: payload.data?.type || 'general',
+        ...payload.data,
       },
-      ...payload
     });
 
     await webpush.sendNotification(subscription, pushPayload);
     return true;
   } catch (error) {
     if (error.statusCode === 404 || error.statusCode === 410) {
-      console.warn('[WebPush] Subscription has expired or is no longer valid.');
+      console.warn('[WebPush] Subscription expired or invalid.');
       throw { type: 'REPLACEMENT_REQUIRED', error };
     }
-    console.error('[WebPush] Error sending notification:', error.message);
+    console.error('[WebPush] Send error:', error.message);
     return false;
   }
 }

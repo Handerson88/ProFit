@@ -1,115 +1,104 @@
 /**
- * Unified Service Worker: PWA Caching + Web Push
+ * ProFit Service Worker — PWA Cache + Web Push
+ * Compatible: Chrome, Firefox, Edge, Safari iOS 16.4+ (PWA)
  */
 
-const CACHE_NAME = 'profit-v2';
-const URLS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/faviconnovo.png'
-];
+const CACHE_NAME = 'profit-v3';
+const PRECACHE = ['/', '/index.html', '/manifest.json', '/faviconnovo.png'];
 
+// ── Install ──────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(URLS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE))
   );
   self.skipWaiting();
 });
 
+// ── Activate ─────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys()
+      .then((keys) => Promise.all(
+        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+      ))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
+// ── Fetch (cache-first for static, network-first for API) ────
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
-    return;
-  }
+  if (event.request.method !== 'GET') return;
+  if (event.request.url.includes('/api/')) return;
 
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request).then((fetchResponse) => {
-        return fetchResponse;
-      });
-    }).catch(() => {
-        // Fallback or custom offline page could go here
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).catch(() => caches.match('/index.html'));
     })
   );
 });
 
-// Web Push Notification Event
+// ── Push ─────────────────────────────────────────────────────
+// Uses ONLY options that are safe across ALL browsers including iOS Safari PWA.
+// Never use: vibrate, actions, renotify, badge, requireInteraction
+// (they silently fail or crash showNotification on iOS).
 self.addEventListener('push', (event) => {
   if (!event.data) return;
 
-  try {
-    const data = event.data.json();
-    const title = data.title || 'ProFit';
-    
-    // Support for both 'url' and 'click_action' from backend
-    const targetUrl = data.data?.url || data.data?.click_action || data.url || data.click_action || '/';
-    
-    const options = {
-      body: data.body || '',
-      icon: '/faviconnovo.png',
-      badge: '/faviconnovo.png',
-      vibrate: [200, 100, 200, 100, 200], // More distinct vibration
-      timestamp: Date.now(),
-      tag: data.data?.tag || 'profit-alert', // Group related notifications
-      renotify: true, // Re-notify if the same tag is used
-      data: {
-        url: targetUrl,
-        ...data.data
-      },
-      actions: [
-        { action: 'open', title: 'Abrir' },
-        { action: 'close', title: 'Ignorar' },
-      ],
-      requireInteraction: false // Let it disappear after some time
-    };
+  let title = 'ProFit';
+  let options = {
+    body: '',
+    icon: '/faviconnovo.png',
+    data: { url: '/' },
+  };
 
-    event.waitUntil(self.registration.showNotification(title, options));
-  } catch (error) {
-    console.error('[SW] Push event error:', error);
-    const textData = event.data.text();
-    event.waitUntil(self.registration.showNotification('ProFit', { 
-        body: textData,
-        icon: '/faviconnovo.png'
-    }));
+  try {
+    const payload = event.data.json();
+
+    title = payload.title || 'ProFit';
+
+    const targetUrl =
+      payload.data?.url ||
+      payload.data?.click_action ||
+      payload.url ||
+      payload.click_action ||
+      '/';
+
+    options = {
+      body: payload.body || '',
+      icon: '/faviconnovo.png',
+      // tag groups duplicate notifications — safe on all platforms
+      tag: payload.data?.tag || payload.tag || 'profit-push',
+      // timestamp is safe on all platforms
+      timestamp: Date.now(),
+      data: { url: targetUrl, ...payload.data },
+    };
+  } catch (_) {
+    // Fallback for plain-text payloads
+    options.body = event.data.text();
   }
+
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// Notification Click Handling
+// ── Notification click ────────────────────────────────────────
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
-  // Use 'url' then fallback to 'click_action'
-  const urlToOpen = event.notification.data?.url || event.notification.data?.click_action || '/';
+
+  const urlToOpen = event.notification.data?.url || '/';
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Try to find an existing tab and focus it
-      for (const client of windowClients) {
-        if (client.url.includes(urlToOpen) && 'focus' in client) {
-          return client.focus();
+    clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((list) => {
+        // Navigate an existing window to the target URL then focus it
+        for (const client of list) {
+          if ('navigate' in client && 'focus' in client) {
+            return client.navigate(urlToOpen).then((c) => c && c.focus());
+          }
         }
-      }
-      // If no tab, open a new one
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
-    })
+        // No existing window — open a new one
+        if (clients.openWindow) return clients.openWindow(urlToOpen);
+      })
   );
 });
