@@ -1,65 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Circle, Clock, Loader2, Trophy, Flame, ChevronRight, AlertCircle, PlayCircle, Info, Sparkles } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock, Loader2, Trophy, Dumbbell, Info, Sparkles, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
+import { BottomNav } from '../components/BottomNav';
 
 export const WorkoutSession = () => {
   const { day } = useParams();
   const navigate = useNavigate();
   const [activePlan, setActivePlan] = useState<any>(null);
+  const [dayWorkout, setDayWorkout] = useState<any>(null);
   const [exercises, setExercises] = useState<any[]>([]);
-  const [exerciseProgress, setExerciseProgress] = useState<Record<string, { completed: boolean, sets: number[] }>>({});
+  const [exerciseProgress, setExerciseProgress] = useState<Record<string, { completed: boolean; sets: number[] }>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [expandedTip, setExpandedTip] = useState<string | null>(null);
   const [startTime] = useState(Date.now());
   const { langData } = useLanguage();
 
-  useEffect(() => {
-    fetchWorkoutData();
-  }, [day]);
+  useEffect(() => { fetchWorkoutData(); }, [day]);
 
   const fetchWorkoutData = async () => {
     try {
       setIsLoading(true);
       const rawPlan = await api.workouts.getActive();
-      if (!rawPlan) {
-        navigate('/workout');
-        return;
-      }
+      if (!rawPlan) { navigate('/workout'); return; }
 
-      // Parse structured_plan if it's a string (Postgres JSONB sometimes returns as string in some drivers/configs)
       let plan = rawPlan;
       if (typeof plan.structured_plan === 'string') {
-        try {
-          plan.structured_plan = JSON.parse(plan.structured_plan);
-        } catch (e) {
-          console.error("Failed to parse structured_plan", e);
-        }
+        try { plan.structured_plan = JSON.parse(plan.structured_plan); } catch (e) {}
       }
-      
       setActivePlan(plan);
 
-      const dayWorkout = plan.structured_plan.daily_workouts.find((dw: any) => dw.day === day);
-      if (!dayWorkout) {
-        navigate('/workout');
-        return;
-      }
-      setExercises(dayWorkout.exercises);
+      const found = plan.structured_plan?.daily_workouts?.find((dw: any) => dw.day === day);
+      if (!found) { navigate('/workout'); return; }
+      setDayWorkout(found);
+      setExercises(found.exercises || []);
 
-      // Fetch progress for this day
       const progress = await api.workouts.getExerciseProgress(plan.id, day!);
-      const progressMap: Record<string, { completed: boolean, sets: number[] }> = {};
+      const progressMap: Record<string, { completed: boolean; sets: number[] }> = {};
       progress.forEach((p: any) => {
-        progressMap[p.exercise_name] = {
-          completed: p.completed,
-          sets: p.completed_sets || []
-        };
+        progressMap[p.exercise_name] = { completed: p.completed, sets: p.completed_sets || [] };
       });
       setExerciseProgress(progressMap);
-
     } catch (err) {
       console.error('Failed to fetch workout data', err);
     } finally {
@@ -68,38 +53,44 @@ export const WorkoutSession = () => {
   };
 
   const handleToggleSet = async (exercise: any, setIndex: number) => {
-    const exerciseName = exercise.name;
-    const currentProgress = exerciseProgress[exerciseName] || { completed: false, sets: [] };
-    let newSets = [...currentProgress.sets];
-    
-    if (newSets.includes(setIndex)) {
-      newSets = newSets.filter(s => s !== setIndex);
-    } else {
-      newSets.push(setIndex);
-      // Haptic feedback
-      if ('vibrate' in navigator) navigator.vibrate(10);
-    }
+    const name = exercise.name;
+    const cur = exerciseProgress[name] || { completed: false, sets: [] };
+    const newSets = cur.sets.includes(setIndex)
+      ? cur.sets.filter(s => s !== setIndex)
+      : [...cur.sets, setIndex];
 
-    const totalSets = Number(exercise.sets);
-    const isCompleted = newSets.length >= totalSets;
+    if (!cur.sets.includes(setIndex) && 'vibrate' in navigator) navigator.vibrate(10);
 
-    const newProg = { ...exerciseProgress, [exerciseName]: { completed: isCompleted, sets: newSets } };
+    const isCompleted = newSets.length >= Number(exercise.sets);
+    const newProg = { ...exerciseProgress, [name]: { completed: isCompleted, sets: newSets } };
     setExerciseProgress(newProg);
 
     try {
-      setIsUpdating(exerciseName);
-      await api.workouts.markExerciseComplete(activePlan.id, exerciseName, day!, isCompleted, newSets);
-      
-      // Check if full workout is done
-      const completedCount = Object.values(newProg).filter((p: any) => p.completed).length;
-      if (completedCount === exercises.length) {
+      setIsUpdating(name);
+      await api.workouts.markExerciseComplete(activePlan.id, name, day!, isCompleted, newSets);
+      if (Object.values(newProg).filter((p: any) => p.completed).length === exercises.length) {
         handleFullWorkoutComplete();
       }
     } catch (err) {
-      console.error('Failed to update set status', err);
+      console.error(err);
     } finally {
       setIsUpdating(null);
     }
+  };
+
+  const handleMarkAllDone = async (exercise: any) => {
+    const name = exercise.name;
+    const setsCount = Number(exercise.sets) || 4;
+    const allSets = Array.from({ length: setsCount }, (_, i) => i);
+    const newProg = { ...exerciseProgress, [name]: { completed: true, sets: allSets } };
+    setExerciseProgress(newProg);
+    try {
+      setIsUpdating(name);
+      await api.workouts.markExerciseComplete(activePlan.id, name, day!, true, allSets);
+      if (Object.values(newProg).filter((p: any) => p.completed).length === exercises.length) {
+        handleFullWorkoutComplete();
+      }
+    } catch (e) { console.error(e); } finally { setIsUpdating(null); }
   };
 
   const handleFullWorkoutComplete = async () => {
@@ -107,275 +98,345 @@ export const WorkoutSession = () => {
       await api.workouts.markComplete(activePlan.id, day!);
       setShowSuccess(true);
       if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
-    } catch (err) {
-      console.error('Failed to mark full workout as complete', err);
-    }
+    } catch (err) { console.error(err); }
   };
 
-  const completedExercisesCount = Object.values(exerciseProgress).filter(p => p.completed).length;
+  const completedCount = Object.values(exerciseProgress).filter(p => p.completed).length;
   const totalExercises = exercises.length;
-  const progressPercentage = totalExercises > 0 ? (completedExercisesCount / totalExercises) * 100 : 0;
+  const progressPct = totalExercises > 0 ? (completedCount / totalExercises) * 100 : 0;
+  const durationMinutes = Math.floor((Date.now() - startTime) / 60000) || 45;
+  const caloriesBurned = exercises.length * 45;
 
-  const durationMinutes = Math.floor((Date.now() - startTime) / 60000) || 45; // Simulated or real
-  const caloriesBurned = exercises.length * 45; // Adjusted estimate for more exercises
+  const grouped: Record<string, any[]> = exercises.reduce((acc: any, ex: any) => {
+    const g = ex.muscle_group || langData.wk_general || 'Geral';
+    if (!acc[g]) acc[g] = [];
+    acc[g].push(ex);
+    return acc;
+  }, {});
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--bg-app)]">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        >
-          <Loader2 className="w-12 h-12 text-[#56AB2F]" />
-        </motion.div>
-        <p className="text-[var(--text-muted)] font-bold italic mt-4">{langData.wk_preparing}</p>
+      <div className="main-wrapper bg-[var(--bg-app)]">
+        <div className="app-container flex flex-col items-center justify-center min-h-screen">
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
+            <Loader2 className="w-10 h-10 text-[#56AB2F]" />
+          </motion.div>
+          <p className="text-[var(--text-muted)] font-bold text-sm mt-4 italic">{langData.wk_preparing}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)] pb-32">
-      {/* Header */}
-      <div className="px-6 pt-12 pb-6 flex justify-between items-center sticky top-0 z-40 bg-[var(--bg-app)]/90 backdrop-blur-sm">
-        <button onClick={() => navigate('/workout')} className="w-12 h-12 bg-[var(--bg-card)] rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-all">
-          <ArrowLeft className="w-5 h-5 text-[var(--text-main)]" />
-        </button>
-        <div className="text-center">
-          <h1 className="text-xl font-black text-[var(--text-main)] leading-tight">{langData.wk_workout_of} {day}</h1>
-          <p className="text-[10px] font-black text-[#56AB2F] uppercase tracking-widest flex items-center justify-center">
-            <Flame className="w-3 h-3 mr-1 fill-current" />
-            {activePlan?.structured_plan?.daily_workouts?.find((dw: any) => dw.day === day)?.muscles}
-          </p>
-        </div>
-        <div className="w-12" />
-      </div>
+    <div className="main-wrapper bg-[var(--bg-app)]">
+      <div className="app-container pb-32">
 
-      <div className="px-6 space-y-6">
-        {/* Coach Tip Header */}
-        {activePlan?.structured_plan?.daily_workouts?.find((dw: any) => dw.day === day)?.coach_tip && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-br from-[#1A1A1A] to-[#2D3436] rounded-[32px] p-6 text-white shadow-lg border border-white/5 relative overflow-hidden"
+        {/* ── Sticky Header ── */}
+        <div className="page-header pt-10">
+          <button
+            onClick={() => navigate('/workout')}
+            className="btn-icon flex-shrink-0"
           >
-            <div className="relative z-10 flex items-start space-x-4">
-              <div className="w-10 h-10 bg-[#EAF5D5] rounded-xl flex items-center justify-center text-[#56AB2F] shrink-0">
-                <Sparkles className="w-6 h-6" />
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-black text-[#56AB2F] uppercase tracking-[0.2em] leading-none mb-0.5">
+              {langData.wk_ia_title}
+            </p>
+            <h1 className="text-[17px] font-black text-[var(--text-main)] leading-tight truncate">{day}</h1>
+          </div>
+
+          {progressPct > 0 && (
+            <div className="flex-shrink-0 h-8 px-3 rounded-xl bg-[#56AB2F]/10 border border-[#56AB2F]/20 flex items-center">
+              <span className="text-[11px] font-black text-[#56AB2F]">{Math.round(progressPct)}%</span>
+            </div>
+          )}
+        </div>
+
+        <div className="px-5 pt-5 space-y-4">
+
+          {/* ── Muscle group + progress row ── */}
+          <div className="card-premium flex items-center gap-4">
+            <div className="w-12 h-12 bg-[#56AB2F]/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+              <Dumbbell className="w-6 h-6 text-[#56AB2F]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[var(--text-main)] font-black text-[15px] truncate">
+                {dayWorkout?.muscles || day}
+              </p>
+              <p className="text-[var(--text-muted)] text-[11px] font-bold mt-0.5">
+                {totalExercises} {langData.wk_exercises} · {langData.wk_est_kcal} ~{caloriesBurned} kcal
+              </p>
+            </div>
+          </div>
+
+          {/* ── Progress bar card ── */}
+          <div className="card-premium space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                {langData.wk_total_progress}
+              </p>
+              <p className="text-[11px] font-black text-[#56AB2F]">
+                {completedCount} {langData.wk_of} {totalExercises} {langData.wk_exercises}
+              </p>
+            </div>
+            <div className="w-full h-2 bg-[var(--border-main)] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPct}%` }}
+                transition={{ type: 'spring', stiffness: 60 }}
+                className="h-full bg-gradient-to-r from-[#A8E063] to-[#56AB2F] rounded-full"
+              />
+            </div>
+          </div>
+
+          {/* ── Coach Tip ── */}
+          {dayWorkout?.coach_tip && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card-premium flex items-start gap-4"
+            >
+              <div className="w-10 h-10 bg-[#56AB2F]/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-[#56AB2F]" />
               </div>
               <div>
-                <span className="text-[10px] font-black text-[#A8E063] uppercase tracking-[0.2em] mb-1 block">{langData.wk_coach_tip}</span>
-                <p className="text-sm font-bold leading-relaxed text-white/90">
-                  "{activePlan.structured_plan.daily_workouts.find((dw: any) => dw.day === day).coach_tip}"
+                <span className="text-[10px] font-black text-[#56AB2F] uppercase tracking-[0.2em] block mb-1">
+                  {langData.wk_coach_tip}
+                </span>
+                <p className="text-[12px] font-medium text-[var(--text-muted)] leading-relaxed">
+                  "{dayWorkout.coach_tip}"
                 </p>
               </div>
-            </div>
-            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-[#56AB2F]/10 rounded-full blur-2xl"></div>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
 
-        {/* Progress Card */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-[var(--bg-card)] rounded-[32px] p-6 shadow-xl shadow-gray-200/50 border border-[var(--border-main)] overflow-hidden relative"
-        >
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Trophy className="w-12 h-12 text-[#56AB2F]" />
-          </div>
-          <div className="flex justify-between items-end mb-4">
-            <div>
-              <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{langData.wk_total_progress}</p>
-              <h3 className="text-2xl font-black text-[var(--text-main)]">{completedExercisesCount} {langData.PT ? 'de' : 'of'} {totalExercises} <span className="text-sm text-[var(--text-muted)] font-bold">{langData.wk_exercises}</span></h3>
-            </div>
-            <span className="text-lg font-black text-[#56AB2F]">{Math.round(progressPercentage)}%</span>
-          </div>
-          <div className="w-full h-4 bg-gray-50 rounded-full overflow-hidden border border-[var(--border-main)]/50">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercentage}%` }}
-              transition={{ type: "spring", stiffness: 50 }}
-              className="h-full bg-gradient-to-r from-[#A8E063] to-[#56AB2F]"
-            />
-          </div>
-        </motion.div>
+          {/* ── Exercise groups ── */}
+          {Object.entries(grouped).map(([muscleGroup, groupExercises]: [string, any[]], groupIdx: number) => (
+            <div key={muscleGroup} className="space-y-3">
 
-        {/* Exercise List grouped by Muscle Group */}
-        <div className="space-y-8">
-          {Object.entries(
-            exercises.reduce((acc: any, ex: any) => {
-              const group = ex.muscle_group || 'geral';
-              if (!acc[group]) acc[group] = [];
-              acc[group].push(ex);
-              return acc;
-            }, {})
-          ).map(([muscleGroup, groupExercises]: [any, any], groupIdx: number) => (
-            <div key={muscleGroup} className="space-y-4">
-              <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1 flex items-center">
-                <span className="w-2 h-2 bg-[#56AB2F] rounded-full mr-2"></span>
-                {muscleGroup}
-              </h4>
-              
-              <div className="space-y-4">
-                {groupExercises.map((ex: any, idx: number) => {
-                  const prog = exerciseProgress[ex.name] || { completed: false, sets: [] };
-                  const isDone = prog.completed;
-                  const setsCount = Number(ex.sets) || 4;
-
-                  return (
-                    <motion.div
-                      key={ex.name}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: (groupIdx * 0.2) + (idx * 0.1) }}
-                      className={`bg-[var(--bg-card)] rounded-[32px] shadow-sm border-2 transition-all p-6 relative overflow-hidden ${isDone ? 'border-[#56AB2F]/30 bg-[#F0F9EB]/20 shadow-none' : 'border-transparent shadow-gray-200/40'}`}
-                    >
-                      {isDone && (
-                        <div className="absolute top-4 right-4">
-                          <div className="bg-[#56AB2F] text-white p-1 rounded-full">
-                            <CheckCircle2 className="w-4 h-4" />
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between items-start mb-4 pr-8">
-                        <div>
-                          <h3 className={`text-lg font-black leading-tight ${isDone ? 'text-[var(--text-main)]/40' : 'text-[var(--text-main)]'}`}>{ex.name}</h3>
-                          <div className="flex gap-3 mt-2">
-                             <div className="flex items-center text-[11px] font-bold text-[var(--text-muted)]">
-                               <Clock className="w-3 h-3 mr-1" />
-                               {ex.rest} {langData.wk_rest}
-                             </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 mb-6">
-                        <div className="bg-gray-50 rounded-2xl p-3 border border-[var(--border-main)]/50">
-                          <p className="text-[9px] font-black text-[var(--text-muted)] uppercase mb-1">{langData.wk_suggested_load}</p>
-                          <p className="text-sm font-black text-[var(--text-main)]">{ex.reps} <span className="text-[10px] text-[var(--text-muted)]">reps</span></p>
-                        </div>
-                        <div className="bg-gray-50 rounded-2xl p-3 border border-[var(--border-main)]/50">
-                          <p className="text-[9px] font-black text-[var(--text-muted)] uppercase mb-1">{langData.wk_volume}</p>
-                          <p className="text-sm font-black text-[var(--text-main)]">{ex.sets} <span className="text-[10px] text-[var(--text-muted)]">{langData.wk_sets_series}</span></p>
-                        </div>
-                      </div>
-
-                      {/* Technical Tip - Only show if available */}
-                      {ex.instructions && (
-                        <div className="flex gap-3 p-4 bg-amber-50/50 rounded-2xl border border-amber-100/30 mb-6">
-                          <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                          <p className="text-[11px] font-medium text-amber-900/70 italic leading-relaxed">"{ex.instructions}"</p>
-                        </div>
-                      )}
-
-                      {/* Sets Progression */}
-                      <div>
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">{langData.wk_completed_sets}</span>
-                          <span className="text-[10px] font-black text-[#56AB2F]">{prog.sets.length} / {setsCount}</span>
-                        </div>
-                        <div className="flex gap-2.5 flex-wrap">
-                          {Array.from({ length: setsCount }).map((_, i) => {
-                            const setCompleted = prog.sets.includes(i);
-                            return (
-                              <button
-                                key={i}
-                                onClick={() => handleToggleSet(ex, i)}
-                                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all border-2 active:scale-90 ${
-                                  setCompleted 
-                                    ? 'bg-[#56AB2F] border-[#56AB2F] text-white shadow-lg shadow-[#56AB2F]/20' 
-                                    : 'bg-[var(--bg-card)] border-[var(--border-main)] text-gray-300 hover:border-[#56AB2F]/30 hover:text-[#56AB2F]'
-                                }`}
-                              >
-                                {setCompleted ? (
-                                  <CheckCircle2 className="w-5 h-5" />
-                                ) : (
-                                  <span className="text-xs font-black">{i + 1}</span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Quick Exercise Done Button */}
-                      {!isDone && (
-                        <button 
-                          onClick={async () => {
-                            // Mark all sets as completed
-                            const allSets = Array.from({ length: setsCount }, (_, i) => i);
-                            const exerciseName = ex.name;
-                            const newProg = { ...exerciseProgress, [exerciseName]: { completed: true, sets: allSets } };
-                            setExerciseProgress(newProg);
-                            try {
-                              setIsUpdating(exerciseName);
-                              await api.workouts.markExerciseComplete(activePlan.id, exerciseName, day!, true, allSets);
-                              const completedCount = Object.values(newProg).filter((p: any) => p.completed).length;
-                              if (completedCount === exercises.length) {
-                                handleFullWorkoutComplete();
-                              }
-                            } catch (e) { console.error(e); } finally { setIsUpdating(null); }
-                          }}
-                          className="w-full mt-6 py-3 bg-[var(--bg-card)] border-2 border-[#56AB2F]/20 text-[#56AB2F] font-black text-xs rounded-xl flex items-center justify-center gap-2 hover:bg-[#56AB2F] hover:text-white transition-all active:scale-95"
-                        >
-                           <CheckCircle2 className="w-4 h-4" />
-                           {langData.wk_mark_done}
-                        </button>
-                      )}
-
-                      {isUpdating === ex.name && (
-                        <div className="absolute inset-0 bg-[var(--bg-card)]/40 backdrop-blur-[1px] flex items-center justify-center z-10 transition-opacity">
-                          <Loader2 className="w-6 h-6 animate-spin text-[#56AB2F]" />
-                        </div>
-                      )}
-                    </motion.div>
-                  );
-                })}
+              {/* Group label */}
+              <div className="flex items-center gap-2 px-1 pt-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#56AB2F] flex-shrink-0" />
+                <span className="section-label">{muscleGroup}</span>
+                <div className="flex-1 h-px bg-[var(--border-main)]" />
               </div>
+
+              {groupExercises.map((ex: any, idx: number) => {
+                const prog = exerciseProgress[ex.name] || { completed: false, sets: [] };
+                const isDone = prog.completed;
+                const setsCount = Number(ex.sets) || 4;
+                const showTip = expandedTip === ex.name;
+
+                return (
+                  <motion.div
+                    key={ex.name}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: groupIdx * 0.08 + idx * 0.05 }}
+                    className={`card-premium relative overflow-hidden transition-all ${
+                      isDone ? 'border-[#56AB2F]/20' : ''
+                    }`}
+                    style={isDone ? { borderColor: 'rgba(86,171,47,0.2)' } : {}}
+                  >
+                    {/* Saving overlay */}
+                    {isUpdating === ex.name && (
+                      <div className="absolute inset-0 bg-[var(--bg-card)]/60 backdrop-blur-[2px] flex items-center justify-center z-10">
+                        <Loader2 className="w-5 h-5 animate-spin text-[#56AB2F]" />
+                      </div>
+                    )}
+
+                    {/* ── Exercise name row ── */}
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`text-[15px] font-black leading-snug ${
+                          isDone ? 'text-[var(--text-muted)] line-through decoration-[#56AB2F]/40' : 'text-[var(--text-main)]'
+                        }`}>
+                          {ex.name}
+                        </h3>
+                        <p className="text-[11px] font-bold text-[var(--text-muted)] mt-1 flex items-center gap-1">
+                          <Clock className="w-3 h-3 flex-shrink-0" />
+                          {langData.wk_rest}: {ex.rest}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {ex.instructions && !isDone && (
+                          <button
+                            onClick={() => setExpandedTip(showTip ? null : ex.name)}
+                            className={`btn-icon ${showTip ? 'border-[#56AB2F]/30 text-[#56AB2F]' : ''}`}
+                          >
+                            <Info className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {isDone && (
+                          <div className="w-8 h-8 rounded-xl bg-[#56AB2F]/10 flex items-center justify-center">
+                            <CheckCircle2 className="w-4 h-4 text-[#56AB2F]" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── Reps / Sets tiles ── */}
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <div className="card-secondary">
+                        <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
+                          {langData.wk_suggested_load}
+                        </p>
+                        <p className="text-[14px] font-black text-[var(--text-main)]">
+                          {ex.reps}
+                          <span className="text-[10px] font-bold text-[var(--text-muted)] ml-1">reps</span>
+                        </p>
+                      </div>
+                      <div className="card-secondary">
+                        <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
+                          {langData.wk_volume}
+                        </p>
+                        <p className="text-[14px] font-black text-[var(--text-main)]">
+                          {ex.sets}
+                          <span className="text-[10px] font-bold text-[var(--text-muted)] ml-1">{langData.wk_sets_series}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* ── Instructions (collapsible) ── */}
+                    <AnimatePresence>
+                      {showTip && ex.instructions && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                          animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+                          exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="card-secondary">
+                            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed italic">
+                              "{ex.instructions}"
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* ── Sets buttons ── */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                          {langData.wk_completed_sets}
+                        </span>
+                        <span className="text-[10px] font-black text-[#56AB2F]">
+                          {prog.sets.length}/{setsCount}
+                        </span>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        {Array.from({ length: setsCount }).map((_, i) => {
+                          const done = prog.sets.includes(i);
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => handleToggleSet(ex, i)}
+                              className={`w-12 h-12 rounded-xl font-black text-sm flex items-center justify-center border transition-all active:scale-90 ${
+                                done
+                                  ? 'bg-[#56AB2F] border-[#56AB2F] text-white shadow-lg shadow-[#56AB2F]/20'
+                                  : 'bg-transparent border-[var(--border-strong)] text-[var(--text-muted)] hover:border-[#56AB2F]/40'
+                              }`}
+                            >
+                              {done ? <CheckCircle2 className="w-5 h-5" /> : i + 1}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* ── Mark all done ── */}
+                    {!isDone && (
+                      <button
+                        onClick={() => handleMarkAllDone(ex)}
+                        className="btn-secondary text-sm h-11"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-[#56AB2F]" />
+                        <span>{langData.wk_mark_done}</span>
+                      </button>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           ))}
+
+          {/* ── Force finish button (partial progress) ── */}
+          {completedCount > 0 && completedCount < totalExercises && (
+            <button
+              onClick={handleFullWorkoutComplete}
+              className="w-full py-4 rounded-[var(--radius-xl)] border border-[var(--border-main)] text-[var(--text-muted)] font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
+            >
+              <Zap className="w-4 h-4" />
+              {langData.wk_finish_workout}
+            </button>
+          )}
+
         </div>
+
+        <BottomNav />
       </div>
 
+      {/* ── Success Modal ── */}
       <AnimatePresence>
         {showSuccess && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 backdrop-blur-md p-4 pb-8"
           >
-            <motion.div 
-              initial={{ scale: 0.8, y: 50 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-[var(--bg-card)] rounded-[48px] p-10 text-center shadow-2xl relative z-10 max-w-sm w-full border border-[var(--border-main)]"
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="w-full max-w-sm bg-[var(--bg-card)] border border-[var(--border-strong)] rounded-[40px] p-8 text-center"
             >
-              <div className="w-24 h-24 bg-[#EAF5D5] rounded-full flex items-center justify-center mx-auto mb-8 relative">
-                 <motion.div 
-                    animate={{ scale: [1, 1.2, 1] }} 
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="absolute inset-0 bg-[#56AB2F]/20 rounded-full"
-                 />
-                 <Trophy className="w-12 h-12 text-[#56AB2F] relative z-10" />
+              {/* Trophy icon */}
+              <div className="relative w-24 h-24 mx-auto mb-6">
+                <motion.div
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute inset-0 bg-[#56AB2F]/15 rounded-full"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Trophy className="w-11 h-11 text-[#56AB2F]" />
+                </div>
               </div>
-              
-              <h3 className="text-3xl font-black text-[var(--text-main)] mb-2">{langData.wk_workout_done}</h3>
-              <p className="text-[var(--text-muted)] font-bold mb-8 italic">"{langData.wk_excellent_work}"</p>
 
-              <div className="grid grid-cols-2 gap-4 mb-10">
-                <div className="bg-[#FFF8F1] rounded-3xl p-4">
-                  <p className="text-[10px] font-black text-orange-400 uppercase mb-1">{langData.wk_est_kcal}</p>
-                  <p className="text-xl font-black text-[var(--text-main)]">~{caloriesBurned}</p>
+              <h3 className="text-2xl font-black text-[var(--text-main)] mb-1">
+                {langData.wk_workout_done}
+              </h3>
+              <p className="text-[var(--text-muted)] font-bold text-sm mb-7">
+                "{langData.wk_excellent_work}"
+              </p>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-3 mb-7">
+                <div className="card-secondary text-center py-4">
+                  <p className="text-[9px] font-black text-[#56AB2F] uppercase tracking-widest mb-2">
+                    {langData.wk_est_kcal}
+                  </p>
+                  <p className="text-2xl font-black text-[var(--text-main)]">~{caloriesBurned}</p>
+                  <p className="text-[10px] text-[var(--text-muted)] font-bold">kcal</p>
                 </div>
-                <div className="bg-[#F1F7FF] rounded-3xl p-4">
-                  <p className="text-[10px] font-black text-blue-400 uppercase mb-1">{langData.wk_time}</p>
-                  <p className="text-xl font-black text-[var(--text-main)]">{durationMinutes}m</p>
+                <div className="card-secondary text-center py-4">
+                  <p className="text-[9px] font-black text-[#56AB2F] uppercase tracking-widest mb-2">
+                    {langData.wk_time}
+                  </p>
+                  <p className="text-2xl font-black text-[var(--text-main)]">{durationMinutes}</p>
+                  <p className="text-[10px] text-[var(--text-muted)] font-bold">min</p>
                 </div>
               </div>
-              
-              <button 
+
+              <button
                 onClick={() => navigate('/workout')}
-                className="w-full py-5 bg-gradient-to-r from-[#A8E063] to-[#56AB2F] text-white rounded-[24px] font-black text-lg shadow-xl shadow-[#56AB2F]/30 active:scale-95 transition-all"
+                className="btn-primary"
+                style={{ background: 'linear-gradient(135deg, #56AB2F 0%, #A8E063 100%)' }}
               >
                 {langData.wk_see_tomorrow}
               </button>
@@ -386,4 +447,3 @@ export const WorkoutSession = () => {
     </div>
   );
 };
-

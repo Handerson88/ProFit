@@ -218,7 +218,7 @@ export const Dashboard = () => {
   const { langData } = useLanguage();
   const { totalUsersCount, user } = useAuth();
   const [recentMeals, setRecentMeals] = useState<any[]>([]);
-  const [userName, setUserName] = useState(langData.PT ? 'Usuário' : 'User');
+  const [userName, setUserName] = useState(langData.user_placeholder);
   const [userGoal, setUserGoal] = useState('');
   const [meals, setMeals] = useState<any[]>([]);
   const [summary, setSummary] = useState<any[]>([]);
@@ -559,41 +559,73 @@ export const Dashboard = () => {
     }
 
     const plan = typeof workout.structured_plan === 'string' ? JSON.parse(workout.structured_plan) : workout.structured_plan;
-    const capitalizedTodayName = getMaputoDayName(getMaputoNow().toDate());
-    
-    // Find today's workout in daily_workouts.
-    // GPT sometimes returns "segunda-feira" or "Segunda-feira".
-    const todayWorkout = plan.daily_workouts?.find((w: any) => 
-      w.day.toLowerCase() === capitalizedTodayName.toLowerCase() || 
-      w.day.toLowerCase().includes(capitalizedTodayName.toLowerCase())
+    const dailyWorkouts: any[] = plan.daily_workouts || [];
+
+    // Detect weekday-named plan vs split plan ("Treino A", "Treino B"...)
+    const weekdayKw = ['segunda','terça','quarta','quinta','sexta','sábado','domingo','monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+    const isWeekdayPlan = dailyWorkouts.some((w: any) =>
+      weekdayKw.some(kw => w.day.toLowerCase().includes(kw))
     );
 
+    let todayWorkout: any = null;
+    let isSplitPlan = false;
+
+    if (isWeekdayPlan) {
+      const todayName = getMaputoDayName(getMaputoNow().toDate()).toLowerCase();
+      todayWorkout = dailyWorkouts.find((w: any) =>
+        w.day.toLowerCase() === todayName || w.day.toLowerCase().includes(todayName)
+      );
+    } else {
+      // Split plan: pick workout by day-of-week index so it's consistent each day
+      isSplitPlan = true;
+      const trainingWorkouts = dailyWorkouts.filter((w: any) => {
+        const exCount = w.exercises?.length || 0;
+        return exCount > 0 && !w.muscles?.toLowerCase().includes('descanso') && !w.muscles?.toLowerCase().includes('rest');
+      });
+      if (trainingWorkouts.length > 0) {
+        const dow = getMaputoNow().day(); // 0=Sun … 6=Sat (Maputo timezone)
+        const isWeekend = dow === 0 || dow === 6;
+        if (!isWeekend) {
+          todayWorkout = trainingWorkouts[(dow - 1) % trainingWorkouts.length];
+        }
+      }
+    }
+
+    const label = isSplitPlan
+      ? (langData.dash_workout_next || 'Próximo Treino')
+      : langData.dash_workout_today;
+
     return (
-      <div 
+      <div
         onClick={() => navigate('/workout')}
         className="bg-[var(--bg-card)] rounded-[32px] p-6 shadow-xl mb-8 border border-white/5 relative overflow-hidden group cursor-pointer"
       >
         <div className="relative z-10">
           <div className="flex justify-between items-start mb-4">
-            <div>
-              <span className="text-[10px] font-black text-[#22C55E] uppercase tracking-[0.2em]">{langData.dash_workout_today}</span>
-              <h3 className="text-white text-xl font-black mt-1">{todayWorkout?.muscles || (langData.PT ? 'Descanso Ativo' : 'Active Rest')}</h3>
+            <div className="flex-1 min-w-0 pr-3">
+              <span className="text-[10px] font-black text-[#22C55E] uppercase tracking-[0.2em]">{label}</span>
+              <h3 className="text-white text-xl font-black mt-1 leading-tight">
+                {todayWorkout?.muscles || langData.wk_active_rest}
+              </h3>
+              {isSplitPlan && todayWorkout && (
+                <p className="text-white/40 text-[11px] font-bold mt-0.5 truncate">{todayWorkout.day}</p>
+              )}
             </div>
-            <div className="w-10 h-10 bg-[var(--bg-card)]/10 rounded-xl flex items-center justify-center text-[#22C55E]">
+            <div className="w-10 h-10 bg-[var(--bg-card)]/10 rounded-xl flex items-center justify-center text-[#22C55E] flex-shrink-0">
               <Target className="w-6 h-6" />
             </div>
           </div>
-          
+
           {todayWorkout ? (
             <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <div className="px-3 py-1 bg-[var(--bg-card)]/10 rounded-lg">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="px-3 py-1.5 bg-[var(--bg-card)]/10 rounded-lg">
                   <span className="text-white/60 text-[10px] font-bold block uppercase tracking-wider">{langData.dash_workout_exercises}</span>
                   <span className="text-white font-black">{todayWorkout.exercises?.length || 0}</span>
                 </div>
-                <div className="px-3 py-1 bg-[var(--bg-card)]/10 rounded-lg">
+                <div className="px-3 py-1.5 bg-[var(--bg-card)]/10 rounded-lg flex-1 min-w-0">
                   <span className="text-white/60 text-[10px] font-bold block uppercase tracking-wider">{langData.dash_workout_focus}</span>
-                  <span className="text-white font-black truncate max-w-[120px] inline-block">{todayWorkout.muscles}</span>
+                  <span className="text-white font-black truncate block">{todayWorkout.muscles}</span>
                 </div>
               </div>
               {todayWorkout.coach_tip && (
@@ -811,7 +843,7 @@ export const Dashboard = () => {
                   </div>
                   {profile?.plan_expiration && (
                     <span className="text-[8px] font-black text-[var(--text-muted)] mt-0.5 uppercase tracking-tighter">
-                      {langData.dash_valid_until}: {new Date(profile.plan_expiration).toLocaleDateString(langData.PT ? 'pt-BR' : 'en-ZA')}
+                      {langData.dash_valid_until}: {new Date(profile.plan_expiration).toLocaleDateString(langData.locale)}
                     </span>
                   )}
                 </div>
@@ -937,8 +969,6 @@ export const Dashboard = () => {
             onOpenCalendar={() => setIsCalendarOpen(true)} 
           />
 
-          <CoachMessageCard workout={activeWorkout} />
-          <WorkoutCard workout={activeWorkout} />
 
           {isLoading ? (
             <SkeletonLoader />

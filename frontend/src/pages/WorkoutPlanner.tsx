@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Dumbbell, Sparkles, Clock, ChevronRight, Loader2, Calendar, CheckCircle2, Trophy, Flame, AlertTriangle, Lock, X, Camera, Info, Edit2 } from 'lucide-react';
+import { ArrowLeft, Dumbbell, Sparkles, Clock, ChevronRight, Loader2, Calendar, CheckCircle2, Trophy, Flame, AlertTriangle, Lock, X, Camera, Info, Edit2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BottomNav } from '../components/BottomNav';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -19,21 +19,7 @@ export const WorkoutPlanner = () => {
   const { user, totalUsersCount } = useAuth();
   const navigate = useNavigate();
 
-  const getDaysSinceCreation = () => {
-    if (!user?.created_at) return 0;
-    const date = new Date(user.created_at);
-    if (isNaN(date.getTime())) return 0;
-    return (new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
-  };
-
-  const isServerActive = user?.subscription_status === 'ativo' || user?.subscription_status === 'active';
-  const isUnderLimit = totalUsersCount > 0 ? totalUsersCount <= 20 : true;
-  const isPromoActive = isServerActive || isUnderLimit || user?.role === 'admin' || user?.is_influencer || user?.is_early_adopter;
-
-  if (!isPromoActive) {
-    return <Paywall feature={langData.wk_ia_title} />;
-  }
-
+  // All hooks must be declared before any conditional return
   const [activePlan, setActivePlan] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
@@ -58,6 +44,10 @@ export const WorkoutPlanner = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const isServerActive = user?.subscription_status === 'ativo' || user?.subscription_status === 'active';
+  const isUnderLimit = totalUsersCount > 0 ? totalUsersCount <= 20 : true;
+  const isPromoActive = isServerActive || isUnderLimit || user?.role === 'admin' || user?.is_influencer || user?.is_early_adopter;
   const [formData, setFormData] = useState({
     goal: 'ganhar massa',
     level: 'iniciante',
@@ -89,13 +79,13 @@ export const WorkoutPlanner = () => {
     days_per_week: formData.days_per_week,
     structured_plan: {
       daily_workouts: [
-        { day: langData.days_mon, muscles: langData.PT ? 'Peito e Tríceps' : 'Chest and Triceps', exercises: [] },
-        { day: langData.days_tue, muscles: langData.PT ? 'Costas e Bíceps' : 'Back and Biceps', exercises: [] },
-        { day: langData.days_wed, muscles: langData.PT ? 'Descanso Ativo' : 'Active Rest', exercises: [] },
-        { day: langData.days_thu, muscles: langData.PT ? 'Pernas Completo' : 'Full Legs', exercises: [] },
-        { day: langData.days_fri, muscles: langData.PT ? 'Ombros e Core' : 'Shoulders and Core', exercises: [] },
-        { day: langData.days_sat, muscles: langData.PT ? 'Cardio e Mobilidade' : 'Cardio and Mobility', exercises: [] },
-        { day: langData.days_sun, muscles: langData.PT ? 'Descanso Full' : 'Full Rest', exercises: [] }
+        { day: langData.days_mon, muscles: langData.wk_muscle_chest_triceps, exercises: [] },
+        { day: langData.days_tue, muscles: langData.wk_muscle_back_biceps, exercises: [] },
+        { day: langData.days_wed, muscles: langData.wk_muscle_active_rest, exercises: [] },
+        { day: langData.days_thu, muscles: langData.wk_muscle_full_legs, exercises: [] },
+        { day: langData.days_fri, muscles: langData.wk_muscle_shoulders_core, exercises: [] },
+        { day: langData.days_sat, muscles: langData.wk_muscle_cardio_mobility, exercises: [] },
+        { day: langData.days_sun, muscles: langData.wk_muscle_full_rest, exercises: [] }
       ]
     },
     plan_start_date: new Date().toISOString(),
@@ -435,9 +425,9 @@ export const WorkoutPlanner = () => {
                             <div>
                               <label className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3 block">{langData.wk_level}</label>
                               <select value={formData.level} onChange={(e) => setFormData({...formData, level: e.target.value})} className="w-full bg-slate-800/50 p-4 rounded-2xl text-sm font-bold border-white/5 text-white outline-none focus:ring-2 focus:ring-[#56AB2F]/50">
-                                <option value="iniciante">{langData.PT ? 'Iniciante' : 'Beginner'}</option>
-                                <option value="intermediário">{langData.PT ? 'Intermediário' : 'Intermediate'}</option>
-                                <option value="avançado">{langData.PT ? 'Avançado' : 'Advanced'}</option>
+                                <option value="iniciante">{langData.wk_beginner}</option>
+                                <option value="intermediário">{langData.wk_intermediate}</option>
+                                <option value="avançado">{langData.wk_advanced}</option>
                               </select>
                             </div>
                             <div>
@@ -456,7 +446,7 @@ export const WorkoutPlanner = () => {
                                   onClick={() => setFormData({...formData, location: opt})}
                                   className={`flex-1 p-3 rounded-2xl text-xs font-bold capitalize border-2 transition-all ${formData.location === opt ? 'bg-[#56AB2F] border-[#56AB2F] text-white shadow-lg shadow-[#56AB2F]/20' : 'bg-slate-800/50 border-white/5 text-slate-400 hover:bg-slate-800'}`}
                                 >
-                                  {opt === 'academia' ? (langData.PT ? 'Academia' : 'Gym') : (langData.PT ? 'Casa' : 'Home')}
+                                  {opt === 'academia' ? langData.wk_gym : langData.wk_home_location}
                                 </button>
                               ))}
                             </div>
@@ -492,7 +482,7 @@ export const WorkoutPlanner = () => {
                               <select value={formData.intensity} onChange={(e) => setFormData({...formData, intensity: e.target.value})} className="w-full bg-slate-800/50 p-4 rounded-2xl text-sm font-bold border-white/5 text-white outline-none focus:ring-2 focus:ring-[#56AB2F]/50">
                                 {['Leve', 'Moderado', 'Intenso'].map(i => (
                                   <option key={i} value={i}>
-                                    {i === 'Leve' ? (langData.PT ? 'Leve' : 'Light') : i === 'Moderado' ? (langData.PT ? 'Moderado' : 'Moderate') : (langData.PT ? 'Intenso' : 'Intense')}
+                                    {i === 'Leve' ? langData.wk_light : i === 'Moderado' ? langData.wk_moderate : langData.wk_intense}
                                   </option>
                                 ))}
                               </select>
@@ -557,7 +547,7 @@ export const WorkoutPlanner = () => {
                             <textarea 
                               value={formData.injuries} 
                               onChange={(e) => setFormData({...formData, injuries: e.target.value})} 
-                              placeholder={langData.PT ? 'Ex: Joelho esquerdo, Coluna...' : 'Ex: Left knee, Spine...'} 
+                              placeholder={langData.wk_injuries_placeholder}
                               className="w-full bg-slate-800/50 p-4 rounded-2xl text-sm font-bold border-white/5 text-white h-20 resize-none outline-none focus:ring-2 focus:ring-[#56AB2F]/50"
                             />
                           </div>
@@ -566,7 +556,7 @@ export const WorkoutPlanner = () => {
                             <textarea 
                               value={formData.diseases} 
                               onChange={(e) => setFormData({...formData, diseases: e.target.value})} 
-                              placeholder={langData.PT ? 'Ex: Pressão alta, Diabetes...' : 'Ex: High blood pressure, Diabetes...'} 
+                              placeholder={langData.wk_diseases_placeholder}
                               className="w-full bg-slate-800/50 p-4 rounded-2xl text-sm font-bold border-white/5 text-white h-20 resize-none outline-none focus:ring-2 focus:ring-[#56AB2F]/50"
                             />
                           </div>
@@ -641,7 +631,7 @@ export const WorkoutPlanner = () => {
                   disabled={isTransitioning}
                   className="flex-1 py-5 bg-slate-800 rounded-3xl text-slate-400 font-black text-lg disabled:opacity-50 hover:bg-slate-700 transition-colors"
                 >
-                  Voltar
+                  {langData.wk_back}
                 </button>
               )}
               <button 
@@ -651,7 +641,7 @@ export const WorkoutPlanner = () => {
               >
                 {isTransitioning ? (
                   <Loader2 className="w-6 h-6 animate-spin" />
-                ) : currentStep === 5 ? 'Gerar Plano' : 'Continuar'}
+                ) : currentStep === 5 ? langData.wk_generate : langData.wk_continue}
               </button>
             </div>
           </div>
@@ -720,7 +710,7 @@ export const WorkoutPlanner = () => {
             />
           </div>
           <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500 tracking-widest px-1">
-            <span>{langData.PT ? 'Progresso' : 'Progress'}</span>
+            <span>{langData.wk_progress}</span>
             <span>{Math.round(loadingProgress)}%</span>
           </div>
         </div>
@@ -768,10 +758,10 @@ export const WorkoutPlanner = () => {
    */
   const renderGenerationOverlay = () => {
     const phaseTexts = {
-      validating: langData.PT ? 'Validando seus dados...' : 'Validating your data...',
-      analyzing: langData.PT ? 'Analisando sua biometria...' : 'Analyzing your biometrics...',
-      optimizing: langData.PT ? 'Otimizando volume de treino...' : 'Optimizing training volume...',
-      finalizing: langData.PT ? 'Finalizando seu plano Master...' : 'Finalizing your Master plan...',
+      validating: langData.wk_validating,
+      analyzing: langData.wk_analyzing_bio,
+      optimizing: langData.wk_optimizing,
+      finalizing: langData.wk_finalizing_plan,
       idle: ''
     };
 
@@ -830,7 +820,7 @@ export const WorkoutPlanner = () => {
             ))}
           </div>
           <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-            {retryCount > 0 ? (langData.PT ? `Tentativa ${retryCount + 1}` : `Attempt ${retryCount + 1}`) : (langData.PT ? 'Conectando ao Coach...' : 'Connecting to Coach...')}
+            {retryCount > 0 ? `${langData.wk_attempt} ${retryCount + 1}` : langData.wk_connecting}
           </span>
         </div>
 
@@ -843,55 +833,81 @@ export const WorkoutPlanner = () => {
   };
 
 
+  if (!isPromoActive) {
+    return <Paywall feature={langData.wk_ia_title} />;
+  }
+
   return (
     <div className="main-wrapper bg-[var(--bg-app)]">
       <AnimatePresence>
         {isGenerating && renderGenerationOverlay()}
       </AnimatePresence>
+
       <div className="app-container pb-32 bg-transparent shadow-none border-none">
-        <div className="px-6 pt-12 pb-6 flex justify-center items-center sticky top-0 z-40 bg-[var(--bg-app)]/90 backdrop-blur-sm">
-          <h1 className="text-[22px] font-bold text-[var(--text-main)]">{langData.wk_ia_title}</h1>
+
+        {/* ── Header ── */}
+        <div className="px-6 pt-12 pb-4 sticky top-0 z-40 bg-[var(--bg-app)]/95 backdrop-blur-sm border-b border-[var(--border-main)]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#56AB2F]/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+              <Dumbbell className="w-5 h-5 text-[#56AB2F]" />
+            </div>
+            <div>
+              <h1 className="text-[20px] font-black text-[var(--text-main)] leading-none">{langData.wk_ia_title}</h1>
+              <p className="text-[11px] font-bold text-[var(--text-muted)] mt-0.5">
+                {langData.wk_subtitle}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="px-6">
+        <div className="px-6 pt-6">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20">
               <Loader2 className="w-12 h-12 animate-spin text-[#56AB2F] mb-4" />
               <p className="text-[var(--text-muted)] font-bold italic">{langData.wk_preparing}</p>
             </div>
           ) : activePlan ? (
-            <div className="space-y-8">
-              {/* Active Plan Info */}
-              <div className="bg-[var(--bg-card)] rounded-[40px] p-8 shadow-xl border border-[var(--border-main)] relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 flex space-x-2">
-                  {activePlan.goal === 'Manual' && (
-                    <button 
-                      onClick={() => navigate('/workout/manual')}
-                      className="p-2 bg-[#56AB2F]/10 rounded-xl text-[#56AB2F] hover:bg-[#56AB2F]/20 transition-all border border-[#56AB2F]/20"
-                      title="Editar Plano Manual"
-                    >
-                      <Edit2 className="w-5 h-5" />
-                    </button>
-                  )}
-                  <button 
-                    onClick={() => {
-                      setConfirmOptions({
+            <div className="space-y-5">
+
+              {/* ── Plano Ativo ── */}
+              <div className="bg-[var(--bg-card)] rounded-[28px] p-6 border border-[var(--border-main)] shadow-sm">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] font-black text-[#56AB2F] uppercase tracking-widest">
+                      {langData.wk_active_plan_title}
+                    </span>
+                    <h2 className="text-xl font-black text-[var(--text-main)] mt-1 leading-tight pr-2 truncate">
+                      {activePlan.title || langData.wk_master_plan}
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0 mt-1">
+                    {activePlan.goal === 'Manual' && (
+                      <button
+                        onClick={() => navigate('/workout/manual')}
+                        className="w-9 h-9 bg-[var(--bg-surface)] rounded-xl flex items-center justify-center text-[#56AB2F] hover:bg-[#56AB2F]/10 transition-all"
+                        title={langData.wk_edit_manual}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setConfirmOptions({
                         isOpen: true,
-                        title: langData.PT ? 'Resetar Plano' : 'Reset Plan',
-                        message: langData.PT ? 'Deseja realmente apagar o plano atual e gerar um novo? Todo seu progresso nos 30 dias será perdido. Esta ação é irreversível.' : 'Do you really want to delete the current plan and generate a new one? All your 30-day progress will be lost. This action is irreversible.',
+                        title: langData.wk_delete_plan,
+                        message: langData.wk_delete_plan_msg,
                         type: 'danger',
-                        confirmText: langData.PT ? 'Apagar Plano' : 'Delete Plan',
+                        confirmText: langData.wk_delete_plan,
                         showCancel: true,
                         onConfirm: async () => {
                           try {
                             await api.workouts.reset();
                             setActivePlan(null);
-                          } catch(e) {
+                          } catch (e) {
                             setTimeout(() => {
                               setConfirmOptions({
                                 isOpen: true,
                                 title: langData.error,
-                                message: langData.PT ? 'Ocorreu um erro ao resetar o plano. Tente novamente.' : 'An error occurred while resetting the plan. Please try again.',
+                                message: langData.wk_delete_error,
                                 type: 'danger',
                                 confirmText: langData.close,
                                 onConfirm: async () => {},
@@ -900,167 +916,231 @@ export const WorkoutPlanner = () => {
                             }, 300);
                           }
                         }
-                      });
-                    }}
-                    className="p-2 bg-gray-50 rounded-xl text-[var(--text-muted)] hover:text-red-500 transition-colors"
-                    title="Resetar Plano"
-                  >
-                    <Flame className="w-5 h-5" />
-                  </button>
-                  <Flame className="w-6 h-6 text-orange-500 opacity-20" />
-                </div>
-                <p className="text-[10px] font-black text-[#56AB2F] uppercase tracking-widest mb-1">{langData.wk_active_plan_title}</p>
-                <h2 className="text-2xl font-black text-[var(--text-main)] mb-1">{activePlan.title || (langData.PT ? 'Seu Plano Master' : 'Your Master Plan')}</h2>
-                <div className="flex flex-wrap gap-4 mt-6">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-4 h-4 text-[var(--text-muted)]" />
-                    <p className="text-xs font-bold text-[var(--text-muted)]">{langData.PT ? 'Início' : 'Start'}: {formatDate(activePlan.plan_start_date || activePlan.created_at)}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Clock className="w-4 h-4 text-[#56AB2F]" />
-                    <p className="text-xs font-bold text-[var(--text-muted)]">{langData.PT ? 'Renovação' : 'Renewal'}: {formatDate(activePlan.plan_renewal_date || activePlan.next_plan_available_at)}</p>
+                      })}
+                      className="w-9 h-9 bg-[var(--bg-surface)] rounded-xl flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50/50 transition-all"
+                      title={langData.wk_delete_plan}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 
-                <div className="mt-8 relative">
-                  <button 
-                    onClick={() => {
-                      setIsUpdating(true);
-                      setIsModalOpen(true);
-                    }}
-                    className="w-full py-4 bg-slate-800 border-2 border-[#56AB2F]/30 rounded-2xl text-white font-black text-sm flex items-center justify-center space-x-2 group hover:bg-[#56AB2F] transition-all shadow-lg"
-                  >
-                    <Sparkles className="w-5 h-5 text-[#56AB2F] group-hover:text-white transition-colors group-hover:animate-pulse" />
-                    <span>{langData.wk_update_now}</span>
-                    
-                    {activePlan.goal === 'Manual' && (
-                      <span className="absolute -top-3 -right-2 bg-amber-500 text-white text-[8px] font-black px-2 py-1 rounded-full shadow-lg border border-white animate-bounce">
-                        UPGRADE PREMIUM
-                      </span>
-                    )}
-                  </button>
-                  <p className="text-[10px] text-[var(--text-muted)] font-bold text-center mt-2 px-4 italic">
-                    {activePlan.goal === 'Manual' 
-                      ? (langData.PT ? 'Gere um plano inteligente para acelerar seus resultados.' : 'Generate a smart plan to accelerate your results.')
-                      : (langData.PT ? 'Gera um novo plano adaptado à sua evolução e histórico recente.' : 'Generates a new plan adapted to your evolution and recent history.')}
-                  </p>
+                {/* Tags do plano */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {activePlan.goal && (
+                    <span className="px-2.5 py-1 bg-[var(--bg-surface)] rounded-lg text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider capitalize">
+                      {activePlan.goal}
+                    </span>
+                  )}
+                  {activePlan.level && (
+                    <span className="px-2.5 py-1 bg-[var(--bg-surface)] rounded-lg text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider capitalize">
+                      {activePlan.level}
+                    </span>
+                  )}
+                  {activePlan.days_per_week && (
+                    <span className="px-2.5 py-1 bg-[#56AB2F]/10 rounded-lg text-[10px] font-black text-[#56AB2F] uppercase tracking-wider">
+                      {activePlan.days_per_week}x {langData.wk_per_week}
+                    </span>
+                  )}
                 </div>
+
+                {/* Datas */}
+                <div className="flex flex-wrap gap-4 mb-5 text-[11px] font-bold text-[var(--text-muted)]">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>{langData.wk_start_date}: {formatDate(activePlan.plan_start_date || activePlan.created_at)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[#56AB2F]">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{langData.wk_renewal_date}: {formatDate(activePlan.plan_renewal_date || activePlan.next_plan_available_at)}</span>
+                  </div>
+                </div>
+
+                {/* Botão atualizar plano */}
+                <button
+                  onClick={() => { setIsUpdating(true); setIsModalOpen(true); }}
+                  className="w-full py-3.5 bg-[#56AB2F]/10 border border-[#56AB2F]/30 rounded-2xl text-[#56AB2F] font-black text-sm flex items-center justify-center gap-2 hover:bg-[#56AB2F] hover:text-white transition-all relative overflow-hidden"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>{langData.wk_update_now}</span>
+                  {activePlan.goal === 'Manual' && (
+                    <span className="ml-2 bg-amber-400 text-white text-[8px] font-black px-2 py-0.5 rounded-full">
+                      UPGRADE IA
+                    </span>
+                  )}
+                </button>
               </div>
 
-              {/* Progress Bar */}
-              <div className="bg-[var(--bg-card)] rounded-[32px] p-6 border border-white/10 shadow-sm">
-                <div className="flex justify-between items-center mb-4">
-                   <h4 className="text-base font-black text-[var(--text-main)]">{langData.PT ? 'Seu Progresso' : 'Your Progress'}</h4>
-                   <Trophy className="w-6 h-6 text-[#56AB2F]" />
+              {/* ── Progresso ── */}
+              <div className="bg-[var(--bg-card)] rounded-[24px] p-5 border border-[var(--border-main)]">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-black text-[var(--text-main)]">
+                      {langData.wk_weekly_progress}
+                    </p>
+                    <p className="text-[11px] font-bold text-[var(--text-muted)] mt-0.5">
+                      {completedSessions.length} {langData.wk_of} {activePlan.structured_plan?.daily_workouts?.length || 7} {langData.wk_workouts_done}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 bg-[#56AB2F]/10 rounded-2xl flex items-center justify-center">
+                    <Trophy className="w-5 h-5 text-[#56AB2F]" />
+                  </div>
                 </div>
-                <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-                  <motion.div 
+                <div className="w-full h-2 bg-[var(--bg-surface)] rounded-full overflow-hidden">
+                  <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${(completedSessions.length / (activePlan.structured_plan?.daily_workouts?.length || 1)) * 100}%` }}
-                    className="h-full bg-[#56AB2F]"
+                    className="h-full bg-gradient-to-r from-[#A8E063] to-[#56AB2F] rounded-full"
                   />
                 </div>
               </div>
 
-              {/* Weekly Cards */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center mb-2 px-1">
-                  <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">{langData.PT ? 'Organização Semanal' : 'Weekly Schedule'}</h4>
-                  <p className="text-[9px] font-black text-[#56AB2F] uppercase bg-[#56AB2F]/10 px-2 py-1 rounded-lg">
-                    {activePlan.days_per_week}
-                  </p>
-                </div>
-                {activePlan.structured_plan?.daily_workouts?.map((dw: any) => {
-                  const todayName = getMaputoDayName(new Date()).toLowerCase();
-                  const isDone = completedSessions.includes(dw.day);
-                  const isToday = dw.day.toLowerCase() === todayName;
-                  const isLocked = !isToday && !isDone;
-                  const canAccess = isToday || isDone;
+              {/* ── Treinos da Semana ── */}
+              <div>
+                <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3 px-1">
+                  {langData.wk_weekly_workouts}
+                </p>
+                <div className="space-y-3">
+                  {(() => {
+                    const dailyWorkouts = activePlan.structured_plan?.daily_workouts || [];
+                    // Detect weekday-named plan vs split-named plan ("Treino A", "Treino B"...)
+                    const weekdayKeywords = ['segunda','terça','quarta','quinta','sexta','sábado','domingo','monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+                    const isWeekdayPlan = dailyWorkouts.some((dw: any) =>
+                      weekdayKeywords.some(kw => dw.day.toLowerCase().includes(kw))
+                    );
+                    const todayName = getMaputoDayName(new Date()).toLowerCase();
+                    // For split plans: first non-completed, non-rest workout is "next"
+                    let nextSplitIndex = -1;
+                    if (!isWeekdayPlan) {
+                      nextSplitIndex = dailyWorkouts.findIndex((dw: any) => {
+                        const exCount = dw.exercises?.length || 0;
+                        const isRest = exCount === 0 || dw.muscles?.toLowerCase().includes('descanso') || dw.muscles?.toLowerCase().includes('rest');
+                        return !isRest && !completedSessions.includes(dw.day);
+                      });
+                    }
 
-                  return (
-                    <motion.button
-                      key={dw.day}
-                      disabled={!canAccess && !isDone}
-                      onClick={() => {
-                        if (canAccess || isDone) {
-                          navigate(`/workout/session/${dw.day}`);
-                        }
-                      }}
-                      whileTap={(canAccess || isDone) ? { scale: 0.98 } : {}}
-                      className={`w-full p-6 rounded-[32px] shadow-sm border-2 transition-all flex items-center justify-between group relative overflow-hidden
-                        ${isDone 
-                          ? 'bg-[#F0F9EB]/40 border-[#56AB2F]/20 opacity-100' 
-                          : isToday 
-                            ? 'bg-[var(--bg-card)] border-[#56AB2F] shadow-lg shadow-[#56AB2F]/10' 
-                            : canAccess
-                              ? 'bg-[var(--bg-card)] border-transparent'
-                              : 'bg-gray-50/50 border-transparent opacity-40'}`}
-                    >
-                      <div className="flex items-center space-x-4 relative z-10">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500
-                          ${isDone ? 'bg-[#56AB2F] text-white rotate-[360deg]' : 
-                            isToday ? 'bg-[#56AB2F]/10 text-[#56AB2F]' : 
-                            canAccess ? 'bg-gray-50 text-[var(--text-muted)]' : 'bg-gray-100/50 text-gray-300'}`}>
-                          {isDone ? <CheckCircle2 className="w-7 h-7" /> : <Dumbbell className="w-6 h-6" />}
+                    return dailyWorkouts.map((dw: any, idx: number) => {
+                    const isDone = completedSessions.includes(dw.day);
+                    const exerciseCount = dw.exercises?.length || 0;
+                    const isRest = exerciseCount === 0
+                      || dw.muscles?.toLowerCase().includes('descanso')
+                      || dw.muscles?.toLowerCase().includes('rest');
+
+                    // Weekday plans: accessible if today or done
+                    // Split plans: accessible if not a rest day (all training days open)
+                    const isToday = isWeekdayPlan && dw.day.toLowerCase() === todayName;
+                    const isNext = !isWeekdayPlan && idx === nextSplitIndex;
+                    const canAccess = isWeekdayPlan ? (isToday || isDone) : (!isRest || isDone);
+
+                    const muscleLabel = activePlan.goal === 'Manual' && exerciseCount > 0
+                      ? `${exerciseCount} ${langData.wk_exercises}`
+                      : dw.muscles;
+
+                    return (
+                      <motion.button
+                        key={dw.day}
+                        disabled={!canAccess}
+                        onClick={() => { if (canAccess) navigate(`/workout/session/${encodeURIComponent(dw.day)}`); }}
+                        whileTap={canAccess ? { scale: 0.98 } : {}}
+                        className={`w-full px-5 py-4 rounded-[20px] border-2 transition-all flex items-center justify-between gap-3
+                          ${isDone
+                            ? 'bg-[#56AB2F]/5 border-[#56AB2F]/20'
+                            : (isToday || isNext)
+                              ? 'bg-[var(--bg-card)] border-[#56AB2F] shadow-md shadow-[#56AB2F]/10'
+                              : canAccess
+                                ? 'bg-[var(--bg-card)] border-[var(--border-main)]'
+                                : 'bg-[var(--bg-surface)]/60 border-transparent opacity-50 cursor-default'}`}
+                      >
+                        {/* Ícone de status */}
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0
+                          ${isDone
+                            ? 'bg-[#56AB2F] text-white'
+                            : (isToday || isNext)
+                              ? 'bg-[#56AB2F]/10 text-[#56AB2F]'
+                              : 'bg-[var(--bg-surface)] text-[var(--text-muted)]'}`}>
+                          {isDone
+                            ? <CheckCircle2 className="w-5 h-5" />
+                            : isRest
+                              ? <Clock className="w-5 h-5" />
+                              : <Dumbbell className="w-5 h-5" />}
                         </div>
-                        <div className="text-left">
-                          <div className="flex items-center gap-2">
-                             <p className={`text-base font-black ${isLocked ? 'text-gray-300' : 'text-[var(--text-main)]'}`}>{dw.day}</p>
-                             {isToday && !isDone && (
-                               <span className="flex h-2 w-2 rounded-full bg-[#56AB2F] animate-ping" />
-                             )}
-                          </div>
-                          <p className={`text-xs font-bold leading-tight line-clamp-1 ${isDone ? 'text-[#56AB2F]' : isLocked ? 'text-gray-200' : 'text-[var(--text-muted)]'}`}>
-                            {isDone ? (langData.PT ? 'Treino Finalizado! 🏆' : 'Workout Done! 🏆') : (
-                              activePlan.goal === 'Manual' && dw.exercises && dw.exercises.length > 0
-                                ? dw.exercises.map((ex: any) => ex.name).join(', ')
-                                : dw.muscles
+
+                        {/* Informação do dia */}
+                        <div className="flex-1 text-left min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                            <p className={`text-[14px] font-black ${!canAccess ? 'text-[var(--text-muted)]' : 'text-[var(--text-main)]'}`}>
+                              {dw.day}
+                            </p>
+                            {isToday && !isDone && (
+                              <span className="bg-[#56AB2F] text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-md flex-shrink-0">
+                                {langData.dash_today}
+                              </span>
                             )}
+                            {isNext && !isDone && (
+                              <span className="bg-[#56AB2F] text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-md flex-shrink-0">
+                                {langData.wk_next}
+                              </span>
+                            )}
+                          </div>
+                          <p className={`text-[11px] font-bold leading-tight truncate ${isDone ? 'text-[#56AB2F]' : 'text-[var(--text-muted)]'}`}>
+                            {isDone
+                              ? langData.wk_workout_done_label
+                              : isRest
+                                ? langData.wk_rest_day
+                                : muscleLabel}
                           </p>
                         </div>
-                      </div>
 
-                      <div className="flex items-center space-x-3 relative z-10">
-                        {isToday && !isDone && (
-                          <span className="bg-[#56AB2F] text-white text-[9px] font-black uppercase px-2 py-1 rounded-md">{langData.PT ? 'Hoje' : 'Today'}</span>
-                        )}
-                        {(!canAccess && !isDone) ? (
-                          <Lock className="w-5 h-5 text-gray-200" />
-                        ) : (
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isToday ? 'bg-[#56AB2F] text-white' : 'bg-gray-50 text-gray-300'}`}>
-                            <ChevronRight className="w-4 h-4" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Progress Sparkle for current day */}
-                      {isToday && !isDone && (
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#56AB2F]/10 to-transparent rounded-full -mr-12 -mt-12 blur-2xl" />
-                      )}
-                    </motion.button>
-                  );
-                })}
+                        {/* Contagem de exercícios + seta */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {!isDone && !isRest && exerciseCount > 0 && (
+                            <span className="text-[9px] font-black text-[var(--text-muted)] bg-[var(--bg-surface)] px-2 py-0.5 rounded-lg">
+                              {exerciseCount}x
+                            </span>
+                          )}
+                          {canAccess && !isDone && (
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center
+                              ${(isToday || isNext) ? 'bg-[#56AB2F] text-white' : 'bg-[var(--bg-surface)] text-[var(--text-muted)]'}`}>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </div>
+                          )}
+                        </div>
+                      </motion.button>
+                    );
+                  });
+                  })()}
+                </div>
               </div>
+
             </div>
           ) : (
-            <div className="py-12 text-center">
-              <div className="w-20 h-20 bg-[var(--bg-card)] rounded-[32px] flex items-center justify-center shadow-sm mx-auto mb-6">
-                <Sparkles className="w-10 h-10 text-[#56AB2F]" />
+            /* ── Estado vazio ── */
+            <div className="pt-10 pb-6 text-center">
+              <div className="w-24 h-24 bg-[#56AB2F]/10 rounded-[32px] flex items-center justify-center mx-auto mb-6">
+                <Dumbbell className="w-12 h-12 text-[#56AB2F]" />
               </div>
-              <h2 className="text-2xl font-black text-[var(--text-main)] mb-2">{langData.PT ? 'Sem Plano Ativo' : 'No Active Plan'}</h2>
-              <p className="text-[var(--text-muted)] font-bold mb-10 max-w-xs mx-auto">{langData.PT ? 'Gere agora seu plano inteligente válido pelos próximos 30 dias.' : 'Generate your smart plan now, valid for the next 30 days.'}</p>
-              <button 
-                onClick={() => setIsModalOpen(true)}
-                className="w-full py-5 bg-[#56AB2F] rounded-3xl text-white font-black text-lg shadow-xl active:scale-95 transition-all mb-4"
-              >
-                {langData.PT ? 'Gerar Plano Inteligente' : 'Generate Smart Plan'}
-              </button>
-              <button 
-                onClick={() => navigate('/workout/manual')}
-                className="w-full py-5 bg-transparent border-2 border-[#56AB2F] rounded-3xl text-[#56AB2F] font-black text-lg active:scale-95 transition-all"
-              >
-                {langData.PT ? 'Criar Meu Plano' : 'Create My Plan'}
-              </button>
+              <h2 className="text-2xl font-black text-[var(--text-main)] mb-2">
+                {langData.wk_no_plan}
+              </h2>
+              <p className="text-[var(--text-muted)] font-bold mb-8 max-w-xs mx-auto text-sm leading-relaxed">
+                {langData.wk_no_plan_desc}
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="w-full py-5 bg-[#56AB2F] rounded-3xl text-white font-black text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  <span>{langData.wk_generate_ai}</span>
+                </button>
+                <button
+                  onClick={() => navigate('/workout/manual')}
+                  className="w-full py-4 bg-transparent border-2 border-[var(--border-main)] rounded-3xl text-[var(--text-muted)] font-black text-base active:scale-95 transition-all flex items-center justify-center gap-2"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  <span>{langData.wk_create_manual}</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -1071,7 +1151,7 @@ export const WorkoutPlanner = () => {
           {showWarning && renderWarningModal()}
         </AnimatePresence>
 
-        <ConfirmModal 
+        <ConfirmModal
           isOpen={confirmOptions.isOpen}
           onClose={closeConfirm}
           title={confirmOptions.title}
