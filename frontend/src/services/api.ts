@@ -407,11 +407,11 @@ export const api = {
         body: JSON.stringify(data)
       }).then(handleResponse),
 
-    removeDevice: (payload: { device_id?: string; endpoint?: string; subscription?: any }) =>
+    removeDevice: (payload?: { device_id?: string; endpoint?: string; subscription?: any }) =>
       fetch(`${API_URL}/notifications/device`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify(payload)
+        ...(payload ? { body: JSON.stringify(payload) } : {})
       }).then(handleResponse),
   },
   workouts: {
