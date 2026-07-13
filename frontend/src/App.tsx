@@ -11,6 +11,7 @@ import { AddMeal } from './pages/AddMeal';
 import { WorkoutPlanner } from './pages/WorkoutPlanner';
 import { History } from './pages/History';
 import { Profile } from './pages/Profile';
+import { ProfileLogs } from './pages/ProfileLogs';
 import { FoodScanner } from './pages/Scanner';
 import { ScanResult } from './pages/ScanResult';
 import { Notifications } from './pages/Notifications';
@@ -223,6 +224,7 @@ function App() {
           <Route path="/workout/manual" element={<ProtectedRoute><ManualWorkoutCreator /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/profile/logs" element={<ProtectedRoute><ProfileLogs /></ProtectedRoute>} />
           <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
           <Route path="/scanner" element={<ProtectedRoute><FoodScanner /></ProtectedRoute>} />
           <Route path="/scan-result" element={<ProtectedRoute><ScanResult /></ProtectedRoute>} />

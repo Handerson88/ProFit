@@ -59,7 +59,7 @@ const workerStateLabel = (state: string) => ({
   'not-registered': 'não registrado',
 }[state] || state);
 
-export const PushDiagnosticBanner = () => {
+export const PushDiagnosticBanner = ({ showWhenHealthy = false }: { showWhenHealthy?: boolean }) => {
   const [report, setReport] = useState<PushDiagnosticReport | null>(null);
   const [checking, setChecking] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -104,7 +104,7 @@ export const PushDiagnosticBanner = () => {
     };
   }, [inspect]);
 
-  if (!report || report.code === 'active') return null;
+  if (!report || (report.code === 'active' && !showWhenHealthy)) return null;
 
   const style = severityStyles[report.severity];
   const StatusIcon = report.severity === 'error'

@@ -17,7 +17,6 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
 import { NotificationCenter } from '../components/NotificationCenter';
-import { PushDiagnosticBanner } from '../components/PushDiagnosticBanner';
 import { formatMaputoTime, formatMaputoLongDate, getMaputoNow, isMaputoToday, getMaputoDayName } from '../utils/dateUtils';
 import { notificationService } from '../services/notificationService';
 
@@ -855,8 +854,6 @@ export const Dashboard = () => {
             <NotificationCenter />
           </div>
         </div>
-
-        <PushDiagnosticBanner />
 
         {/* Banner de Plano/Pagamento */}
         {(() => {
