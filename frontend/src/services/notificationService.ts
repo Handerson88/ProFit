@@ -61,6 +61,9 @@ export const PUSH_SUBSCRIPTION_CHANGED_EVENT = 'profit:push-subscription-changed
 const SERVICE_WORKER_URL = '/sw.js';
 const SERVICE_WORKER_SCOPE = '/';
 const SERVICE_WORKER_READY_TIMEOUT_MS = 15_000;
+// This is the public half of the VAPID pair and is intentionally shipped to browsers.
+// The environment variable remains the preferred override for future key rotations.
+const DEFAULT_VAPID_PUBLIC_KEY = 'BP8IeHC6cSbjTpOaLA7ytP4ng2xaNgca940mOCkv2k83IllKA4xdsmOo9RzN1-YOoV5afp1iy9Yfq21eWFZ44WE';
 const PROMPT_DISMISSED_KEY = 'profit_push_prompt_dismissed_at_v3';
 const PREVIOUS_PROMPT_DISMISSED_KEY = 'profit_push_prompt_dismissed_at_v2';
 const OLDER_PROMPT_DISMISSED_KEY = 'profit_push_prompt_dismissed_at';
@@ -68,7 +71,9 @@ const LEGACY_PROMPT_DISMISSED_KEY = 'notification_prompt_dismissed';
 const PUSH_USER_KEY = 'profit_push_user_id';
 
 class NotificationService {
-  private readonly vapidKey = (import.meta.env.VITE_VAPID_PUBLIC_KEY || '').trim();
+  private readonly vapidKey = (
+    import.meta.env.VITE_VAPID_PUBLIC_KEY || DEFAULT_VAPID_PUBLIC_KEY
+  ).trim();
   private registrationPromise: Promise<ServiceWorkerRegistration> | null = null;
   private activeRegistration: ServiceWorkerRegistration | null = null;
   private currentSubscription: PushSubscription | null = null;

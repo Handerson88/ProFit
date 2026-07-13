@@ -47,6 +47,7 @@ export const NotificationPrompt = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
     if (window.location.pathname.startsWith('/quiz')) return;
+    if (window.location.pathname.startsWith('/profile/logs')) return;
 
     // iOS not installed as PWA — show Add to Home Screen guide
     if (notificationService.isIOSNotPWA()) {
