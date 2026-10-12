@@ -1,16 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, CheckCircle2, Globe, Languages, Monitor } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, Clock, Dumbbell, Globe, Languages, Monitor } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BottomNav } from '../components/BottomNav';
 import { api } from '../services/api';
+import { TrainingScheduleModal } from '../components/TrainingScheduleModal';
+
+const DAY_LABELS: Record<string, string> = {
+  monday: 'Seg', tuesday: 'Ter', wednesday: 'Qua', thursday: 'Qui',
+  friday: 'Sex', saturday: 'Sáb', sunday: 'Dom'
+};
 
 export const Preferences = () => {
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [trainingSchedule, setTrainingSchedule] = useState<{ days: string[]; time: string } | null>(null);
+  const [showTrainingModal, setShowTrainingModal] = useState(false);
+
+  useEffect(() => {
+    api.user.getAppStatus().then((status: any) => {
+      setTrainingSchedule(status?.training || null);
+    }).catch(() => {});
+  }, []);
+
+  const trainingSummary = trainingSchedule?.days?.length && trainingSchedule?.time
+    ? `${trainingSchedule.days.map(d => DAY_LABELS[d] || d).join(', ')} às ${trainingSchedule.time}`
+    : 'Ainda não definido';
 
   const handleAILanguageChange = async (lang: 'auto' | 'pt' | 'en') => {
     try {
@@ -98,8 +116,43 @@ export const Preferences = () => {
               })}
             </div>
           </div>
+
+          {/* Training Schedule Section */}
+          <div>
+            <p className="section-label mb-4">Horário de Treino</p>
+            <button
+              onClick={() => setShowTrainingModal(true)}
+              className="w-full flex items-center justify-between p-4 bg-white/[0.03] rounded-3xl border border-white/[0.06] active:scale-[0.98] transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 bg-white/[0.06] text-slate-400">
+                  <Dumbbell className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-[15px] text-white">Dias e horário</p>
+                  <p className="text-[12px] text-slate-500 font-medium flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> {trainingSummary}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-500" />
+            </button>
+          </div>
         </motion.div>
       </div>
+
+      <TrainingScheduleModal
+        isOpen={showTrainingModal}
+        onClose={() => setShowTrainingModal(false)}
+        initialDays={trainingSchedule?.days}
+        initialTime={trainingSchedule?.time}
+        onSaved={(schedule) => {
+          setTrainingSchedule(schedule);
+          setToastMessage('Horário de treino atualizado');
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 3000);
+        }}
+      />
 
       {/* Toast */}
       <AnimatePresence>

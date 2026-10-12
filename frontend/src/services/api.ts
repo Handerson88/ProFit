@@ -85,9 +85,11 @@ const handleResponse = async (res: Response) => {
   
   if (!res.ok) {
     const isPublicRoute = ['/login', '/register', '/onboarding', '/quiz', '/checkout', '/forgot-password', '/reset-password', '/auth/invite', '/activate', '/accept-invite', '/register-password'].some(path => window.location.pathname.startsWith(path));
-    
+    // Payment/checkout errors are business errors, not session errors — never force-logout on them.
+    const isPaymentRequest = res.url.includes('/payment/');
+
     // Redirect to login if unauthorized or if user/profile is not found
-    if ((res.status === 401 || (res.status === 404 && res.url.includes('/user/profile'))) && !isPublicRoute) {
+    if ((res.status === 401 || (res.status === 404 && res.url.includes('/user/profile'))) && !isPublicRoute && !isPaymentRequest) {
       console.warn(`Auth session invalid (Status ${res.status}). Redirecting to login...`);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -364,6 +366,16 @@ export const api = {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({ onboarding_completed: true })
+    }).then(handleResponse),
+
+    getAppStatus: () => fetch(`${API_URL}/user/app-status`, {
+      headers: getHeaders()
+    }).then(handleResponse),
+
+    updateTrainingSchedule: (data: { days?: string[]; time?: string }) => fetch(`${API_URL}/user/training-schedule`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
     }).then(handleResponse)
   },
 
