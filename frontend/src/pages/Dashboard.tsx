@@ -12,6 +12,7 @@ import { EditMealModal } from '../components/EditMealModal';
 import { InviteModal } from '../components/InviteModal';
 import { PremiumBanner } from '../components/PremiumBanner';
 import { MilestonePopUp } from '../components/MilestonePopUp';
+import { TrainingScheduleModal } from '../components/TrainingScheduleModal';
 import { appService } from '../services/appService';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -243,6 +244,7 @@ export const Dashboard = () => {
   const [mealToDelete, setMealToDelete] = useState<string | null>(null);
   const [appStatus, setAppStatus] = useState({ totalUsers: 0, monetizationEnabled: false });
   const [showMilestone, setShowMilestone] = useState(false);
+  const [showTrainingSchedule, setShowTrainingSchedule] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
   const [isTrial, setIsTrial] = useState(false);
@@ -271,6 +273,14 @@ export const Dashboard = () => {
     localStorage.setItem('milestone_20_users_seen', 'true');
     setShowMilestone(false);
   };
+
+  useEffect(() => {
+    api.user.getAppStatus().then((status: any) => {
+      const training = status?.training;
+      const needsTrainingSchedule = !training || !training.time || !training.days || training.days.length === 0;
+      if (needsTrainingSchedule) setShowTrainingSchedule(true);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -1029,9 +1039,14 @@ export const Dashboard = () => {
         onClose={() => setIsInviteModalOpen(false)}
       />
 
-      <MilestonePopUp 
+      <MilestonePopUp
         isOpen={showMilestone}
         onClose={handleCloseMilestone}
+      />
+
+      <TrainingScheduleModal
+        isOpen={showTrainingSchedule}
+        onClose={() => setShowTrainingSchedule(false)}
       />
 
       <BottomNav />
