@@ -867,7 +867,11 @@ export const Dashboard = () => {
 
         {/* Banner de Plano/Pagamento */}
         {(() => {
-          const isPro = profile?.subscription_status === 'ativo' && (profile?.plan === 'pro' || profile?.plan === 'premium');
+          const planValue = String(profile?.plan || profile?.plan_type || '').trim().toLowerCase();
+          const subscriptionStatusValue = String(profile?.subscription_status || profile?.plan_status || '').trim().toLowerCase();
+          const isActiveSubscription = subscriptionStatusValue === 'ativo' || subscriptionStatusValue === 'active';
+          const isFreePlanValue = planValue === '' || planValue === 'free' || planValue === 'gratuito';
+          const isPro = isActiveSubscription && !isFreePlanValue;
           const isInfluencer = profile?.is_influencer;
 
           // ── Free trial countdown ──────────────────────────────────────────
