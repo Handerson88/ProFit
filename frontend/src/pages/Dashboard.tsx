@@ -22,6 +22,15 @@ import { formatMaputoTime, formatMaputoLongDate, getMaputoNow, isMaputoToday, ge
 import { notificationService } from '../services/notificationService';
 
 
+const isPaidPlanActive = (p: any): boolean => {
+  if (!p) return false;
+  const plan = String(p.plan || p.plan_type || '').trim().toLowerCase();
+  const status = String(p.subscription_status || p.plan_status || '').trim().toLowerCase();
+  const isActive = status === 'ativo' || status === 'active';
+  const isFree = plan === '' || plan === 'free' || plan === 'gratuito';
+  return isActive && !isFree;
+};
+
 const formatDateHeader = (date: Date, langData: any) => {
   const nowMaputo = getMaputoNow().toDate();
   if (date.getDate() === nowMaputo.getDate() && date.getMonth() === nowMaputo.getMonth() && date.getFullYear() === nowMaputo.getFullYear()) {
@@ -834,8 +843,8 @@ export const Dashboard = () => {
       <div className="app-container pb-28 min-h-screen">
       <div className="px-6 pt-12">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
+        <div className="flex justify-between items-start gap-3 mb-8">
+          <div className="min-w-0 flex-1">
             <p className="text-sm text-[var(--text-muted)] font-medium tracking-wide mb-1">
               {(() => {
                 const hour = getMaputoNow().hour();
@@ -844,34 +853,31 @@ export const Dashboard = () => {
                 return langData.dash_hello_night;
               })()} 👋
             </p>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-[28px] font-bold text-[var(--text-main)] leading-tight">{userName}</h1>
-              {profile?.subscription_status === 'ativo' && (profile?.plan === 'pro' || profile?.plan === 'premium') && (
-                <div className="flex flex-col items-start mt-1">
-                  <div className="plan-badge-pill">
-                    {profile?.is_early_adopter || profile?.is_influencer ? 'FREE' : 'PRO'}
-                  </div>
-                  {profile?.plan_expiration && (
-                    <span className="text-[8px] font-black text-[var(--text-muted)] mt-0.5 uppercase tracking-tighter">
-                      {langData.dash_valid_until}: {new Date(profile.plan_expiration).toLocaleDateString(langData.locale)}
-                    </span>
-                  )}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+              <h1 className="text-[28px] font-bold text-[var(--text-main)] leading-tight truncate max-w-full">{userName}</h1>
+              {isPaidPlanActive(profile) && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#A8E063] to-[#56AB2F] shadow-sm shadow-[#56AB2F]/30 flex-shrink-0">
+                  <Crown className="w-3 h-3 text-white flex-shrink-0" />
+                  <span className="text-[10px] font-black text-white uppercase tracking-wide whitespace-nowrap">
+                    {profile?.is_early_adopter || profile?.is_influencer ? 'Free' : 'Acesso Pro'}
+                  </span>
                 </div>
               )}
             </div>
+            {isPaidPlanActive(profile) && profile?.plan_expiration && (
+              <span className="block text-[10px] font-semibold text-[var(--text-muted)] mt-1">
+                {langData.dash_valid_until}: {new Date(profile.plan_expiration).toLocaleDateString(langData.locale)}
+              </span>
+            )}
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 flex-shrink-0">
             <NotificationCenter />
           </div>
         </div>
 
         {/* Banner de Plano/Pagamento */}
         {(() => {
-          const planValue = String(profile?.plan || profile?.plan_type || '').trim().toLowerCase();
-          const subscriptionStatusValue = String(profile?.subscription_status || profile?.plan_status || '').trim().toLowerCase();
-          const isActiveSubscription = subscriptionStatusValue === 'ativo' || subscriptionStatusValue === 'active';
-          const isFreePlanValue = planValue === '' || planValue === 'free' || planValue === 'gratuito';
-          const isPro = isActiveSubscription && !isFreePlanValue;
+          const isPro = isPaidPlanActive(profile);
           const isInfluencer = profile?.is_influencer;
 
           // ── Free trial countdown ──────────────────────────────────────────
