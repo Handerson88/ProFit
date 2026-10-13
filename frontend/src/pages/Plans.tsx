@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Crown, Check, Zap,
@@ -80,6 +80,8 @@ export const Plans = () => {
   const [error,          setError]          = useState<string | null>(null);
   const [couponCode,     setCouponCode]     = useState('');
   const [showCoupon,     setShowCoupon]     = useState(false);
+  const bottomBarRef = useRef<HTMLDivElement>(null);
+  const [bottomBarHeight, setBottomBarHeight] = useState(160);
 
   useEffect(() => {
     const profilePlanState = getProfilePlanState(user);
@@ -129,6 +131,21 @@ export const Plans = () => {
     ? expirationDate.toLocaleDateString('pt-PT')
     : null;
 
+  // The bottom payment bar has a dynamic height (coupon input, error message),
+  // so the page's bottom padding is measured live to avoid it covering content.
+  useEffect(() => {
+    const el = bottomBarRef.current;
+    if (!el) {
+      setBottomBarHeight(0);
+      return;
+    }
+    const updateHeight = () => setBottomBarHeight(el.offsetHeight);
+    updateHeight();
+    const resizeObserver = new ResizeObserver(updateHeight);
+    resizeObserver.observe(el);
+    return () => resizeObserver.disconnect();
+  }, [showPurchaseOptions, showCoupon, error, selected]);
+
   const handlePay = async () => {
     setError(null);
     setLoading(true);
@@ -149,17 +166,20 @@ export const Plans = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0F14] text-white pb-36 font-sans">
+    <div
+      className="min-h-screen bg-[#0A0F14] text-white font-sans"
+      style={{ paddingBottom: showPurchaseOptions ? bottomBarHeight + 24 : 32 }}
+    >
 
       {/* ── Header ── */}
-      <div className="sticky top-0 z-40 bg-[#0A0F14]/95 backdrop-blur-xl border-b border-white/5">
+      <div className="sticky top-0 z-40 bg-[#0A0F14]/95 backdrop-blur-xl border-b border-white/5 pt-[env(safe-area-inset-top)]">
         <div className="max-w-md mx-auto px-5 h-[60px] flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="btn-icon">
+          <button onClick={() => navigate(-1)} className="btn-icon flex-shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
-            <h1 className="text-[17px] font-bold">Planos ProFit</h1>
-            <p className="text-[12px] text-slate-500">Escolha e pague</p>
+          <div className="min-w-0">
+            <h1 className="text-[17px] font-bold truncate">Planos ProFit</h1>
+            <p className="text-[12px] text-slate-500 truncate">Escolha e pague</p>
           </div>
         </div>
       </div>
@@ -278,8 +298,8 @@ export const Plans = () => {
 
       {/* ── Botão Pagar ── */}
       {showPurchaseOptions && (
-        <div className="fixed bottom-0 left-0 right-0 z-40">
-          <div className="max-w-md mx-auto px-5 pb-6 pt-4 bg-gradient-to-t from-[#0A0F14] via-[#0A0F14]/97 to-transparent space-y-3">
+        <div ref={bottomBarRef} className="fixed bottom-0 left-0 right-0 z-40">
+          <div className="max-w-md mx-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-4 bg-gradient-to-t from-[#0A0F14] via-[#0A0F14]/97 to-transparent space-y-3">
 
             {/* Coupon toggle */}
             <div>
