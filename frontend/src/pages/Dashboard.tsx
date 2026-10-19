@@ -257,11 +257,13 @@ export const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
   const [isTrial, setIsTrial] = useState(false);
+  const [isProSubscription, setIsProSubscription] = useState<boolean | null>(null);
 
   useEffect(() => {
     api.subscription.getStatus().then((s: any) => {
       setIsTrial(s?.is_trial ?? false);
       setTrialDaysLeft(typeof s?.trial_days_left === 'number' ? s.trial_days_left : null);
+      setIsProSubscription(typeof s?.is_pro === 'boolean' ? s.is_pro : null);
     }).catch(() => {});
   }, []);
 
@@ -838,6 +840,13 @@ export const Dashboard = () => {
 
   if (isLoading) return <SkeletonLoader />;
 
+  // `subscription.getStatus()` is the authoritative source (it knows about trials),
+  // since profile.subscription_status is "ativo" for trial users too. Fall back to
+  // the profile heuristic (minus trial) only if that call hasn't resolved/failed.
+  const isUserPro = isProSubscription !== null
+    ? isProSubscription
+    : (isPaidPlanActive(profile) && !isTrial);
+
   return (
     <div className="main-wrapper">
       <div className="app-container pb-28 min-h-screen">
@@ -855,7 +864,7 @@ export const Dashboard = () => {
             </p>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
               <h1 className="text-[28px] font-bold text-[var(--text-main)] leading-tight truncate max-w-full">{userName}</h1>
-              {isPaidPlanActive(profile) && (
+              {isUserPro && (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#A8E063] to-[#56AB2F] shadow-sm shadow-[#56AB2F]/30 flex-shrink-0">
                   <Crown className="w-3 h-3 text-white flex-shrink-0" />
                   <span className="text-[10px] font-black text-white uppercase tracking-wide whitespace-nowrap">
@@ -864,7 +873,7 @@ export const Dashboard = () => {
                 </div>
               )}
             </div>
-            {isPaidPlanActive(profile) && profile?.plan_expiration && (
+            {isUserPro && profile?.plan_expiration && (
               <span className="block text-[10px] font-semibold text-[var(--text-muted)] mt-1">
                 {langData.dash_valid_until}: {new Date(profile.plan_expiration).toLocaleDateString(langData.locale)}
               </span>
@@ -877,7 +886,7 @@ export const Dashboard = () => {
 
         {/* Banner de Plano/Pagamento */}
         {(() => {
-          const isPro = isPaidPlanActive(profile);
+          const isPro = isUserPro;
           const isInfluencer = profile?.is_influencer;
 
           // ── Free trial countdown ──────────────────────────────────────────

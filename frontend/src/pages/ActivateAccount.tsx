@@ -68,7 +68,7 @@ const ActivateAccount: React.FC = () => {
             // Redirect based on onboarding status
             setTimeout(() => {
                 if (data.user.onboarding_completed) {
-                    navigate('/dashboard');
+                    navigate('/home');
                 } else {
                     navigate('/quiz');
                 }

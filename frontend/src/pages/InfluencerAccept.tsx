@@ -79,7 +79,7 @@ const InfluencerAccept: React.FC = () => {
       if (response.success) {
         // Redirecionar para o Quiz se não completou onboarding, senão Dashboard
         if (response.user.onboarding_completed) {
-          navigate('/dashboard');
+          navigate('/home');
         } else {
           navigate('/quiz');
         }

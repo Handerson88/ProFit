@@ -23,6 +23,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { api } from '../../services/api';
+import { getUserPlanStatus, getWhatsAppLink } from '../../utils/userPlanStatus';
 
 const AdminUsers: React.FC = () => {
     const [users, setUsers] = useState<any[]>([]);
@@ -315,6 +316,7 @@ const AdminUsers: React.FC = () => {
         return flags[code] || '🌍';
     };
 
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -459,17 +461,32 @@ const AdminUsers: React.FC = () => {
                                 <tr key={user.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-[#EDF2F7] dark:bg-slate-800 flex items-center justify-center text-[#2D3748] dark:text-white font-bold text-[13px] border border-[#E2E8F0] dark:border-slate-700">
+                                            <div className="w-9 h-9 rounded-full bg-[#EDF2F7] dark:bg-slate-800 flex items-center justify-center text-[#2D3748] dark:text-white font-bold text-[13px] border border-[#E2E8F0] dark:border-slate-700 flex-shrink-0">
                                                 {user.name?.[0]?.toUpperCase() || 'U'}
                                             </div>
-                                            <div>
+                                            <div className="min-w-0">
                                                 <div className="flex items-center gap-1.5">
-                                                    <div className="font-semibold text-[#2D3748] dark:text-white text-[14px]">{user.name || 'Sem Nome'}</div>
+                                                    <div className="font-semibold text-[#2D3748] dark:text-white text-[14px] truncate">{user.name || 'Sem Nome'}</div>
                                                     {user.is_influencer && (
-                                                        <Star size={12} className="text-amber-500" fill="currentColor" />
+                                                        <Star size={12} className="text-amber-500 flex-shrink-0" fill="currentColor" />
                                                     )}
                                                 </div>
-                                                <div className="text-[12px] text-[#718096] dark:text-slate-400">{user.email}</div>
+                                                <div className="text-[12px] text-[#718096] dark:text-slate-400 truncate">{user.email}</div>
+                                                {user.phone && (
+                                                    <a
+                                                        href={getWhatsAppLink(user.phone, user.country_code) || undefined}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        title="Abrir conversa no WhatsApp"
+                                                        className="inline-flex items-center gap-1 mt-0.5 text-[12px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                                                    >
+                                                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 flex-shrink-0">
+                                                            <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.74.46 3.43 1.32 4.92L2 22l5.29-1.39a9.87 9.87 0 0 0 4.75 1.21h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2zm5.8 14.03c-.24.68-1.19 1.25-1.95 1.41-.52.11-1.2.2-3.48-.75-2.92-1.21-4.8-4.17-4.95-4.37-.14-.2-1.18-1.57-1.18-3 0-1.42.75-2.12 1.02-2.41.27-.29.59-.36.78-.36.2 0 .39 0 .56.01.18.01.42-.07.66.5.24.58.83 2 .9 2.15.07.15.12.33.02.53-.1.2-.15.33-.3.5-.15.18-.31.4-.45.54-.15.15-.3.31-.13.61.17.3.76 1.25 1.63 2.02 1.12 1 2.06 1.31 2.36 1.46.3.15.47.13.65-.08.18-.2.76-.88.96-1.18.2-.3.4-.25.68-.15.28.1 1.76.83 2.06.98.3.15.5.22.57.35.07.13.07.74-.17 1.42z"/>
+                                                        </svg>
+                                                        {user.phone}
+                                                    </a>
+                                                )}
                                             </div>
                                         </div>
                                     </td>
@@ -520,20 +537,32 @@ const AdminUsers: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="flex flex-col gap-1">
+                                        <div className="flex flex-col gap-1.5">
                                             {(() => {
-                                                const now = new Date();
-                                                const isExpired = user.data_expiracao ? new Date(user.data_expiracao) < now : true;
-                                                const isPro = user.plano_status === 'ativo';
-                                                
-                                                if (isPro && !isExpired) {
-                                                    return <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-1.5 w-fit uppercase tracking-wider">🟢 PRO Ativo</span>;
-                                                } else if (isPro && isExpired) {
-                                                    return <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-50 text-rose-600 border border-rose-100 flex items-center gap-1.5 w-fit uppercase tracking-wider">🔴 PRO Expirado</span>;
-                                                } else {
-                                                    return <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-1.5 w-fit uppercase tracking-wider">⚪ Sem Plano</span>;
-                                                }
+                                                const status = getUserPlanStatus(user);
+                                                const styles: Record<string, string> = {
+                                                    pro_active: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+                                                    pro_expired: 'bg-rose-50 text-rose-600 border-rose-100',
+                                                    trial: 'bg-blue-50 text-blue-600 border-blue-100',
+                                                    none: 'bg-slate-100 text-slate-500 border-slate-200',
+                                                };
+                                                const icons: Record<string, string> = {
+                                                    pro_active: '🟢', pro_expired: '🔴', trial: '🔵', none: '⚪',
+                                                };
+                                                return (
+                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border flex items-center gap-1.5 w-fit uppercase tracking-wider ${styles[status.key]}`}>
+                                                        {icons[status.key]} {status.label}
+                                                    </span>
+                                                );
                                             })()}
+
+                                            {!!user.has_paid && user.last_payment_date && (
+                                                <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
+                                                    <CreditCard size={10} className="flex-shrink-0" />
+                                                    {new Date(user.last_payment_date).toLocaleDateString()}
+                                                    {user.last_payment_amount ? ` · ${Math.round(Number(user.last_payment_amount))} MT` : ''}
+                                                </span>
+                                            )}
                                             {user.data_expiracao && (
                                                 <span className="text-[10px] text-gray-400 font-medium">Exp: {new Date(user.data_expiracao).toLocaleDateString()}</span>
                                             )}
