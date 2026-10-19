@@ -426,6 +426,7 @@ export const Quiz = () => {
           // Meta
           language: localStorage.getItem('appLanguage') || 'PT',
           subscription_plan: selectedPlan,
+          onboarding_completed: true,
           leadId
         }
       );
@@ -438,7 +439,7 @@ export const Quiz = () => {
           await notificationService.subscribe().catch(e => console.error('Failed to register device:', e));
         }
 
-        window.location.href = '/dashboard';
+        window.location.href = '/home';
       }
     } catch (err: any) {
       console.error("Registration failed:", err);
@@ -462,7 +463,7 @@ export const Quiz = () => {
             if (pushSubscription) {
               await notificationService.subscribe().catch(e => console.error('Failed to register device:', e));
             }
-            window.location.href = '/dashboard';
+            window.location.href = '/home';
           }
         } catch (loginErr: any) {
           if (loginErr.status === 401 || loginErr.message?.includes('Senha incorreta')) {
@@ -510,7 +511,7 @@ export const Quiz = () => {
           }
         }
 
-        window.location.href = '/dashboard';
+        window.location.href = '/home';
       }
     } catch (err: any) {
       setAuthError(err.message || "Senha incorreta");
@@ -815,9 +816,9 @@ export const Quiz = () => {
             
             <div className="w-full space-y-4">
               {[
-                { id: 'Masculino', label: langData.quiz_gender_male },
-                { id: 'Feminino', label: langData.quiz_gender_female },
-                { id: 'Outro', label: langData.quiz_gender_other }
+                { id: 'male', label: langData.quiz_gender_male },
+                { id: 'female', label: langData.quiz_gender_female },
+                { id: 'other', label: langData.quiz_gender_other }
               ].map(opt => (
                 <button
                   key={opt.id}
